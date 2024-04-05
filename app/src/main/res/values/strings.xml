@@ -1,3 +1,35 @@
 <resources>
+    <string name="app_display_language">EN</string>
     <string name="app_name">Checklist</string>
+    <string name="edit">Edit</string>
+    <string name="add">Add</string>
+    <string name="back">Back</string>
+    <string name="dismiss">Dismiss</string>
+    <string name="confirm">Confirm</string>
+    <string name="warning">Warning</string>
+    <string name="cancel">Cancel</string>
+
+    <!-- MainLayout -->
+    <string name="tasks">Tasks</string>
+    <string name="time_format">"EE, dd MMM "</string>
+    <string name="more_options">more options</string>
+
+    <!-- TaskLayout -->
+    <string name="task_date_format">dd MMM yyyy</string>
+    <string name="task_creation_time">Task creation time: %1$s</string>
+    <string name="check">Check</string>
+    <string name="undo">Undo</string>
+    <string name="reminder">reminder</string>
+    <string name="create_task">Create a task</string>
+    <string name="edit_task">Edit the task</string>
+
+    <!-- Notification -->
+    <string name="task_reminder">Task Reminder</string>
+    <string name="description">For remind to do the task</string>
+    <string name="no_set_reminder_permission">Failed to set reminder due to no permission</string>
+    <string name="note_brevent">Note: notification may not work if Brevent work on Checklist</string>
+    <string name="note_thanox">Note: notification may not work if Thanox work on Checklist</string>
+    <string name="no_do_nothing">Don\'t plan to do nothing!!</string>
+    <string name="no_change_do_nothing">Don\'t change plan to do nothing!!</string>
+
 </resources>
