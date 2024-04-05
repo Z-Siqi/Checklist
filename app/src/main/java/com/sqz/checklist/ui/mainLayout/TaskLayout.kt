@@ -193,11 +193,17 @@ fun TaskLayout(
                                 }
                             }
                         }
-                        Text(text = "Cancel the reminder?")
+                        Text(text = stringResource(R.string.cancel_the_reminder))
+                        val fullDateShort = stringResource(R.string.full_date_short)
                         val formatter = remember {
-                            SimpleDateFormat("yyyy dd MMM hh:mm a", Locale.getDefault())
+                            SimpleDateFormat(fullDateShort, Locale.getDefault())
                         }
-                        Text(text = "remind at ${formatter.format(remindTime)}")
+                        Text(
+                            text = stringResource(
+                                R.string.remind_at,
+                                formatter.format(remindTime)
+                            )
+                        )
                     }
                 )
             }
@@ -263,11 +269,16 @@ fun TaskLayout(
             text = {
                 val time = cal.timeInMillis - now.timeInMillis
                 val (hour, minutes) = convertTime(time.toInt())
-                Text(text = "remind at $hour hour $minutes minutes later")
+                Text(text = stringResource(R.string.remind_at_preview, hour, minutes))
                 val remindTime = now.timeInMillis + time
-                val formatter =
-                    remember { SimpleDateFormat("yyyy dd MMM hh:mm a", Locale.getDefault()) }
-                Text(text = "remind at ${formatter.format(remindTime)}")
+                val fullDateShort = stringResource(R.string.full_date_short)
+                val formatter = remember { SimpleDateFormat(fullDateShort, Locale.getDefault()) }
+                Text(
+                    text = stringResource(
+                        R.string.remind_at,
+                        formatter.format(remindTime)
+                    )
+                )
             },
             context = context
         )
@@ -427,7 +438,7 @@ private fun Menu(
             DropdownMenuItem(
                 onClick = onClickToTaskHistory,
                 text = {
-                    Text(text = "Task History")
+                    Text(text = stringResource(R.string.task_history))
                 }
             )
         }
