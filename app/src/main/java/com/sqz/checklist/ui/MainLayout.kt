@@ -139,13 +139,16 @@ fun TopBar(
     modifier: Modifier = Modifier
 ) {
     val topAppBarTitle = stringResource(R.string.time_format)
+    val year = "YYYY"
+    val week = "EEEE"
     MediumTopAppBar(
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer,
             titleContentColor = MaterialTheme.colorScheme.primary,
+            scrolledContainerColor = MaterialTheme.colorScheme.secondaryContainer,
         ),
         title = {
-            if (topBarState.heightOffset <= topBarState.heightOffsetLimit * 0.5) {
+            if (topBarState.heightOffset <= topBarState.heightOffsetLimit * 0.7) {
                 Row(
                     verticalAlignment = Alignment.Bottom
                 ) {
@@ -156,18 +159,16 @@ fun TopBar(
                         overflow = TextOverflow.Visible
                     )
                     Text(
-                        text = topBarContent("YYYY"),
+                        text = topBarContent(year),
                         maxLines = 1,
                         fontSize = 15.sp,
                         overflow = TextOverflow.Visible
                     )
                 }
             } else {
-                Row(
-                    verticalAlignment = Alignment.Bottom
-                ) {
+                Row(verticalAlignment = Alignment.Bottom) {
                     Text(
-                        text = topBarContent("dd MMMM"),
+                        text = topBarContent(stringResource(R.string.top_bar_date)),
                         modifier = modifier.height(30.dp),
                         maxLines = 1,
                         fontSize = 24.sp,
@@ -175,7 +176,7 @@ fun TopBar(
                     )
                     Spacer(modifier = modifier.width(10.dp))
                     Text(
-                        text = topBarContent("YYYY"),
+                        text = topBarContent(year),
                         modifier = modifier.height(28.dp),
                         maxLines = 1,
                         fontSize = 15.sp,
@@ -185,24 +186,24 @@ fun TopBar(
             }
         },
         navigationIcon = {
-            val visible = topBarState.heightOffset >= topBarState.heightOffsetLimit * 0.5
-            AnimatedVisibility(
-                visible = visible,
-                enter = expandHorizontally(
-                    expandFrom = Alignment.CenterHorizontally
-                ) + fadeIn(
-                    initialAlpha = 0.3f
-                ),
-                exit = slideOutHorizontally() + fadeOut()
-            ) {
-                if (topBarState.heightOffset != topBarState.heightOffsetLimit) {
+            val visible = topBarState.heightOffset >= topBarState.heightOffsetLimit * 0.58
+            if (topBarState.heightOffset != topBarState.heightOffsetLimit) {
+                AnimatedVisibility(
+                    visible = visible,
+                    enter = expandHorizontally(
+                        expandFrom = Alignment.CenterHorizontally
+                    ) + fadeIn(
+                        initialAlpha = 0.3f
+                    ),
+                    exit = slideOutHorizontally() + fadeOut()
+                ) {
                     Row(
                         modifier = modifier.padding(top = 8.dp),
                         verticalAlignment = Alignment.Bottom
                     ) {
                         Spacer(modifier = modifier.width(10.dp))
                         Text(
-                            text = topBarContent("EEEE"),
+                            text = topBarContent(week),
                             maxLines = 1,
                             fontSize = 22.sp,
                             color = MaterialTheme.colorScheme.primary,

@@ -25,8 +25,8 @@ class MainActivity : ComponentActivity() {
         ).build()
         setContent {
             ChecklistTheme {
-                window.statusBarColor = MaterialTheme.colorScheme.tertiary.toArgb()
-                window.navigationBarColor = MaterialTheme.colorScheme.surfaceVariant.toArgb()
+                window.statusBarColor = MaterialTheme.colorScheme.secondary.toArgb()
+                window.navigationBarColor = MaterialTheme.colorScheme.secondary.toArgb()
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
