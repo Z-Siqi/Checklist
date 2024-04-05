@@ -1,7 +1,11 @@
 package com.sqz.checklist.ui.mainLayout
 
 import android.content.Context
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
@@ -46,6 +50,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -61,6 +66,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat.getSystemService
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.work.WorkManager
 import com.sqz.checklist.MainActivity
@@ -92,6 +98,9 @@ fun TaskItem(
             taskState.checkTaskAction = true
             taskState.undoActionId = id
         }
+    }
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        Vibrate(context, itemState)
     }
     val height = if (!isDismissed) 120.dp else 0.dp
     Column(
@@ -158,6 +167,33 @@ fun TaskItem(
             textState.clearText()
             textState.edit { insert(0, description) }
         }
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.Q)
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun Vibrate(
+    context: Context,
+    itemState: SwipeToDismissBoxState
+) {
+    var isOn by remember { mutableStateOf(false) }
+    if (itemState.targetValue == SwipeToDismissBoxValue.StartToEnd ||
+        itemState.targetValue == SwipeToDismissBoxValue.EndToStart
+    ) {
+        LaunchedEffect(true) {
+            getSystemService(context, Vibrator::class.java)?.vibrate(
+                VibrationEffect.createPredefined(
+                    VibrationEffect.EFFECT_TICK
+                )
+            )
+        }
+        isOn = true
+    } else if (isOn && itemState.targetValue == itemState.currentValue) {
+        getSystemService(context, Vibrator::class.java)?.vibrate(
+            VibrationEffect.createOneShot(10L, 50)
+        )
+        isOn = false
     }
 }
 
