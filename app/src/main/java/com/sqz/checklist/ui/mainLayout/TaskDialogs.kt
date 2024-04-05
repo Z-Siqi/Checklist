@@ -23,6 +23,12 @@ import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalConfiguration
@@ -34,6 +40,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sqz.checklist.R
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun TaskChangeContentCard(
@@ -46,16 +54,30 @@ fun TaskChangeContentCard(
     doneImeAction: Boolean = false,
     modifier: Modifier = Modifier
 ) {
+    var clearFocus by rememberSaveable { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
+    fun releaseFocusAndDismiss() = coroutineScope.launch {
+        clearFocus = true
+        delay(80)
+        onDismissRequest()
+    }
+
     val scrollState = rememberScrollState()
     AlertDialog(
-        onDismissRequest = onDismissRequest,
+        onDismissRequest = { releaseFocusAndDismiss() },
         confirmButton = {
-            TextButton(onClick = confirm) {
+            TextButton(onClick = {
+                coroutineScope.launch {
+                    clearFocus = true
+                    delay(80)
+                    confirm()
+                }
+            }) {
                 Text(text = confirmText)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismissRequest) {
+            TextButton(onClick = { releaseFocusAndDismiss() }) {
                 Text(text = stringResource(R.string.cancel))
             }
         },
@@ -77,6 +99,10 @@ fun TaskChangeContentCard(
                     .height(height.dp)
             ) {
                 val focus = LocalFocusManager.current
+                if (clearFocus) LaunchedEffect(true) {
+                    focus.clearFocus()
+                    clearFocus = false
+                }
                 BasicTextField(
                     modifier = modifier
                         .fillMaxSize()
@@ -88,10 +114,12 @@ fun TaskChangeContentCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     ),
                     cursorBrush = SolidColor(MaterialTheme.colorScheme.onSurfaceVariant),
-                    keyboardOptions = KeyboardOptions(imeAction = if (doneImeAction) {
-                        ImeAction.Done
-                    } else { ImeAction.Default }),
-                    onKeyboardAction = { if (doneImeAction) focus.clearFocus() },
+                    keyboardOptions = KeyboardOptions(
+                        imeAction = if (doneImeAction) {
+                            ImeAction.Done
+                        } else ImeAction.Default
+                    ),
+                    onKeyboardAction = { if (doneImeAction) clearFocus = true },
                     lineLimits = lineLimits,
                 )
             }

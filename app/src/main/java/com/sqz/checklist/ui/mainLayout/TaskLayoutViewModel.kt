@@ -93,6 +93,7 @@ class TaskLayoutViewModel : ViewModel() {
         viewModelScope.launch {
             val insert = Task(description = description, createDate = LocalDate.now())
             MainActivity.taskDatabase.taskDao().insertAll(insert)
+            taskData = MainActivity.taskDatabase.taskDao().getAll(1)
         }
     }
 
