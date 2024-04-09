@@ -8,6 +8,7 @@
     <string name="confirm">Confirm</string>
     <string name="warning">Warning</string>
     <string name="cancel">Cancel</string>
+    <string name="delete">Delete</string>
     <string name="full_date_short">yyyy dd MMM hh:mm a</string>
 
     <!-- MainLayout -->
@@ -25,6 +26,10 @@
     <string name="create_task">Create a task</string>
     <string name="edit_task">Edit the task</string>
     <string name="task_history">Task History</string>
+    <string name="delete_all_history">Delete All History Task?</string>
+    <string name="redo_all_history">Redo All History Task?</string>
+    <string name="redo">Redo</string>
+    <string name="nothing_here">Nothing Here!</string>
 
     <!-- Notification -->
     <string name="task_reminder">Task Reminder</string>

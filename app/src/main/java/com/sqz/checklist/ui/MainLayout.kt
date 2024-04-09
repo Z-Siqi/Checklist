@@ -47,8 +47,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.sqz.checklist.R
-import com.sqz.checklist.ui.mainLayout.TaskHistory
-import com.sqz.checklist.ui.mainLayout.TaskLayout
+import com.sqz.checklist.ui.mainLayout.taskLayout.TaskHistory
+import com.sqz.checklist.ui.mainLayout.taskLayout.TaskLayout
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale

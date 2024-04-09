@@ -47,6 +47,9 @@ interface TaskDao {
     @Query("SELECT id FROM task WHERE isHistory = 1 ORDER BY isHistoryId")
     suspend fun getIsHistoryBottomKeyId(): Int
 
+    @Query("SELECT isHistory FROM task WHERE id = :id")
+    suspend fun getIsHistoryId(id: Int): Int
+
 
     // History-related Set Actions
     @Query("UPDATE task SET isHistoryId = :isHistoryId WHERE id = :id")
