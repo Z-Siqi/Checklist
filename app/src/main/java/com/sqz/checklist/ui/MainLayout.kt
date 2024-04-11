@@ -185,34 +185,6 @@ fun TopBar(
                 }
             }
         },
-        navigationIcon = {
-            val visible = topBarState.heightOffset >= topBarState.heightOffsetLimit * 0.58
-            if (topBarState.heightOffset != topBarState.heightOffsetLimit) {
-                AnimatedVisibility(
-                    visible = visible,
-                    enter = expandHorizontally(
-                        expandFrom = Alignment.CenterHorizontally
-                    ) + fadeIn(
-                        initialAlpha = 0.3f
-                    ),
-                    exit = slideOutHorizontally() + fadeOut()
-                ) {
-                    Row(
-                        modifier = modifier.padding(top = 8.dp),
-                        verticalAlignment = Alignment.Bottom
-                    ) {
-                        Spacer(modifier = modifier.width(10.dp))
-                        Text(
-                            text = topBarContent(week),
-                            maxLines = 1,
-                            fontSize = 22.sp,
-                            color = MaterialTheme.colorScheme.primary,
-                            overflow = TextOverflow.Visible
-                        )
-                    }
-                }
-            }
-        },
         actions = {
             IconButton(onClick = onClick) {
                 Icon(
@@ -223,6 +195,32 @@ fun TopBar(
         },
         scrollBehavior = scrollBehavior
     )
+    val visible = topBarState.heightOffset >= topBarState.heightOffsetLimit * 0.58
+    if (topBarState.heightOffset != topBarState.heightOffsetLimit) {
+        AnimatedVisibility(
+            visible = visible,
+            enter = expandHorizontally(
+                expandFrom = Alignment.CenterHorizontally
+            ) + fadeIn(
+                initialAlpha = 0.3f
+            ),
+            exit = slideOutHorizontally() + fadeOut()
+        ) {
+            Row(
+                modifier = modifier.padding(top = 22.dp, start = 4.dp),
+                verticalAlignment = Alignment.Bottom
+            ) {
+                Spacer(modifier = modifier.width(10.dp))
+                Text(
+                    text = topBarContent(week),
+                    maxLines = 1,
+                    fontSize = 22.sp,
+                    color = MaterialTheme.colorScheme.primary,
+                    overflow = TextOverflow.Visible
+                )
+            }
+        }
+    }
 }
 
 @Composable
