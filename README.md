@@ -1,9 +1,28 @@
 # Checklist
 
-**A checklist android app**
+*An easy-to-use and intuitive checklist application.*
 
-It's still early in development, DO NOT SAVE IMPORTANT DATA ONLY IN THIS APP!
+![ic_launcher_round](https://github.com/Z-Siqi/Checklist/assets/77391690/e2fa56f6-a865-430d-ae71-10c5c6796211)
+
+[![Download](https://img.shields.io/github/v/tag/Z-Siqi/Checklist?label=Release&color=green)](https://github.com/Z-Siqi/Checklist/releases)
+</br>
+[![Beta](https://img.shields.io/badge/Download-blue?label=Beta)](https://github.com/Z-Siqi/Checklist/raw/master/app/release/app-release.apk)
+[![CI](https://img.shields.io/github/actions/workflow/status/Z-Siqi/Checklist/android.yml?logoColor=sienna&label=CI%20builds&labelColor=sienna&color=seagreen)](https://github.com/Z-Siqi/Checklist/actions/workflows/android.yml)
+
+Looking for a simplicity and practicality in design? Want a design without unnecessary complexity? Or just simply like the Material 3 design style? If you think so, this software will perfect for you.
+
+## Feature
+* Simplicity and practicality design.
+* Use swiping as a way to get things done.
+* Automatically delete completed tasks and keep five historical records by default.
+* No advertisement that impact the experience.
+* Based on Material Design 3
+
+## Screenshot
+<img src="https://github.com/Z-Siqi/Checklist/assets/77391690/eece4b76-50bb-4a65-b346-e080bdaae539" width="300" height="600">
 
 ***
 
-[Download beta version](https://github.com/Z-Siqi/Checklist/raw/master/app/release/app-release.apk)
+It's still early in development, DO NOT SAVE IMPORTANT DATA ONLY IN THIS APP!
+
+*More features are under development...*
