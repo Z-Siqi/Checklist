@@ -5,6 +5,7 @@ import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
@@ -14,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.DividerDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -118,7 +120,9 @@ fun NavBar(
             )
         }
         Spacer(modifier = modifier.weight(0.5f))
-        VerticalDivider(modifier = modifier.height(50.dp))
+        VerticalDivider(modifier = modifier.height(50.dp), color = if (isSystemInDarkTheme()) {
+            MaterialTheme.colorScheme.onSurface
+        } else DividerDefaults.color)
         NavigationBarItem(
             colors = NavigationBarItemDefaults.colors(MaterialTheme.colorScheme.primary),
             icon = icon,

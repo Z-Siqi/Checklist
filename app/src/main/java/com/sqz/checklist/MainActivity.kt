@@ -3,6 +3,7 @@ package com.sqz.checklist
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -26,7 +27,9 @@ class MainActivity : ComponentActivity() {
         setContent {
             ChecklistTheme {
                 window.statusBarColor = MaterialTheme.colorScheme.secondary.toArgb()
-                window.navigationBarColor = MaterialTheme.colorScheme.secondary.toArgb()
+                window.navigationBarColor = if (isSystemInDarkTheme()) {
+                    MaterialTheme.colorScheme.onSecondary.toArgb()
+                } else MaterialTheme.colorScheme.secondary.toArgb()
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
