@@ -7,16 +7,16 @@ env:
   # The name of the Play Store
   playstore_name: Checklist
 
-  # Keystore Path
+  # Keystore Path (Replace to your KeyStore if you wanna use this CI in your forked)
   ks_path: KeyStore.jks
 
-  # Keystore Password
+  # Keystore Password (Replace ${{ secrets.KEY_STORE }} to your password such as 123456)
   ks_store_pass: ${{ secrets.KEY_STORE }}
 
-  # Keystore Alias
+  # Keystore Alias (Replace to your alias)
   ks_alias: ${{ secrets.KEY_STORE_ALIAS }}
 
-  # Keystore Alias Password
+  # Keystore Alias Password (Replace to your alias password)
   ks_alias_pass: ${{ secrets.KEY_STORE }}
 
 on:

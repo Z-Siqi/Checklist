@@ -12,7 +12,7 @@ data class Task(
     @ColumnInfo val createDate: LocalDate,
     @ColumnInfo val detail: String? = null, // not implemented
     @ColumnInfo val reminder: String? = null,
-    @ColumnInfo val isPin: Boolean = false, // not implemented
+    @ColumnInfo val isPin: Boolean = false,
     @ColumnInfo val pinToTop: Boolean = false, // not implemented
     @ColumnInfo val isHistory: Boolean = false,
     @ColumnInfo val isHistoryId: Int = 0,

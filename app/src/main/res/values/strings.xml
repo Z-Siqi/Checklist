@@ -42,5 +42,6 @@
     <string name="no_change_do_nothing">Don\'t change plan to do nothing!!</string>
     <string name="remind_at_preview">remind at %1$s hour %2$s minutes later</string>
     <string name="remind_at">remind at %1$s</string>
+    <string name="pin">Pin</string>
 
 </resources>
