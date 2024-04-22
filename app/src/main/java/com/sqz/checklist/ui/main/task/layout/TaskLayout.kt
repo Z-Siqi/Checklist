@@ -2,7 +2,6 @@ package com.sqz.checklist.ui.main.task.layout
 
 import android.widget.Toast
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -41,6 +40,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalConfiguration
@@ -48,6 +48,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -62,13 +63,14 @@ import com.sqz.checklist.ui.main.WarningAlertDialog
 import com.sqz.checklist.ui.main.task.item.TaskItem
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
 import com.sqz.checklist.ui.material.TimeSelectDialog
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskLayout(
     toTaskHistory: () -> Unit,
@@ -137,7 +139,7 @@ fun TaskLayout(
                             colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerLow)
                         ) {
                             Text(
-                                text = "Pinned task",
+                                text = stringResource(R.string.pinned_task),
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.outline,
@@ -245,6 +247,28 @@ fun TaskLayout(
                 taskState.undoTaskToHistory(taskState.undoActionId)
                 undoTask = true
                 taskState.undoTaskAction = false
+            }
+            if (item.isEmpty()) { // Show text if not any task
+                var delayed by rememberSaveable { mutableStateOf(false) }
+                if (delayed) {
+                    Column(
+                        modifier = modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = stringResource(R.string.nothing_need_do),
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 24.sp,
+                            color = MaterialTheme.colorScheme.outline,
+                            lineHeight = 30.sp,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                } else LaunchedEffect(true) {
+                    delay(800)
+                    delayed = true
+                }
             }
         }
     }

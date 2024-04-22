@@ -10,21 +10,40 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.core.content.ContextCompat.getString
 import com.sqz.checklist.R
+import com.sqz.checklist.ui.main.WarningAlertDialog
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -35,14 +54,19 @@ fun TimeSelectDialog(
     onDismissRequest: () -> Unit,
     onConfirmClick: (cal: Long) -> Unit,
     onFailed: () -> Unit,
-    context: Context
+    context: Context,
+    modifier: Modifier = Modifier
 ) {
+    var datePickDialog by rememberSaveable { mutableStateOf(false) }
+    var isDatePick by rememberSaveable { mutableStateOf(false) }
+    var rememberDays by rememberSaveable { mutableIntStateOf(0) }
+
     val timePickerState = rememberTimePickerState()
     val now = Calendar.getInstance()
     val cal = Calendar.getInstance()
     cal.set(Calendar.HOUR_OF_DAY, timePickerState.hour)
     cal.set(Calendar.MINUTE, timePickerState.minute)
-    if (cal.before(now)) {
+    if (cal.before(now) && !isDatePick) {
         cal.add(Calendar.DATE, 1)
     }
     CheckPermission(
@@ -69,9 +93,32 @@ fun TimeSelectDialog(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 TimePicker(state = timePickerState)
+
+                OutlinedButton(
+                    onClick = {
+                        if (!isDatePick) {
+                            datePickDialog = true
+                        } else {
+                            cal.clear()
+                            rememberDays = 0
+                            isDatePick = false
+                        }
+                    },
+                    colors = if (isDatePick) ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.primary
+                    ) else ButtonDefaults.outlinedButtonColors(),
+                    shape = ShapeDefaults.Medium,
+                    modifier = modifier.fillMaxWidth(0.7f)
+                ) {
+                    Text(text = "Select a date")
+                }
+                Spacer(modifier = modifier.height(5.dp))
+
                 val time = cal.timeInMillis - now.timeInMillis
-                val (hour, minutes) = convertTime(time.toInt())
+                val (hour, minutes) = convertTime(time)
                 Text(text = stringResource(R.string.remind_at_preview, hour, minutes))
+
                 val remindTime = now.timeInMillis + time
                 val fullDateShort = stringResource(R.string.full_date_short)
                 val formatter = remember { SimpleDateFormat(fullDateShort, Locale.getDefault()) }
@@ -84,13 +131,106 @@ fun TimeSelectDialog(
             }
         }
     )
+    if (datePickDialog) {
+        DatePickDialog(
+            onDismissRequest = { datePickDialog = false },
+            onConfirm = {
+                isDatePick = true
+                datePickDialog = false
+            },
+            selectedDate = {
+                rememberDays = it
+            },
+            context = context
+        )
+    }
+    if (isDatePick && rememberDays > 0) {
+        cal.add(Calendar.DATE, rememberDays)
+    } else {
+        isDatePick = false
+    }
 }
 
-private fun convertTime(milliseconds: Int): Pair<Int, Int> {
-    val seconds = milliseconds / 1000
-    val minutes = seconds / 60
-    val hours = minutes / 60
-    val remainingMinutes = minutes % 60
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DatePickDialog(
+    onDismissRequest: () -> Unit,
+    onConfirm: () -> Unit,
+    selectedDate: (day: Int) -> Unit,
+    context: Context
+) {
+    var invalid by rememberSaveable { mutableStateOf(false) }
+    var tooLarge by rememberSaveable { mutableStateOf(false) }
+    var dialog by rememberSaveable { mutableStateOf(false) }
+    DatePickerDialog(
+        onDismissRequest = onDismissRequest,
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    if (!invalid) onConfirm()
+                    if (tooLarge) dialog = true
+                    if (invalid) Toast.makeText(
+                        context,
+                        getString(context, R.string.cannot_set_past),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                },
+                colors = if (invalid) {
+                    ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.outlineVariant)
+                } else ButtonDefaults.textButtonColors()
+            ) {
+                Text(text = stringResource(R.string.confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismissRequest) {
+                Text(text = stringResource(R.string.dismiss))
+            }
+        },
+    ) {
+        val now = Calendar.getInstance()
+        val datePickerState = rememberDatePickerState()
+        if (datePickerState.selectedDateMillis != null) {
+            val calculateTime = datePickerState.selectedDateMillis!! - now.timeInMillis
+            if (calculateTime < -86400000) {
+                invalid = true
+            } else if (calculateTime < 0) {
+                invalid = false
+                selectedDate((0))
+            } else {
+                invalid = false
+                val day = (1 + calculateTime / 1000 / 60 / 60 / 24).toInt()
+                if (day > 30) {
+                    invalid = true
+                    tooLarge = true
+                    selectedDate((day))
+                } else selectedDate((day))
+            }
+        }
+        if (dialog) {
+            WarningAlertDialog(
+                onDismissRequest = { dialog = false },
+                onConfirmButtonClick = {
+                    dialog = false
+                    onConfirm()
+                }) {
+                Text(text = stringResource(R.string.setting_remind_warning))
+            }
+        }
+        Column(
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+}
+
+private fun convertTime(milliseconds: Long): Pair<Int, Int> {
+    val seconds = milliseconds / 1000L
+    val minutes = seconds / 60L
+    val hours = (minutes / 60L).toInt()
+    val remainingMinutes = (minutes % 60).toInt()
     return Pair(hours, remainingMinutes)
 }
 

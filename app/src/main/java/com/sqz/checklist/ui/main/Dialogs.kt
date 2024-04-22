@@ -143,7 +143,7 @@ private fun TaskChangeContentCardPreview() {
 fun WarningAlertDialog(
     onDismissRequest: () -> Unit,
     onConfirmButtonClick: () -> Unit,
-    onDismissButtonClick: () -> Unit,
+    onDismissButtonClick: () -> Unit = onDismissRequest,
     text: @Composable () -> Unit
 ) {
     AlertDialog(

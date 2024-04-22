@@ -3,13 +3,16 @@ package com.sqz.checklist.notification
 import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.util.Log
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import com.sqz.checklist.MainActivity
 import com.sqz.checklist.R
 
 object NotificationObject {
@@ -31,12 +34,20 @@ object NotificationObject {
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.createNotificationChannel(channel)
 
+        val fullScreenIntent = Intent(context, MainActivity::class.java)
+        val fullScreenPendingIntent = PendingIntent.getActivity(
+            context, 0,
+            fullScreenIntent, PendingIntent.FLAG_MUTABLE
+        )
+
         // Build and show notification
         val builder = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle(title)
             .setContentText(content)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+            .setFullScreenIntent(fullScreenPendingIntent, true)
 
         with(NotificationManagerCompat.from(context)) {
             if (ActivityCompat.checkSelfPermission(

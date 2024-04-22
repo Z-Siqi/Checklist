@@ -30,6 +30,8 @@
     <string name="redo_all_history">Redo All History Task?</string>
     <string name="redo">Redo</string>
     <string name="nothing_here">Nothing Here!</string>
+    <string name="pin">Pin</string>
+    <string name="pinned_task">Pinned task</string>
 
     <!-- Notification -->
     <string name="task_reminder">Task Reminder</string>
@@ -42,6 +44,8 @@
     <string name="no_change_do_nothing">Don\'t change plan to do nothing!!</string>
     <string name="remind_at_preview">remind at %1$s hour %2$s minutes later</string>
     <string name="remind_at">remind at %1$s</string>
-    <string name="pin">Pin</string>
+    <string name="nothing_need_do">Nothing need to do! \nClick \'Add\' to create a task</string>
+    <string name="setting_remind_warning">Setting reminders that are too long is not recommended, and you shouldn\'t put off your plans for that long. Additionally this may cause unintended problems. \n\nClick Confirm to continue set.</string>
+    <string name="cannot_set_past">Cannot set reminder for the past! lol</string>
 
 </resources>
