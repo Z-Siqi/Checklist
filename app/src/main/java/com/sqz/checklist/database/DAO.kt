@@ -23,9 +23,6 @@ interface TaskDao {
     @Query("SELECT reminder FROM task WHERE id = :id")
     suspend fun getReminderInfo(id: Int): String?
 
-    @Query("SELECT COUNT(isPin) FROM task WHERE isPin = 1")
-    suspend fun getIsPinSum(): Int
-
 
     /* Insert & Edit Actions */
     @Insert(onConflict = OnConflictStrategy.REPLACE)

@@ -1,4 +1,4 @@
-package com.sqz.checklist.ui.main.task
+package com.sqz.checklist.ui.main.task.item
 
 import android.content.Context
 import android.os.Build
@@ -52,7 +52,7 @@ import androidx.work.WorkManager
 import com.sqz.checklist.MainActivity
 import com.sqz.checklist.R
 import com.sqz.checklist.ui.main.TaskChangeContentCard
-import com.sqz.checklist.ui.main.task.item.ItemBox
+import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale

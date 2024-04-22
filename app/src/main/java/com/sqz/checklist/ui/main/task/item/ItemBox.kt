@@ -21,8 +21,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.sqz.checklist.ui.main.task.AnimateInFinishedTask
-import com.sqz.checklist.ui.main.task.cardBackgoundColor
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -72,7 +70,7 @@ internal fun ItemBox(
             shape = ShapeDefaults.ExtraLarge
         ) {
             Box(
-                modifier = modifier.padding(bottom = 8.dp, top = 12.dp, start = 12.dp, end = 11.dp)
+                modifier = modifier.padding(bottom = 8.dp, top = 5.dp, start = 12.dp, end = 11.dp)
             ) {
                 ItemContent(
                     description = description,

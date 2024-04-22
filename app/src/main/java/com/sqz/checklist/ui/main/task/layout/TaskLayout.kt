@@ -1,9 +1,9 @@
-package com.sqz.checklist.ui.main.task
+package com.sqz.checklist.ui.main.task.layout
 
 import android.widget.Toast
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,20 +12,21 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
@@ -34,20 +35,17 @@ import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -61,8 +59,9 @@ import com.sqz.checklist.ui.NavBar
 import com.sqz.checklist.ui.TopBar
 import com.sqz.checklist.ui.main.TaskChangeContentCard
 import com.sqz.checklist.ui.main.WarningAlertDialog
+import com.sqz.checklist.ui.main.task.item.TaskItem
+import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
 import com.sqz.checklist.ui.material.TimeSelectDialog
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.time.LocalDate
@@ -112,6 +111,7 @@ fun TaskLayout(
             )
         }
     ) { paddingValues ->
+        val screenWidthPx = LocalConfiguration.current.screenWidthDp * LocalDensity.current.density
         Surface(
             modifier = modifier.padding(paddingValues),
             color = MaterialTheme.colorScheme.surfaceContainer
@@ -122,45 +122,51 @@ fun TaskLayout(
                 modifier = modifier.fillMaxSize(),
                 state = lazyState
             ) {
-                item {
-                    if (pinnedItem.isNotEmpty()) {
+                if (pinnedItem.isNotEmpty()) {
+                    item {
+                        val pinnedHeight = (35 + (120 * pinnedItem.size)).dp
+                        val animatedPinnedHeight by animateDpAsState(targetValue = pinnedHeight,
+                            label = "Pinned Height"
+                        )
                         Spacer(modifier = modifier.height(10.dp))
-                        Text(
-                            text = "Pinned task",
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.outline,
-                            modifier = modifier.padding(5.dp)
-                        )
-                    }
-                }
-                items(pinnedItem) {
-                    Surface(
-                        color = MaterialTheme.colorScheme.errorContainer
-                    ) {
-                        val screenWidthPx =
-                            LocalConfiguration.current.screenWidthDp * LocalDensity.current.density
-                        val state = rememberSwipeToDismissBoxState(
-                            positionalThreshold = {
-                                screenWidthPx * 0.38f
-                            },
-                        )
-                        TaskItem(
-                            id = it.id,
-                            description = it.description,
-                            createDate = it.createDate,
-                            isPin = it.isPin,
-                            context = context,
-                            itemState = state
-                        )
+                        OutlinedCard(
+                            modifier = modifier
+                                .height(animatedPinnedHeight)
+                                .padding(start = 5.dp, end = 5.dp),
+                            shape = ShapeDefaults.Large,
+                            colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerLow)
+                        ) {
+                            Text(
+                                text = "Pinned task",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.outline,
+                                modifier = modifier.padding(start = 8.dp, top = 5.dp)
+                            )
+                            LazyColumn {
+                                items(pinnedItem) {
+                                    val state = rememberSwipeToDismissBoxState(
+                                        positionalThreshold = {
+                                            screenWidthPx * 0.38f
+                                        },
+                                    )
+                                    TaskItem(
+                                        id = it.id,
+                                        description = it.description,
+                                        createDate = it.createDate,
+                                        isPin = it.isPin,
+                                        context = context,
+                                        itemState = state
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
                 item {
                     Spacer(modifier = modifier.height(20.dp))
                 }
                 items(item, key = { it.id }) {
-                    val screenWidthPx =
-                        LocalConfiguration.current.screenWidthDp * LocalDensity.current.density
                     val state = rememberSwipeToDismissBoxState(
                         positionalThreshold = {
                             screenWidthPx * 0.38f
@@ -285,76 +291,6 @@ fun TaskLayout(
             },
             context = context
         )
-    }
-}
-
-@Composable
-private fun CheckUndoAction(
-    lazyState: LazyListState,
-    taskState: TaskLayoutViewModel
-) {
-    var undoButton by rememberSaveable { mutableStateOf(false) }
-    var rememberScroll by rememberSaveable { mutableIntStateOf(0) }
-    var rememberTime by rememberSaveable { mutableIntStateOf(0) }
-
-    LaunchedEffect(true) {
-        delay(50)
-        rememberScroll = lazyState.firstVisibleItemIndex
-        undoButton = true
-        delay(2000)
-        if (rememberScroll != lazyState.firstVisibleItemIndex) {
-            undoButton = false
-            taskState.checkTaskAction = false
-        } else {
-            while (rememberTime < 7) {
-                delay(500)
-                if (rememberScroll != lazyState.firstVisibleItemIndex) {
-                    undoButton = false
-                    taskState.checkTaskAction = false
-                }
-                rememberTime++
-            }
-            undoButton = false
-            taskState.checkTaskAction = false
-        }
-    }
-    if (undoButton) UndoButton(onClick = {
-        taskState.undoTaskAction = true
-        rememberScroll = 0
-        undoButton = false
-        taskState.checkTaskAction = false
-    })
-}
-
-
-@Composable
-private fun UndoButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Box(modifier = modifier.fillMaxSize()) {
-        FloatingActionButton(
-            modifier = modifier
-                .align(Alignment.BottomEnd)
-                .padding(10.dp),
-            onClick = onClick,
-            containerColor = MaterialTheme.colorScheme.secondary
-        ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.undo),
-                    contentDescription = stringResource(R.string.undo),
-                    tint = MaterialTheme.colorScheme.onSecondary
-                )
-                Text(
-                    text = stringResource(R.string.undo),
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.secondaryContainer
-                )
-            }
-        }
     }
 }
 

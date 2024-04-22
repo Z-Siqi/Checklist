@@ -1,4 +1,4 @@
-package com.sqz.checklist.ui.main.task
+package com.sqz.checklist.ui.main.task.layout
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -52,6 +52,7 @@ import com.sqz.checklist.MainActivity
 import com.sqz.checklist.R
 import com.sqz.checklist.database.Task
 import com.sqz.checklist.ui.main.WarningAlertDialog
+import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale

@@ -1,6 +1,7 @@
 package com.sqz.checklist.ui.main.task.item
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -34,7 +35,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sqz.checklist.R
 import com.sqz.checklist.ui.main.InfoAlertDialog
-import com.sqz.checklist.ui.main.task.cardBackgoundColor
 
 @Composable
 internal fun ItemContent(
@@ -80,26 +80,27 @@ private fun ContentTop(
         Column(
             modifier = modifier
                 .fillMaxWidth(0.75f)
-                .height(58.dp),
+                .height(64.dp),
             horizontalAlignment = Alignment.Start
         ) {
             var overflowState by rememberSaveable { mutableStateOf(false) }
             var overflowInfo by rememberSaveable { mutableStateOf(false) }
-            Card(colors = cardBackgoundColor(), modifier = modifier.padding(top = 2.dp)) {
-                Text(
-                    text = description,
-                    modifier = modifier
-                        .padding(start = 3.dp)
-                        .fillMaxSize()
-                        .clickable(overflowState) { overflowInfo = true },
-                    fontSize = 21.sp,
-                    overflow = TextOverflow.Ellipsis,
-                    onTextLayout = { textLayoutResult: TextLayoutResult ->
-                        overflowState = textLayoutResult.hasVisualOverflow
-                    },
-                    maxLines = 2,
-                    fontWeight = FontWeight.Normal,
-                )
+            Card(colors = cardBackgoundColor(), modifier = modifier.padding(top = 8.dp)) {
+                Box(modifier = modifier.clickable(overflowState) { overflowInfo = true }) {
+                    Text(
+                        text = description,
+                        modifier = modifier
+                            .fillMaxSize()
+                            .padding(start = 5.dp),
+                        fontSize = 21.sp,
+                        overflow = TextOverflow.Ellipsis,
+                        onTextLayout = { textLayoutResult: TextLayoutResult ->
+                            overflowState = textLayoutResult.hasVisualOverflow
+                        },
+                        maxLines = 2,
+                        fontWeight = FontWeight.Normal,
+                    )
+                }
             }
             if (overflowInfo) {
                 InfoAlertDialog(
@@ -137,9 +138,11 @@ private fun ContentBottom(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = modifier.padding(start = 2.dp)
         )
-        Spacer(modifier = modifier
-            .weight(1f)
-            .widthIn(min = 10.dp))
+        Spacer(
+            modifier = modifier
+                .weight(1f)
+                .widthIn(min = 10.dp)
+        )
         Row(modifier = modifier.widthIn(min = 40.dp, max = 100.dp)) {
             IconButton(modifier = modifier.size(30.dp), onClick = reminderOnClick) {
                 Icon(
@@ -162,7 +165,7 @@ private fun ContentBottom(
 @Preview
 @Composable
 private fun Preview() {
-    Surface(modifier = Modifier.size(500.dp, 120.dp)){
+    Surface(modifier = Modifier.size(500.dp, 120.dp)) {
         ItemContent(
             description = "description",
             createDate = "createDate",
