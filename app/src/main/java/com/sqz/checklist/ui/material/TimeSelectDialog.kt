@@ -4,15 +4,23 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
@@ -23,7 +31,9 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimeInput
 import androidx.compose.material3.TimePicker
+import androidx.compose.material3.TimePickerLayoutType
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
@@ -36,10 +46,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.getString
 import com.sqz.checklist.R
@@ -73,7 +85,10 @@ fun TimeSelectDialog(
         context = context,
         onFailed = onFailed
     )
+    val width = (LocalConfiguration.current.screenWidthDp * 0.8).toInt()
+    val widthIn = if (width > 730) width else 630
     AlertDialog(
+        modifier = modifier.widthIn(min = widthIn.dp),
         onDismissRequest = onDismissRequest,
         dismissButton = {
             TextButton(onClick = onDismissRequest) {
@@ -89,11 +104,35 @@ fun TimeSelectDialog(
         },
         text = {
             Column(
+                modifier = modifier.verticalScroll(rememberScrollState()) then if (isLandscape()) {
+                    modifier.border(
+                        2.dp, MaterialTheme.colorScheme.outlineVariant, ShapeDefaults.Medium
+                    )
+                } else modifier,
                 verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                TimePicker(state = timePickerState)
-
+                Box(
+                    modifier = if (isLandscape()) modifier.padding(
+                        start = 16.dp,
+                        end = 16.dp
+                    ) else modifier,
+                    propagateMinConstraints = false
+                ) {
+                    if (!isLandscape() && LocalConfiguration.current.screenHeightDp < 580 ||
+                        isLandscape() && LocalConfiguration.current.screenWidthDp < 595
+                    ) {
+                        TimeInput(state = timePickerState)
+                    } else {
+                        TimePicker(
+                            state = timePickerState,
+                            layoutType = if (isLandscape()) TimePickerLayoutType.Horizontal else {
+                                TimePickerLayoutType.Vertical
+                            }
+                        )
+                    }
+                }
+                Spacer(modifier = modifier.fillMaxWidth())
                 OutlinedButton(
                     onClick = {
                         if (!isDatePick) {
@@ -102,6 +141,9 @@ fun TimeSelectDialog(
                             cal.clear()
                             rememberDays = 0
                             isDatePick = false
+                            ContextCompat.getSystemService(context, Vibrator::class.java)?.vibrate(
+                                VibrationEffect.createOneShot(8L, 50)
+                            )
                         }
                     },
                     colors = if (isDatePick) ButtonDefaults.buttonColors(
@@ -111,7 +153,7 @@ fun TimeSelectDialog(
                     shape = ShapeDefaults.Medium,
                     modifier = modifier.fillMaxWidth(0.7f)
                 ) {
-                    Text(text = "Select a date")
+                    Text(text = stringResource(R.string.select_date))
                 }
                 Spacer(modifier = modifier.height(5.dp))
 
@@ -129,7 +171,8 @@ fun TimeSelectDialog(
                     )
                 )
             }
-        }
+        },
+        properties = DialogProperties(usePlatformDefaultWidth = !isLandscape())
     )
     if (datePickDialog) {
         DatePickDialog(
@@ -157,12 +200,14 @@ private fun DatePickDialog(
     onDismissRequest: () -> Unit,
     onConfirm: () -> Unit,
     selectedDate: (day: Int) -> Unit,
-    context: Context
+    context: Context,
+    modifier: Modifier = Modifier
 ) {
     var invalid by rememberSaveable { mutableStateOf(false) }
     var tooLarge by rememberSaveable { mutableStateOf(false) }
     var dialog by rememberSaveable { mutableStateOf(false) }
     DatePickerDialog(
+        modifier = modifier.verticalScroll(rememberScrollState()),
         onDismissRequest = onDismissRequest,
         confirmButton = {
             TextButton(
@@ -235,6 +280,12 @@ private fun convertTime(milliseconds: Long): Pair<Int, Int> {
 }
 
 @Composable
+private fun isLandscape(): Boolean {
+    val config = LocalConfiguration.current
+    return config.screenWidthDp > (config.screenHeightDp * 1.2)
+}
+
+@Composable
 private fun CheckPermission(
     context: Context,
     onFailed: () -> Unit,
@@ -269,11 +320,22 @@ private fun CheckPermission(
 
 @Preview
 @Composable
-private fun Preview() {
+private fun TimePreview() {
     TimeSelectDialog(
         onDismissRequest = {},
         onConfirmClick = {},
         onFailed = {},
+        context = LocalContext.current
+    )
+}
+
+@Preview
+@Composable
+private fun DatePreview() {
+    DatePickDialog(
+        onDismissRequest = {},
+        onConfirm = {},
+        selectedDate = {},
         context = LocalContext.current
     )
 }

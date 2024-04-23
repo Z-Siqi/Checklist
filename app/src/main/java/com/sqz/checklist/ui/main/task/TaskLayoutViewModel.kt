@@ -164,7 +164,7 @@ class TaskLayoutViewModel : ViewModel() {
             MainActivity.taskDatabase.taskDao().setHistoryId((maxId + 1), id)
             // Update to LazyColumn
             taskData = MainActivity.taskDatabase.taskDao().getAll(1)
-
+            // Pin function to-do
             MainActivity.taskDatabase.taskDao().editTaskPin(id = id, edit = 0)
             isPinTaskData = MainActivity.taskDatabase.taskDao().getIsPinList()
         }
