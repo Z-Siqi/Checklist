@@ -14,18 +14,26 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DisplayMode
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.ShapeDefaults
@@ -46,6 +54,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -69,9 +78,18 @@ fun TimeSelectDialog(
     context: Context,
     modifier: Modifier = Modifier
 ) {
+    var isTimeInput by rememberSaveable { mutableStateOf(false) }
     var datePickDialog by rememberSaveable { mutableStateOf(false) }
     var isDatePick by rememberSaveable { mutableStateOf(false) }
     var rememberDays by rememberSaveable { mutableIntStateOf(0) }
+
+    val timePickLimit = if (!isLandscape() &&
+        LocalConfiguration.current.screenHeightDp < 580 || isLandscape() &&
+        LocalConfiguration.current.screenWidthDp < 595
+    ) {
+        Log.d("Limit", "Disabled some UI due to screen is too small!")
+        true
+    } else false
 
     val timePickerState = rememberTimePickerState()
     val now = Calendar.getInstance()
@@ -90,16 +108,28 @@ fun TimeSelectDialog(
     AlertDialog(
         modifier = modifier.widthIn(min = widthIn.dp),
         onDismissRequest = onDismissRequest,
-        dismissButton = {
-            TextButton(onClick = onDismissRequest) {
-                Text(text = stringResource(R.string.dismiss))
-            }
-        },
         confirmButton = {
-            TextButton(onClick = {
-                onConfirmClick((cal.timeInMillis - now.timeInMillis))
-            }) {
-                Text(text = stringResource(R.string.confirm))
+            Row(modifier = modifier.fillMaxWidth()) {
+                if (!timePickLimit) IconButton(onClick = { isTimeInput = !isTimeInput }) {
+                    fun icon(): Pair<ImageVector, String> = if (isTimeInput)
+                        Pair(Icons.Default.DateRange, context.getString(R.string.pick))
+                    else Pair(Icons.Default.Edit, context.getString(R.string.input))
+                    val (icon, type) = icon()
+                    Icon(
+                        imageVector = icon, contentDescription = type,
+                        tint = MaterialTheme.colorScheme.secondary
+                    )
+                }
+                Spacer(modifier = modifier.weight(1f))
+                TextButton(onClick = onDismissRequest) {
+                    Text(text = stringResource(R.string.dismiss))
+                }
+                Spacer(modifier = modifier.width(10.dp))
+                TextButton(onClick = {
+                    onConfirmClick((cal.timeInMillis - now.timeInMillis))
+                }) {
+                    Text(text = stringResource(R.string.confirm))
+                }
             }
         },
         text = {
@@ -114,16 +144,12 @@ fun TimeSelectDialog(
             ) {
                 Box(
                     modifier = if (isLandscape()) modifier.padding(
-                        start = 16.dp,
-                        end = 16.dp
+                        start = 16.dp, end = 16.dp, top = 8.dp
                     ) else modifier,
                     propagateMinConstraints = false
                 ) {
-                    if (!isLandscape() && LocalConfiguration.current.screenHeightDp < 580 ||
-                        isLandscape() && LocalConfiguration.current.screenWidthDp < 595
-                    ) {
-                        TimeInput(state = timePickerState)
-                    } else {
+                    if (timePickLimit || isTimeInput
+                    ) TimeInput(state = timePickerState) else {
                         TimePicker(
                             state = timePickerState,
                             layoutType = if (isLandscape()) TimePickerLayoutType.Horizontal else {
@@ -142,7 +168,7 @@ fun TimeSelectDialog(
                             rememberDays = 0
                             isDatePick = false
                             ContextCompat.getSystemService(context, Vibrator::class.java)?.vibrate(
-                                VibrationEffect.createOneShot(8L, 50)
+                                VibrationEffect.createOneShot(8L, 70)
                             )
                         }
                     },
@@ -170,6 +196,7 @@ fun TimeSelectDialog(
                         formatter.format(remindTime)
                     )
                 )
+                Spacer(modifier = if (isLandscape()) modifier.height(8.dp) else modifier)
             }
         },
         properties = DialogProperties(usePlatformDefaultWidth = !isLandscape())
@@ -232,6 +259,7 @@ private fun DatePickDialog(
                 Text(text = stringResource(R.string.dismiss))
             }
         },
+        properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
         val now = Calendar.getInstance()
         val datePickerState = rememberDatePickerState()
@@ -266,7 +294,16 @@ private fun DatePickDialog(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            DatePicker(state = datePickerState)
+            DatePicker(
+                state = datePickerState,
+                showModeToggle = if (LocalConfiguration.current.screenHeightDp < 565) {
+                    datePickerState.displayMode = DisplayMode.Input
+                    false
+                } else {
+                    datePickerState.displayMode = DisplayMode.Picker
+                    true
+                }
+            )
         }
     }
 }
@@ -322,9 +359,7 @@ private fun CheckPermission(
 @Composable
 private fun TimePreview() {
     TimeSelectDialog(
-        onDismissRequest = {},
-        onConfirmClick = {},
-        onFailed = {},
+        onDismissRequest = {}, onConfirmClick = {}, onFailed = {},
         context = LocalContext.current
     )
 }
@@ -333,9 +368,7 @@ private fun TimePreview() {
 @Composable
 private fun DatePreview() {
     DatePickDialog(
-        onDismissRequest = {},
-        onConfirm = {},
-        selectedDate = {},
+        onDismissRequest = {}, onConfirm = {}, selectedDate = {},
         context = LocalContext.current
     )
 }

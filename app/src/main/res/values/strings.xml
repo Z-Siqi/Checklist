@@ -33,6 +33,8 @@
     <string name="pin">Pin</string>
     <string name="pinned_task">Pinned task</string>
     <string name="select_date">Select a date</string>
+    <string name="pick">Pick</string>
+    <string name="input">Input</string>
 
     <!-- Notification -->
     <string name="task_reminder">Task Reminder</string>
