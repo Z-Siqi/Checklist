@@ -134,7 +134,7 @@ fun TaskLayout(
                         OutlinedCard(
                             modifier = modifier
                                 .height(animatedPinnedHeight)
-                                .padding(start = 5.dp, end = 5.dp),
+                                .padding(start = 8.dp, end = 8.dp),
                             shape = ShapeDefaults.Large,
                             colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerLow)
                         ) {
@@ -146,7 +146,7 @@ fun TaskLayout(
                                 modifier = modifier.padding(start = 8.dp, top = 5.dp)
                             )
                             LazyColumn {
-                                items(pinnedItem) {
+                                items(pinnedItem, key = { it.id }) {
                                     val state = rememberSwipeToDismissBoxState(
                                         positionalThreshold = {
                                             screenWidthPx * 0.38f
@@ -158,7 +158,8 @@ fun TaskLayout(
                                         createDate = it.createDate,
                                         isPin = it.isPin,
                                         context = context,
-                                        itemState = state
+                                        itemState = state,
+                                        pinnedTask = true
                                     )
                                 }
                             }

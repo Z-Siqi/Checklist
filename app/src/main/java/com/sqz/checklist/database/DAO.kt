@@ -15,7 +15,7 @@ interface TaskDao {
     @Query("SELECT * FROM task WHERE isHistory = 1 ORDER BY isHistoryId")
     suspend fun getAllOrderByIsHistoryId(): List<Task>
 
-    @Query("SELECT * FROM task WHERE isPin = 1")
+    @Query("SELECT * FROM task WHERE isPin = 1 AND isHistory != 1")
     suspend fun getIsPinList(): List<Task>
 
 

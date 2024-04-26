@@ -66,6 +66,7 @@ fun TaskItem(
     isPin: Boolean,
     context: Context,
     itemState: SwipeToDismissBoxState,
+    pinnedTask: Boolean = false,
     modifier: Modifier = Modifier,
     taskState: TaskLayoutViewModel = viewModel()
 ) {
@@ -129,7 +130,8 @@ fun TaskItem(
                 }
             },
             pinIconState = isPin,
-            state = itemState
+            state = itemState,
+            horizontalEdge = if (pinnedTask) 10 else 14
         )
         val textState = rememberTextFieldState()
         if (taskEditCard) {

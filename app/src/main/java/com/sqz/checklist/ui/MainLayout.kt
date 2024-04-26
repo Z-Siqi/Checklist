@@ -10,10 +10,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.DividerDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -38,7 +38,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -95,10 +95,11 @@ fun NavBar(
 ) {
     data class Items(
         val text: String,
-        val icon: ImageVector
+        val icon: Int
     )
+
     var selectedItem by remember { mutableIntStateOf(0) }
-    val items = listOf(Items(stringResource(R.string.tasks), Icons.Filled.Home))
+    val items = listOf(Items(stringResource(R.string.tasks), R.drawable.task_icon))
     NavigationBar(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -113,16 +114,24 @@ fun NavBar(
                     selectedIconColor = MaterialTheme.colorScheme.inverseSurface,
                     disabledIconColor = MaterialTheme.colorScheme.primary
                 ),
-                icon = { Icon(item.icon, contentDescription = item.text) },
+                icon = {
+                    Icon(
+                        painter = painterResource(id = item.icon),
+                        contentDescription = item.text,
+                        modifier = modifier.size(24.dp, 24.dp)
+                    )
+                },
                 label = { Text(item.text) },
                 selected = selectedItem == index,
                 onClick = { selectedItem = index }
             )
         }
         Spacer(modifier = modifier.weight(0.5f))
-        VerticalDivider(modifier = modifier.height(50.dp), color = if (isSystemInDarkTheme()) {
-            MaterialTheme.colorScheme.onSurface
-        } else DividerDefaults.color)
+        VerticalDivider(
+            modifier = modifier.height(50.dp), color = if (isSystemInDarkTheme()) {
+                MaterialTheme.colorScheme.onSurface
+            } else DividerDefaults.color
+        )
         NavigationBarItem(
             colors = NavigationBarItemDefaults.colors(MaterialTheme.colorScheme.primary),
             icon = icon,

@@ -33,15 +33,18 @@ internal fun ItemBox(
     pinIconState: Boolean,
     pinOnClick: () -> Unit,
     state: SwipeToDismissBoxState,
+    horizontalEdge: Int = 14,
     modifier: Modifier = Modifier
 ) {
+    val bgStartEnd = horizontalEdge.dp
+    val startEnd = bgStartEnd - 2.dp
     SwipeToDismissBox(
         state = state,
         backgroundContent = {
             Card(
                 modifier = modifier
                     .fillMaxSize()
-                    .padding(start = 14.dp, end = 14.dp, top = 4.dp, bottom = 4.dp),
+                    .padding(start = bgStartEnd, end = bgStartEnd, top = 4.dp, bottom = 4.dp),
                 colors = cardBackgoundColor(true),
                 shape = ShapeDefaults.ExtraLarge
             ) {
@@ -64,7 +67,7 @@ internal fun ItemBox(
         OutlinedCard(
             modifier = modifier
                 .fillMaxSize()
-                .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 4.dp),
+                .padding(start = startEnd, end = startEnd, top = 4.dp, bottom = 4.dp),
             colors = cardBackgoundColor(),
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.surfaceDim),
             shape = ShapeDefaults.ExtraLarge
