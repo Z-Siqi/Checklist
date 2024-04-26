@@ -1,5 +1,6 @@
 package com.sqz.checklist.ui.main.task
 
+import android.app.NotificationManager
 import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -64,6 +65,7 @@ class TaskLayoutViewModel : ViewModel() {
     // Cancel reminder by id
     fun cancelReminder(id: Int, context: Context) {
         viewModelScope.launch {
+            // Cancel sent notification
             val uuidAndTime = MainActivity.taskDatabase.taskDao().getReminderInfo(id)
             uuidAndTime?.let {
                 val parts = it.split(":")
@@ -74,6 +76,11 @@ class TaskLayoutViewModel : ViewModel() {
                     workManager.cancelWorkById(UUID.fromString(uuid))
                 }
             }
+            // Delete notification if showed
+            val notificationManager = context.getSystemService(
+                Context.NOTIFICATION_SERVICE
+            ) as NotificationManager
+            notificationManager.cancel(id)
         }
     }
 
@@ -88,7 +95,7 @@ class TaskLayoutViewModel : ViewModel() {
     private var taskData by mutableStateOf(listOf<Task>())
     fun loadTaskData(dao: TaskDao): List<Task> {
         viewModelScope.launch {
-            taskData = dao.getAll(1)
+            taskData = dao.getAll(withoutHistory = 1)
         }
         return taskData
     }
@@ -98,12 +105,11 @@ class TaskLayoutViewModel : ViewModel() {
     fun pinState(id: Int = 0, set: Int = 0, load: Boolean = false): List<Task> {
         viewModelScope.launch {
             if (load) {
-                isPinTaskData = MainActivity.taskDatabase.taskDao().getIsPinList()
+                isPinTaskData = MainActivity.taskDatabase.taskDao().getAll(isPinNot = 0)
             } else {
                 MainActivity.taskDatabase.taskDao().editTaskPin(id, set)
-                taskData = MainActivity.taskDatabase.taskDao().getAll(1)
-
-                isPinTaskData = MainActivity.taskDatabase.taskDao().getIsPinList()
+                taskData = MainActivity.taskDatabase.taskDao().getAll(withoutHistory = 1)
+                isPinTaskData = MainActivity.taskDatabase.taskDao().getAll(isPinNot = 0)
             }
         }
         return isPinTaskData
@@ -114,9 +120,8 @@ class TaskLayoutViewModel : ViewModel() {
         viewModelScope.launch {
             val insert = Task(description = description, createDate = LocalDate.now())
             MainActivity.taskDatabase.taskDao().insertAll(insert)
-            taskData = MainActivity.taskDatabase.taskDao().getAll(1)
-
-            isPinTaskData = MainActivity.taskDatabase.taskDao().getIsPinList()
+            taskData = MainActivity.taskDatabase.taskDao().getAll(withoutHistory = 1)
+            isPinTaskData = MainActivity.taskDatabase.taskDao().getAll(isPinNot = 0)
         }
     }
 
@@ -124,9 +129,8 @@ class TaskLayoutViewModel : ViewModel() {
     fun editTask(id: Int, edit: String) {
         viewModelScope.launch {
             MainActivity.taskDatabase.taskDao().editTask(id, edit)
-            taskData = MainActivity.taskDatabase.taskDao().getAll(1)
-
-            isPinTaskData = MainActivity.taskDatabase.taskDao().getIsPinList()
+            taskData = MainActivity.taskDatabase.taskDao().getAll(withoutHistory = 1)
+            isPinTaskData = MainActivity.taskDatabase.taskDao().getAll(isPinNot = 0)
         }
     }
 
@@ -161,8 +165,8 @@ class TaskLayoutViewModel : ViewModel() {
             val maxId = MainActivity.taskDatabase.taskDao().getIsHistoryIdTop()
             MainActivity.taskDatabase.taskDao().setHistoryId((maxId + 1), id)
             // Update to LazyColumn
-            taskData = MainActivity.taskDatabase.taskDao().getAll(1)
-            isPinTaskData = MainActivity.taskDatabase.taskDao().getIsPinList()
+            taskData = MainActivity.taskDatabase.taskDao().getAll(withoutHistory = 1)
+            isPinTaskData = MainActivity.taskDatabase.taskDao().getAll(isPinNot = 0)
         }
     }
 
@@ -198,10 +202,9 @@ class TaskLayoutViewModel : ViewModel() {
             MainActivity.taskDatabase.taskDao().setHistory(0, id)
             MainActivity.taskDatabase.taskDao().setHistoryId(0, id)
             // Update to LazyColumn
-            taskData = MainActivity.taskDatabase.taskDao().getAll(1)
-            taskHistoryData = MainActivity.taskDatabase.taskDao().getAll(0)
-
-            isPinTaskData = MainActivity.taskDatabase.taskDao().getIsPinList()
+            taskData = MainActivity.taskDatabase.taskDao().getAll(withoutHistory = 1)
+            taskHistoryData = MainActivity.taskDatabase.taskDao().getAll(withoutHistory = 0)
+            isPinTaskData = MainActivity.taskDatabase.taskDao().getAll(isPinNot = 0)
         }
     }
 
@@ -211,7 +214,7 @@ class TaskLayoutViewModel : ViewModel() {
             // Actions
             MainActivity.taskDatabase.taskDao().setAllNotHistory()
             // Update to LazyColumn
-            taskHistoryData = MainActivity.taskDatabase.taskDao().getAll(0)
+            taskHistoryData = MainActivity.taskDatabase.taskDao().getAll(withoutHistory = 0)
         }
     }
 
@@ -227,7 +230,7 @@ class TaskLayoutViewModel : ViewModel() {
             )
         )
         // Update to LazyColumn
-        taskHistoryData = MainActivity.taskDatabase.taskDao().getAll(0)
+        taskHistoryData = MainActivity.taskDatabase.taskDao().getAll(withoutHistory = 0)
     }
 
     // Delete all task from history
@@ -236,7 +239,7 @@ class TaskLayoutViewModel : ViewModel() {
             // Actions
             MainActivity.taskDatabase.taskDao().deleteAllHistory()
             // Update to LazyColumn
-            taskHistoryData = MainActivity.taskDatabase.taskDao().getAll(0)
+            taskHistoryData = MainActivity.taskDatabase.taskDao().getAll(withoutHistory = 0)
         }
     }
 

@@ -9,14 +9,11 @@ import androidx.room.Query
 @Dao
 interface TaskDao {
     /* Get Table Actions */
-    @Query("SELECT * FROM task WHERE isHistory != :withoutHistory")
-    suspend fun getAll(withoutHistory: Int = -1): List<Task>
+    @Query("SELECT * FROM task WHERE isHistory != :withoutHistory AND isPin != :isPinNot")
+    suspend fun getAll(withoutHistory: Int = -1, isPinNot: Int = -1): List<Task>
 
     @Query("SELECT * FROM task WHERE isHistory = 1 ORDER BY isHistoryId")
     suspend fun getAllOrderByIsHistoryId(): List<Task>
-
-    @Query("SELECT * FROM task WHERE isPin = 1 AND isHistory != 1")
-    suspend fun getIsPinList(): List<Task>
 
 
     /* Get Value Actions */
