@@ -105,11 +105,11 @@ class TaskLayoutViewModel : ViewModel() {
     fun pinState(id: Int = 0, set: Int = 0, load: Boolean = false): List<Task> {
         viewModelScope.launch {
             if (load) {
-                isPinTaskData = MainActivity.taskDatabase.taskDao().getAll(isPinNot = 0)
+                isPinTaskData = MainActivity.taskDatabase.taskDao().getAll(1, 0)
             } else {
                 MainActivity.taskDatabase.taskDao().editTaskPin(id, set)
                 taskData = MainActivity.taskDatabase.taskDao().getAll(withoutHistory = 1)
-                isPinTaskData = MainActivity.taskDatabase.taskDao().getAll(isPinNot = 0)
+                isPinTaskData = MainActivity.taskDatabase.taskDao().getAll(1, 0)
             }
         }
         return isPinTaskData
@@ -121,7 +121,7 @@ class TaskLayoutViewModel : ViewModel() {
             val insert = Task(description = description, createDate = LocalDate.now())
             MainActivity.taskDatabase.taskDao().insertAll(insert)
             taskData = MainActivity.taskDatabase.taskDao().getAll(withoutHistory = 1)
-            isPinTaskData = MainActivity.taskDatabase.taskDao().getAll(isPinNot = 0)
+            isPinTaskData = MainActivity.taskDatabase.taskDao().getAll(1, 0)
         }
     }
 
@@ -130,7 +130,7 @@ class TaskLayoutViewModel : ViewModel() {
         viewModelScope.launch {
             MainActivity.taskDatabase.taskDao().editTask(id, edit)
             taskData = MainActivity.taskDatabase.taskDao().getAll(withoutHistory = 1)
-            isPinTaskData = MainActivity.taskDatabase.taskDao().getAll(isPinNot = 0)
+            isPinTaskData = MainActivity.taskDatabase.taskDao().getAll(1, 0)
         }
     }
 
@@ -166,7 +166,7 @@ class TaskLayoutViewModel : ViewModel() {
             MainActivity.taskDatabase.taskDao().setHistoryId((maxId + 1), id)
             // Update to LazyColumn
             taskData = MainActivity.taskDatabase.taskDao().getAll(withoutHistory = 1)
-            isPinTaskData = MainActivity.taskDatabase.taskDao().getAll(isPinNot = 0)
+            isPinTaskData = MainActivity.taskDatabase.taskDao().getAll(1, 0)
         }
     }
 
@@ -204,7 +204,7 @@ class TaskLayoutViewModel : ViewModel() {
             // Update to LazyColumn
             taskData = MainActivity.taskDatabase.taskDao().getAll(withoutHistory = 1)
             taskHistoryData = MainActivity.taskDatabase.taskDao().getAll(withoutHistory = 0)
-            isPinTaskData = MainActivity.taskDatabase.taskDao().getAll(isPinNot = 0)
+            isPinTaskData = MainActivity.taskDatabase.taskDao().getAll(1, 0)
         }
     }
 
