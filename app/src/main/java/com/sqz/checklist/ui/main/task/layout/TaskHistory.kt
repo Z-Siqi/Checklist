@@ -1,5 +1,7 @@
 package com.sqz.checklist.ui.main.task.layout
 
+import android.view.SoundEffectConstants
+import android.view.View
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -40,6 +42,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -64,14 +67,19 @@ fun TaskHistory(
     modifier: Modifier = Modifier,
     item: List<Task> = taskState.loadTaskHistoryData(MainActivity.taskDatabase.taskDao())
 ) {
+    val view = LocalView.current
     var deleteAllView by rememberSaveable { mutableStateOf(false) }
     var redoAllView by rememberSaveable { mutableStateOf(false) }
     Scaffold(
-        topBar = { HistoryTopBar(onClick = navBack) },
+        topBar = { HistoryTopBar(onClick = {
+            navBack()
+            view.playSoundEffect(SoundEffectConstants.CLICK)
+        }) },
         bottomBar = {
             HistoryNavBar(
                 deleteAllView = { deleteAllView = true },
-                redoAllView = { redoAllView = true }
+                redoAllView = { redoAllView = true },
+                view = view
             )
         }
     ) { paddingValues ->
@@ -89,7 +97,8 @@ fun TaskHistory(
                     ItemBox(
                         id = it.id,
                         description = it.description,
-                        createDate = it.createDate
+                        createDate = it.createDate,
+                        view = view
                     )
                 }
                 item {
@@ -170,6 +179,7 @@ private fun HistoryNavBar(
     deleteAllView: () -> Unit,
     redoAllView: () -> Unit,
     taskState: TaskLayoutViewModel = viewModel(),
+    view: View,
     modifier: Modifier = Modifier
 ) {
     NavigationBar(
@@ -197,6 +207,7 @@ private fun HistoryNavBar(
                 } else {
                     deleteAllView()
                 }
+                view.playSoundEffect(SoundEffectConstants.CLICK)
             }
         )
         val redoText = stringResource(R.string.redo)
@@ -213,6 +224,7 @@ private fun HistoryNavBar(
                 } else {
                     redoAllView()
                 }
+                view.playSoundEffect(SoundEffectConstants.CLICK)
             }
         )
         Spacer(modifier = modifier.weight(0.5f))
@@ -225,6 +237,7 @@ private fun ItemBox(
     description: String,
     createDate: LocalDate,
     taskState: TaskLayoutViewModel = viewModel(),
+    view: View,
     modifier: Modifier = Modifier
 ) {
     val border = if (taskState.selectedId == id) {
@@ -241,7 +254,10 @@ private fun ItemBox(
         ) {
             val formatter = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.getDefault())
             val padding = modifier.padding(bottom = 8.dp, top = 12.dp, start = 12.dp, end = 11.dp)
-            val onClick = modifier.clickable { taskState.selectTask(id) }
+            val onClick = modifier.clickable {
+                taskState.selectTask(id)
+                view.playSoundEffect(SoundEffectConstants.CLICK)
+            }
             Box(
                 modifier = modifier.fillMaxSize() then onClick
             ) {

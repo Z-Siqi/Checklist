@@ -1,5 +1,6 @@
 package com.sqz.checklist.ui.main
 
+import android.view.SoundEffectConstants
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -34,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
@@ -56,6 +58,7 @@ fun TaskChangeContentCard(
     doneImeAction: Boolean = false,
     modifier: Modifier = Modifier
 ) {
+    val view = LocalView.current
     var clearFocus by rememberSaveable { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
     fun releaseFocusAndDismiss() = coroutineScope.launch {
@@ -75,12 +78,16 @@ fun TaskChangeContentCard(
                     delay(80)
                     confirm()
                 }
+                view.playSoundEffect(SoundEffectConstants.CLICK)
             }) {
                 Text(text = confirmText)
             }
         },
         dismissButton = {
-            TextButton(onClick = { releaseFocusAndDismiss() }) {
+            TextButton(onClick = {
+                releaseFocusAndDismiss()
+                view.playSoundEffect(SoundEffectConstants.CLICK)
+            }) {
                 Text(text = stringResource(R.string.cancel))
             }
         },
@@ -146,15 +153,22 @@ fun WarningAlertDialog(
     onDismissButtonClick: () -> Unit = onDismissRequest,
     text: @Composable () -> Unit
 ) {
+    val view = LocalView.current
     AlertDialog(
-        onDismissRequest = onDismissRequest,
+        onDismissRequest = {
+            onDismissRequest()
+            view.playSoundEffect(SoundEffectConstants.CLICK)
+        },
         confirmButton = {
             TextButton(onClick = onConfirmButtonClick) {
                 Text(text = stringResource(R.string.confirm))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismissButtonClick) {
+            TextButton(onClick = {
+                onDismissButtonClick()
+                view.playSoundEffect(SoundEffectConstants.CLICK)
+            }) {
                 Text(text = stringResource(R.string.dismiss))
             }
         },
@@ -189,12 +203,16 @@ fun InfoAlertDialog(
     text: String,
     modifier: Modifier = Modifier
 ) {
+    val view = LocalView.current
     val scrollState = rememberScrollState()
     AlertDialog(
         modifier = modifier.width((LocalConfiguration.current.screenWidthDp / 1.2).dp),
         onDismissRequest = onDismissRequest,
         confirmButton = {
-            TextButton(onClick = onDismissRequest) {
+            TextButton(onClick = {
+                onDismissRequest()
+                view.playSoundEffect(SoundEffectConstants.CLICK)
+            }) {
                 Text(text = stringResource(R.string.cancel))
             }
         },

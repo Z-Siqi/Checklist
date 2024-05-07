@@ -1,5 +1,7 @@
 package com.sqz.checklist.ui
 
+import android.view.SoundEffectConstants
+import android.view.View
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
@@ -38,6 +40,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -149,6 +152,7 @@ fun TopBar(
     scrollBehavior: TopAppBarScrollBehavior,
     topBarState: TopAppBarState,
     onClick: () -> Unit,
+    view: View,
     modifier: Modifier = Modifier
 ) {
     val topAppBarTitle = stringResource(R.string.time_format)
@@ -199,7 +203,10 @@ fun TopBar(
             }
         },
         actions = {
-            IconButton(onClick = onClick) {
+            IconButton(onClick = {
+                onClick()
+                view.playSoundEffect(SoundEffectConstants.CLICK)
+            }) {
                 Icon(
                     imageVector = Icons.Filled.MoreVert,
                     contentDescription = stringResource(R.string.more_options)
@@ -249,7 +256,7 @@ private fun topBarContent(pattern: String): String {
 private fun Preview() {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     Scaffold(
-        topBar = { TopBar(scrollBehavior, rememberTopAppBarState(), {}) },
+        topBar = { TopBar(scrollBehavior, rememberTopAppBarState(), {}, LocalView.current) },
         bottomBar = { NavBar({ Icon(Icons.Filled.AddCircle, "") }, { Text("Add") }, {}) }
     ) { Modifier.padding(it) }
 }

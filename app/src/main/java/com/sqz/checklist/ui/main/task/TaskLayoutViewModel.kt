@@ -183,7 +183,6 @@ class TaskLayoutViewModel : ViewModel() {
                     )
                 )
                 arrangeIsHistoryId()
-                arrangeKeyId()
             }
         }
     }
@@ -222,7 +221,6 @@ class TaskLayoutViewModel : ViewModel() {
             )
         )
         arrangeIsHistoryId()
-        arrangeKeyId()
         // Update to LazyColumn
         taskHistoryData = MainActivity.taskDatabase.taskDao().getAll(withoutHistory = 0)
     }
@@ -232,7 +230,6 @@ class TaskLayoutViewModel : ViewModel() {
         viewModelScope.launch {
             // Actions
             MainActivity.taskDatabase.taskDao().deleteAllHistory()
-            arrangeKeyId()
             // Update to LazyColumn
             taskHistoryData = MainActivity.taskDatabase.taskDao().getAll(withoutHistory = 0)
         }
@@ -248,18 +245,6 @@ class TaskLayoutViewModel : ViewModel() {
             for(data in arrangeIdList) {
                 MainActivity.taskDatabase.taskDao().setIsHistoryId(data.isHistoryId, data.id)
             }
-        }
-    }
-
-    // Arrange PrimaryKey Id
-    private fun arrangeKeyId() {
-        viewModelScope.launch{
-            val dataList = MainActivity.taskDatabase.taskDao().getAllData()
-            var newId = 1
-            for (data in dataList) {
-                MainActivity.taskDatabase.taskDao().updateId(data.id, newId++)
-            }
-            MainActivity.taskDatabase.taskDao().resetAutoIncrement()
         }
     }
 

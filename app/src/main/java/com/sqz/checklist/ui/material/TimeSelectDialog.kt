@@ -7,6 +7,7 @@ import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.util.Log
+import android.view.SoundEffectConstants
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -23,9 +24,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
@@ -54,9 +52,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -78,6 +77,7 @@ fun TimeSelectDialog(
     context: Context,
     modifier: Modifier = Modifier
 ) {
+    val view = LocalView.current
     var isTimeInput by rememberSaveable { mutableStateOf(false) }
     var datePickDialog by rememberSaveable { mutableStateOf(false) }
     var isDatePick by rememberSaveable { mutableStateOf(false) }
@@ -111,12 +111,12 @@ fun TimeSelectDialog(
         confirmButton = {
             Row(modifier = modifier.fillMaxWidth()) {
                 if (!timePickLimit) IconButton(onClick = { isTimeInput = !isTimeInput }) {
-                    fun icon(): Pair<ImageVector, String> = if (isTimeInput)
-                        Pair(Icons.Default.DateRange, context.getString(R.string.pick))
-                    else Pair(Icons.Default.Edit, context.getString(R.string.input))
+                    fun icon(): Pair<Int, String> = if (isTimeInput)
+                        Pair(R.drawable.schedule, context.getString(R.string.pick))
+                    else Pair(R.drawable.keyboard, context.getString(R.string.input))
                     val (icon, type) = icon()
                     Icon(
-                        imageVector = icon, contentDescription = type,
+                        painter = painterResource(id = icon), contentDescription = type,
                         tint = MaterialTheme.colorScheme.secondary
                     )
                 }
@@ -171,6 +171,7 @@ fun TimeSelectDialog(
                                 VibrationEffect.createOneShot(8L, 70)
                             )
                         }
+                        view.playSoundEffect(SoundEffectConstants.CLICK)
                     },
                     colors = if (isDatePick) ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -241,9 +242,8 @@ private fun DatePickDialog(
                 onClick = {
                     if (!invalid) onConfirm()
                     if (tooLarge) dialog = true
-                    if (invalid) Toast.makeText(
-                        context,
-                        getString(context, R.string.cannot_set_past),
+                    if (invalid && !tooLarge) Toast.makeText(
+                        context, getString(context, R.string.cannot_set_past),
                         Toast.LENGTH_SHORT
                     ).show()
                 },
@@ -267,8 +267,10 @@ private fun DatePickDialog(
             val calculateTime = datePickerState.selectedDateMillis!! - now.timeInMillis
             if (calculateTime < -86400000) {
                 invalid = true
+                tooLarge = false
             } else if (calculateTime < 0) {
                 invalid = false
+                tooLarge = false
                 selectedDate((0))
             } else {
                 invalid = false

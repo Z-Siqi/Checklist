@@ -1,5 +1,7 @@
 package com.sqz.checklist.ui.main.task.layout
 
+import android.view.SoundEffectConstants
+import android.view.View
 import android.widget.Toast
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -46,6 +48,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -80,6 +83,7 @@ fun TaskLayout(
     pinnedItem: List<Task> = taskState.pinState(load = true)
 ) {
     val context = LocalContext.current
+    val view = LocalView.current
     val coroutineScope = rememberCoroutineScope()
     val topBarState = rememberTopAppBarState()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(topBarState)
@@ -100,16 +104,19 @@ fun TaskLayout(
                     taskState.checkTaskAction = false
                     menu = false
                     toTaskHistory()
-                })
+                }, view)
             }
-            TopBar(scrollBehavior, topBarState, onClick = { menu = true })
+            TopBar(scrollBehavior, topBarState, onClick = { menu = true }, view)
         },
         bottomBar = {
             val add = stringResource(R.string.add)
             NavBar(
                 icon = { Icon(Icons.Filled.AddCircle, contentDescription = add) },
                 label = { Text(add) },
-                onClick = { taskAddCard = true }
+                onClick = {
+                    taskAddCard = true
+                    view.playSoundEffect(SoundEffectConstants.CLICK)
+                }
             )
         }
     ) { paddingValues ->
@@ -127,7 +134,8 @@ fun TaskLayout(
                 if (pinnedItem.isNotEmpty()) {
                     item {
                         val pinnedHeight = (35 + (120 * pinnedItem.size)).dp
-                        val animatedPinnedHeight by animateDpAsState(targetValue = pinnedHeight,
+                        val animatedPinnedHeight by animateDpAsState(
+                            targetValue = pinnedHeight,
                             label = "Pinned Height"
                         )
                         Spacer(modifier = modifier.height(10.dp))
@@ -143,7 +151,7 @@ fun TaskLayout(
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.outline,
-                                modifier = modifier.padding(start = 8.dp, top = 5.dp)
+                                modifier = modifier.padding(start = 9.dp, top = 5.dp)
                             )
                             LazyColumn {
                                 items(pinnedItem, key = { it.id }) {
@@ -297,6 +305,7 @@ fun TaskLayout(
             onDismissRequest = {
                 taskState.setReminderId = -1
                 taskState.setReminderState = false
+                view.playSoundEffect(SoundEffectConstants.CLICK)
             },
             onConfirmClick = { timeInMilli ->
                 coroutineScope.launch {
@@ -309,6 +318,7 @@ fun TaskLayout(
                     taskState.setReminderId = -1
                     taskState.setReminderState = false
                 }
+                view.playSoundEffect(SoundEffectConstants.CLICK)
             },
             onFailed = {
                 taskState.setReminderId = -1
@@ -324,6 +334,7 @@ private fun Menu(
     expanded: Boolean = false,
     onDismissRequest: () -> Unit,
     onClickToTaskHistory: () -> Unit,
+    view: View,
     modifier: Modifier = Modifier
 ) {
     Column(verticalArrangement = Arrangement.Top) {
@@ -333,10 +344,11 @@ private fun Menu(
             modifier = modifier
         ) {
             DropdownMenuItem(
-                onClick = onClickToTaskHistory,
-                text = {
-                    Text(text = stringResource(R.string.task_history))
-                }
+                onClick = {
+                    onClickToTaskHistory()
+                    view.playSoundEffect(SoundEffectConstants.CLICK)
+                },
+                text = { Text(text = stringResource(R.string.task_history)) }
             )
         }
     }

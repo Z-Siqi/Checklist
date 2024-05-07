@@ -183,7 +183,7 @@ private fun Vibrate(
         isOn = true
     } else if (isOn && itemState.targetValue == itemState.currentValue) {
         getSystemService(context, Vibrator::class.java)?.vibrate(
-            VibrationEffect.createOneShot(10L, 50)
+            VibrationEffect.createOneShot(12L, 50)
         )
         isOn = false
     }

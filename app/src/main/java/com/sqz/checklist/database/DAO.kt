@@ -72,15 +72,4 @@ interface TaskDao {
 
     @Query("DELETE FROM task WHERE isHistory = 1")
     suspend fun deleteAllHistory()
-
-
-    /* Reset PrimaryKey Id Value */
-    @Query("UPDATE task SET id = :newId WHERE id = :oldId")
-    suspend fun updateId(oldId: Int, newId: Int)
-
-    @Query("SELECT * FROM task ORDER BY id")
-    suspend fun getAllData(): List<Task>
-
-    @Query("DELETE FROM sqlite_sequence WHERE name='task'")
-    suspend fun resetAutoIncrement()
 }

@@ -1,5 +1,7 @@
 package com.sqz.checklist.ui.main.task.item
 
+import android.view.SoundEffectConstants
+import android.view.View
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,6 +27,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextLayoutResult
@@ -47,6 +50,7 @@ internal fun ItemContent(
     pinIconState: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val view = LocalView.current
     Column {
         ContentTop(
             description = description,
@@ -55,7 +59,8 @@ internal fun ItemContent(
                 R.drawable.pinned
             } else {
                 R.drawable.pin
-            }
+            },
+            view = view
         )
         Spacer(modifier = modifier.weight(1f))
         ContentBottom(
@@ -64,7 +69,8 @@ internal fun ItemContent(
             editOnClick = editOnClick,
             timerIcon = if (timerIconState) {
                 R.drawable.timer_on
-            } else R.drawable.timer
+            } else R.drawable.timer,
+            view = view
         )
     }
 }
@@ -74,6 +80,7 @@ private fun ContentTop(
     description: String,
     pinOnClick: () -> Unit,
     pinIcon: Int,
+    view: View,
     modifier: Modifier = Modifier
 ) {
     Row {
@@ -112,7 +119,10 @@ private fun ContentTop(
         Spacer(modifier = modifier.weight(1f))
         IconButton(
             modifier = modifier.rotate(40f),
-            onClick = pinOnClick
+            onClick = {
+                pinOnClick()
+                view.playSoundEffect(SoundEffectConstants.CLICK)
+            }
         ) {
             Icon(
                 painter = painterResource(pinIcon),
@@ -128,6 +138,7 @@ private fun ContentBottom(
     reminderOnClick: () -> Unit,
     editOnClick: () -> Unit,
     timerIcon: Int,
+    view: View,
     modifier: Modifier = Modifier
 ) {
     Row(verticalAlignment = Alignment.Bottom) {
@@ -144,14 +155,20 @@ private fun ContentBottom(
                 .widthIn(min = 10.dp)
         )
         Row(modifier = modifier.widthIn(min = 40.dp, max = 100.dp)) {
-            IconButton(modifier = modifier.size(30.dp), onClick = reminderOnClick) {
+            IconButton(modifier = modifier.size(30.dp), onClick = {
+                reminderOnClick()
+                view.playSoundEffect(SoundEffectConstants.CLICK)
+            }) {
                 Icon(
                     painter = painterResource(id = timerIcon),
                     contentDescription = stringResource(R.string.reminder)
                 )
             }
             Spacer(modifier = modifier.weight(0.2f))
-            IconButton(modifier = modifier.size(30.dp), onClick = editOnClick) {
+            IconButton(modifier = modifier.size(30.dp), onClick = {
+                editOnClick()
+                view.playSoundEffect(SoundEffectConstants.CLICK)
+            }) {
                 Icon(
                     painter = painterResource(id = R.drawable.edit),
                     contentDescription = stringResource(R.string.edit)
