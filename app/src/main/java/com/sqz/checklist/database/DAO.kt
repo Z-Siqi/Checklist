@@ -42,17 +42,11 @@ interface TaskDao {
     @Query("SELECT isHistoryId FROM task WHERE isHistory = 1 ORDER BY isHistoryId DESC")
     suspend fun getIsHistoryIdTop(): Int
 
-    @Query("SELECT isHistoryId FROM task WHERE isHistory = 1 ORDER BY isHistoryId")
-    suspend fun getIsHistoryIdBottom(): Int
-
-    @Query("SELECT isHistoryId FROM task WHERE isHistory = 1 AND isHistoryId >= :min ORDER BY isHistoryId")
-    suspend fun getAllIsHistoryId(min: Int = 0): List<Int>
+    @Query("SELECT id, isHistoryId FROM task WHERE isHistory = 1 ORDER BY isHistoryId")
+    suspend fun getAllIsHistoryId(): List<HistoryIdList>
 
     @Query("SELECT id FROM task WHERE isHistory = 1 ORDER BY isHistoryId")
     suspend fun getIsHistoryBottomKeyId(): Int
-
-    @Query("SELECT isHistoryId FROM task WHERE id = :id")
-    suspend fun getIsHistoryId(id: Int): Int
 
     @Query("SELECT isHistory FROM task WHERE id = :id")
     suspend fun getIsHistory(id: Int): Int // 0 = false, 1 = ture
@@ -62,14 +56,14 @@ interface TaskDao {
     @Query("UPDATE task SET isHistoryId = :isHistoryId WHERE id = :id")
     suspend fun setHistoryId(isHistoryId: Int, id: Int)
 
-    @Query("UPDATE task SET isHistoryId = :isHistoryId WHERE isHistoryId = :byId")
-    suspend fun setHistoryIdById(isHistoryId: Int, byId: Int)
-
     @Query("UPDATE task SET isHistory = 0, isHistoryId = 0")
     suspend fun setAllNotHistory()
 
     @Query("UPDATE task SET isHistory = :isHistory WHERE id = :id")
     suspend fun setHistory(isHistory: Int, id: Int)
+
+    @Query("UPDATE task SET isHistoryId = :isHistoryId WHERE id = :id")
+    suspend fun setIsHistoryId(isHistoryId: Int, id: Int)
 
 
     /* Delete Actions */
@@ -78,4 +72,12 @@ interface TaskDao {
 
     @Query("DELETE FROM task WHERE isHistory = 1")
     suspend fun deleteAllHistory()
+
+
+    /* Reset PrimaryKey Id Value */
+    @Query("UPDATE task SET id = :newId WHERE id = :oldId")
+    suspend fun updateId(oldId: Int, newId: Int)
+
+    @Query("SELECT * FROM task ORDER BY id")
+    suspend fun getAllData(): List<Task>
 }

@@ -178,18 +178,12 @@ class TaskLayoutViewModel : ViewModel() {
                 val id = MainActivity.taskDatabase.taskDao().getIsHistoryBottomKeyId()
                 MainActivity.taskDatabase.taskDao().delete(
                     Task(
-                        id = id,
-                        description = "",
+                        id = id, description = "",
                         createDate = LocalDate.MIN
                     )
                 )
-                val getBottom = MainActivity.taskDatabase.taskDao().getIsHistoryIdBottom()
-                if (getBottom > 1) {
-                    val allIsHistoryId = MainActivity.taskDatabase.taskDao().getAllIsHistoryId()
-                    for (x in allIsHistoryId) {
-                        MainActivity.taskDatabase.taskDao().setHistoryIdById((x - 1), x)
-                    }
-                }
+                arrangeIsHistoryId()
+                arrangeKeyId()
             }
         }
     }
@@ -198,9 +192,9 @@ class TaskLayoutViewModel : ViewModel() {
     fun undoTaskToHistory(id: Int) {
         viewModelScope.launch {
             // Actions
-            arrangeIsHistoryId(id)
             MainActivity.taskDatabase.taskDao().setHistory(0, id)
             MainActivity.taskDatabase.taskDao().setHistoryId(0, id)
+            arrangeIsHistoryId()
             // Update to LazyColumn
             taskData = MainActivity.taskDatabase.taskDao().getAll(withoutHistory = 1)
             taskHistoryData = MainActivity.taskDatabase.taskDao().getAll(withoutHistory = 0)
@@ -221,14 +215,14 @@ class TaskLayoutViewModel : ViewModel() {
     // Delete action
     fun deleteTask(id: Int) = viewModelScope.launch {
         // Actions
-        arrangeIsHistoryId(id)
         MainActivity.taskDatabase.taskDao().delete(
             Task(
-                id = id,
-                description = "",
+                id = id, description = "",
                 createDate = LocalDate.MIN
             )
         )
+        arrangeIsHistoryId()
+        arrangeKeyId()
         // Update to LazyColumn
         taskHistoryData = MainActivity.taskDatabase.taskDao().getAll(withoutHistory = 0)
     }
@@ -238,18 +232,32 @@ class TaskLayoutViewModel : ViewModel() {
         viewModelScope.launch {
             // Actions
             MainActivity.taskDatabase.taskDao().deleteAllHistory()
+            arrangeKeyId()
             // Update to LazyColumn
             taskHistoryData = MainActivity.taskDatabase.taskDao().getAll(withoutHistory = 0)
         }
     }
 
     // Arrange IsHistoryId
-    private fun arrangeIsHistoryId(id: Int = 0) {
+    private fun arrangeIsHistoryId() {
         viewModelScope.launch {
-            val targetMinId = MainActivity.taskDatabase.taskDao().getIsHistoryId(id)
-            val allIsHistoryId = MainActivity.taskDatabase.taskDao().getAllIsHistoryId(targetMinId)
-            for (x in allIsHistoryId) {
-                MainActivity.taskDatabase.taskDao().setHistoryIdById((x - 1), x)
+            val allIsHistoryIdList = MainActivity.taskDatabase.taskDao().getAllIsHistoryId()
+            val arrangeIdList = allIsHistoryIdList.mapIndexed { index, data ->
+                data.copy(isHistoryId = index + 1)
+            }
+            for(data in arrangeIdList) {
+                MainActivity.taskDatabase.taskDao().setIsHistoryId(data.isHistoryId, data.id)
+            }
+        }
+    }
+
+    // Arrange PrimaryKey Id
+    private fun arrangeKeyId() {
+        viewModelScope.launch{
+            val dataList = MainActivity.taskDatabase.taskDao().getAllData()
+            var newId = 1
+            for (data in dataList) {
+                MainActivity.taskDatabase.taskDao().updateId(data.id, newId++)
             }
         }
     }
