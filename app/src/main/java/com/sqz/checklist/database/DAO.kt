@@ -80,4 +80,7 @@ interface TaskDao {
 
     @Query("SELECT * FROM task ORDER BY id")
     suspend fun getAllData(): List<Task>
+
+    @Query("DELETE FROM sqlite_sequence WHERE name='task'")
+    suspend fun resetAutoIncrement()
 }

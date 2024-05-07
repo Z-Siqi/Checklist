@@ -259,6 +259,7 @@ class TaskLayoutViewModel : ViewModel() {
             for (data in dataList) {
                 MainActivity.taskDatabase.taskDao().updateId(data.id, newId++)
             }
+            MainActivity.taskDatabase.taskDao().resetAutoIncrement()
         }
     }
 
