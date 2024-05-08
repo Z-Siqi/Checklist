@@ -11,6 +11,7 @@ import android.view.SoundEffectConstants
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -63,7 +64,6 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.getString
 import com.sqz.checklist.R
-import com.sqz.checklist.ui.main.WarningAlertDialog
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -110,7 +110,10 @@ fun TimeSelectDialog(
         onDismissRequest = onDismissRequest,
         confirmButton = {
             Row(modifier = modifier.fillMaxWidth()) {
-                if (!timePickLimit) IconButton(onClick = { isTimeInput = !isTimeInput }) {
+                if (!timePickLimit) IconButton(onClick = {
+                    isTimeInput = !isTimeInput
+                    view.playSoundEffect(SoundEffectConstants.CLICK)
+                }) {
                     fun icon(): Pair<Int, String> = if (isTimeInput)
                         Pair(R.drawable.schedule, context.getString(R.string.pick))
                     else Pair(R.drawable.keyboard, context.getString(R.string.input))
@@ -156,6 +159,22 @@ fun TimeSelectDialog(
                                 TimePickerLayoutType.Vertical
                             }
                         )
+                        var oldH by remember { mutableIntStateOf(timePickerState.hour) }
+                        var oldM by remember { mutableIntStateOf(timePickerState.minute) }
+                        @RequiresApi(Build.VERSION_CODES.Q)
+                        if (oldH != timePickerState.hour) {
+                            oldH = timePickerState.hour
+                            ContextCompat.getSystemService(context, Vibrator::class.java)?.vibrate(
+                                VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK)
+                            )
+                        }
+                        @RequiresApi(Build.VERSION_CODES.Q)
+                        if (oldM != timePickerState.minute) {
+                            oldM = timePickerState.minute
+                            ContextCompat.getSystemService(context, Vibrator::class.java)?.vibrate(
+                                VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK)
+                            )
+                        }
                     }
                 }
                 Spacer(modifier = modifier.fillMaxWidth())

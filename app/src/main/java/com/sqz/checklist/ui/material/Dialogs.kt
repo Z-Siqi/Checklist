@@ -1,4 +1,4 @@
-package com.sqz.checklist.ui.main
+package com.sqz.checklist.ui.material
 
 import android.view.SoundEffectConstants
 import androidx.compose.foundation.layout.Column
@@ -142,7 +142,7 @@ fun TaskChangeContentCard(
 @Composable
 private fun TaskChangeContentCardPreview() {
     val state = rememberTextFieldState()
-    TaskChangeContentCard({}, {}, "Create a task", "Add", state)
+    TaskChangeContentCard({}, {}, "TEST", "TEST", state)
 }
 
 

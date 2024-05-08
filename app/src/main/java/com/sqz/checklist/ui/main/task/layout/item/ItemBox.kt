@@ -1,4 +1,4 @@
-package com.sqz.checklist.ui.main.task.item
+package com.sqz.checklist.ui.main.task.layout.item
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Box

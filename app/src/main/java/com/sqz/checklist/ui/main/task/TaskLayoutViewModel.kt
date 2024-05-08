@@ -196,7 +196,7 @@ class TaskLayoutViewModel : ViewModel() {
             arrangeIsHistoryId()
             // Update to LazyColumn
             taskData = MainActivity.taskDatabase.taskDao().getAll(withoutHistory = 1)
-            taskHistoryData = MainActivity.taskDatabase.taskDao().getAll(withoutHistory = 0)
+            taskHistoryData = MainActivity.taskDatabase.taskDao().getAllOrderByIsHistoryId()
             isPinTaskData = MainActivity.taskDatabase.taskDao().getAll(1, 0)
         }
     }
@@ -215,14 +215,11 @@ class TaskLayoutViewModel : ViewModel() {
     fun deleteTask(id: Int) = viewModelScope.launch {
         // Actions
         MainActivity.taskDatabase.taskDao().delete(
-            Task(
-                id = id, description = "",
-                createDate = LocalDate.MIN
-            )
+            Task(id = id, description = "", createDate = LocalDate.MIN)
         )
         arrangeIsHistoryId()
         // Update to LazyColumn
-        taskHistoryData = MainActivity.taskDatabase.taskDao().getAll(withoutHistory = 0)
+        taskHistoryData = MainActivity.taskDatabase.taskDao().getAllOrderByIsHistoryId()
     }
 
     // Delete all task from history
@@ -242,13 +239,15 @@ class TaskLayoutViewModel : ViewModel() {
             val arrangeIdList = allIsHistoryIdList.mapIndexed { index, data ->
                 data.copy(isHistoryId = index + 1)
             }
-            for(data in arrangeIdList) {
+            for (data in arrangeIdList) {
                 MainActivity.taskDatabase.taskDao().setIsHistoryId(data.isHistoryId, data.id)
             }
         }
     }
 
-    // For Task History select state
+    /**
+     * Task History select state
+     * **/
     var selectedId by mutableIntStateOf(-0)
     var onSelect by mutableStateOf(false)
     fun selectTask(id: Int) {
@@ -260,4 +259,6 @@ class TaskLayoutViewModel : ViewModel() {
             onSelect = false
         } else selectedId = id
     }
+
+    var hideSelected by mutableStateOf(false)
 }

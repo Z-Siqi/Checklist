@@ -40,12 +40,12 @@ internal fun CheckUndoAction(
         delay(50)
         rememberScroll = lazyState.firstVisibleItemIndex
         undoButton = true
-        delay(2000)
+        delay(1500)
         if (rememberScroll != lazyState.firstVisibleItemIndex) {
             undoButton = false
             taskState.checkTaskAction = false
         } else {
-            while (rememberTime < 7) {
+            while (rememberTime < 5) {
                 delay(500)
                 if (rememberScroll != lazyState.firstVisibleItemIndex) {
                     undoButton = false

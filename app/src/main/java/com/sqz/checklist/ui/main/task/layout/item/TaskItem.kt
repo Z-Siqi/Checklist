@@ -1,4 +1,4 @@
-package com.sqz.checklist.ui.main.task.item
+package com.sqz.checklist.ui.main.task.layout.item
 
 import android.content.Context
 import android.os.Build
@@ -50,7 +50,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.work.WorkManager
 import com.sqz.checklist.MainActivity
 import com.sqz.checklist.R
-import com.sqz.checklist.ui.main.TaskChangeContentCard
+import com.sqz.checklist.ui.material.TaskChangeContentCard
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -183,7 +183,7 @@ private fun Vibrate(
         isOn = true
     } else if (isOn && itemState.targetValue == itemState.currentValue) {
         getSystemService(context, Vibrator::class.java)?.vibrate(
-            VibrationEffect.createOneShot(12L, 50)
+            VibrationEffect.createOneShot(12L, 58)
         )
         isOn = false
     }

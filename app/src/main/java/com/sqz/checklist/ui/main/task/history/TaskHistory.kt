@@ -1,7 +1,10 @@
-package com.sqz.checklist.ui.main.task.layout
+package com.sqz.checklist.ui.main.task.history
 
 import android.view.SoundEffectConstants
 import android.view.View
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -38,6 +41,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -54,8 +58,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sqz.checklist.MainActivity
 import com.sqz.checklist.R
 import com.sqz.checklist.database.Task
-import com.sqz.checklist.ui.main.WarningAlertDialog
+import com.sqz.checklist.ui.material.WarningAlertDialog
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -71,10 +77,12 @@ fun TaskHistory(
     var deleteAllView by rememberSaveable { mutableStateOf(false) }
     var redoAllView by rememberSaveable { mutableStateOf(false) }
     Scaffold(
-        topBar = { HistoryTopBar(onClick = {
-            navBack()
-            view.playSoundEffect(SoundEffectConstants.CLICK)
-        }) },
+        topBar = {
+            HistoryTopBar(onClick = {
+                navBack()
+                view.playSoundEffect(SoundEffectConstants.CLICK)
+            })
+        },
         bottomBar = {
             HistoryNavBar(
                 deleteAllView = { deleteAllView = true },
@@ -98,6 +106,7 @@ fun TaskHistory(
                         id = it.id,
                         description = it.description,
                         createDate = it.createDate,
+                        hide = taskState.hideSelected && taskState.selectedId == it.id,
                         view = view
                     )
                 }
@@ -182,6 +191,7 @@ private fun HistoryNavBar(
     view: View,
     modifier: Modifier = Modifier
 ) {
+    val coroutineScope = rememberCoroutineScope()
     NavigationBar(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -201,9 +211,15 @@ private fun HistoryNavBar(
             selected = taskState.onSelect,
             onClick = {
                 if (taskState.onSelect) {
-                    taskState.deleteTask(taskState.selectedId)
-                    taskState.selectedId = -0
-                    taskState.onSelect = false
+                    coroutineScope.launch {
+                        taskState.hideSelected = true
+                        delay(80)
+                        taskState.deleteTask(taskState.selectedId)
+                        delay(20)
+                        taskState.selectedId = -0
+                        taskState.onSelect = false
+                        taskState.hideSelected = false
+                    }
                 } else {
                     deleteAllView()
                 }
@@ -218,9 +234,14 @@ private fun HistoryNavBar(
             selected = taskState.onSelect,
             onClick = {
                 if (taskState.onSelect) {
-                    taskState.undoTaskToHistory(taskState.selectedId)
-                    taskState.selectedId = -0
-                    taskState.onSelect = false
+                    coroutineScope.launch {
+                        taskState.hideSelected = true
+                        taskState.undoTaskToHistory(taskState.selectedId)
+                        delay(100)
+                        taskState.selectedId = -0
+                        taskState.onSelect = false
+                        taskState.hideSelected = false
+                    }
                 } else {
                     redoAllView()
                 }
@@ -236,6 +257,7 @@ private fun ItemBox(
     id: Int,
     description: String,
     createDate: LocalDate,
+    hide: Boolean,
     taskState: TaskLayoutViewModel = viewModel(),
     view: View,
     modifier: Modifier = Modifier
@@ -243,7 +265,14 @@ private fun ItemBox(
     val border = if (taskState.selectedId == id) {
         BorderStroke(3.dp, MaterialTheme.colorScheme.tertiary)
     } else BorderStroke(1.dp, MaterialTheme.colorScheme.surfaceDim)
-    Column(modifier = modifier.height(120.dp)) {
+    Column(
+        modifier = modifier.animateContentSize(
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioNoBouncy,
+                stiffness = Spring.StiffnessHigh
+            )
+        ) then modifier.height(if (hide) 0.dp else 120.dp)
+    ) {
         OutlinedCard(
             modifier = modifier
                 .fillMaxSize()

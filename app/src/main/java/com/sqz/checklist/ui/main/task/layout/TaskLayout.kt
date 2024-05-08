@@ -61,9 +61,9 @@ import com.sqz.checklist.R
 import com.sqz.checklist.database.Task
 import com.sqz.checklist.ui.NavBar
 import com.sqz.checklist.ui.TopBar
-import com.sqz.checklist.ui.main.TaskChangeContentCard
-import com.sqz.checklist.ui.main.WarningAlertDialog
-import com.sqz.checklist.ui.main.task.item.TaskItem
+import com.sqz.checklist.ui.material.TaskChangeContentCard
+import com.sqz.checklist.ui.material.WarningAlertDialog
+import com.sqz.checklist.ui.main.task.layout.item.TaskItem
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
 import com.sqz.checklist.ui.material.TimeSelectDialog
 import kotlinx.coroutines.delay
@@ -157,7 +157,7 @@ fun TaskLayout(
                                 items(pinnedItem, key = { it.id }) {
                                     val state = rememberSwipeToDismissBoxState(
                                         positionalThreshold = {
-                                            screenWidthPx * 0.38f
+                                            screenWidthPx * 0.35f
                                         },
                                     )
                                     TaskItem(
@@ -180,7 +180,7 @@ fun TaskLayout(
                 items(item, key = { it.id }) {
                     val state = rememberSwipeToDismissBoxState(
                         positionalThreshold = {
-                            screenWidthPx * 0.38f
+                            screenWidthPx * 0.35f
                         },
                     )
                     TaskItem(

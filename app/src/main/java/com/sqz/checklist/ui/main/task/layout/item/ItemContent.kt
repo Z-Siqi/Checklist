@@ -1,4 +1,4 @@
-package com.sqz.checklist.ui.main.task.item
+package com.sqz.checklist.ui.main.task.layout.item
 
 import android.view.SoundEffectConstants
 import android.view.View
@@ -37,7 +37,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sqz.checklist.R
-import com.sqz.checklist.ui.main.InfoAlertDialog
+import com.sqz.checklist.ui.material.InfoAlertDialog
 
 @Composable
 internal fun ItemContent(
