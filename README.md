@@ -19,10 +19,10 @@ Looking for a simplicity and practicality in design? Want a design without unnec
 * Based on Material Design 3
 
 ## Screenshot
-<img src="https://github.com/Z-Siqi/Checklist/assets/77391690/eece4b76-50bb-4a65-b346-e080bdaae539" width="300" height="600">
+<img src="https://github.com/Z-Siqi/Checklist/assets/77391690/891b1a17-8be0-42e4-8e62-4694366c2a43" width="290" height="620">
 
 ***
 
-It's still early in development, DO NOT SAVE IMPORTANT DATA ONLY IN THIS APP!
+![License](https://img.shields.io/github/license/Z-Siqi/Checklist)
 
 *More features are under development...*
