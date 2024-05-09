@@ -212,6 +212,11 @@ fun TaskLayout(
                     taskState.autoDeleteHistoryTask(5)
                 }
             }
+            // cancel set reminder when checked
+            if (taskState.cancelReminderAction) {
+                taskState.cancelHistoryReminder(context)
+                taskState.cancelReminderAction = false
+            }
             if (taskState.reminderCard) { // processing cancel reminder
                 fun dismiss() {
                     taskState.reminderCard = false

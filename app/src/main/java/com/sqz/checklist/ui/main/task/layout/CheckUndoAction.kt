@@ -18,6 +18,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -32,9 +33,17 @@ internal fun CheckUndoAction(
     lazyState: LazyListState,
     taskState: TaskLayoutViewModel
 ) {
+    val isWindowFocused = LocalWindowInfo.current.isWindowFocused
+
     var undoButton by rememberSaveable { mutableStateOf(false) }
     var rememberScroll by rememberSaveable { mutableIntStateOf(0) }
     var rememberTime by rememberSaveable { mutableIntStateOf(0) }
+
+    fun undoTimeout() {
+        undoButton = false
+        taskState.checkTaskAction = false
+        taskState.cancelReminderAction = true
+    }
 
     LaunchedEffect(true) {
         delay(50)
@@ -42,19 +51,16 @@ internal fun CheckUndoAction(
         undoButton = true
         delay(1500)
         if (rememberScroll != lazyState.firstVisibleItemIndex) {
-            undoButton = false
-            taskState.checkTaskAction = false
+            undoTimeout()
         } else {
             while (rememberTime < 5) {
                 delay(500)
                 if (rememberScroll != lazyState.firstVisibleItemIndex) {
-                    undoButton = false
-                    taskState.checkTaskAction = false
+                    undoTimeout()
                 }
                 rememberTime++
             }
-            undoButton = false
-            taskState.checkTaskAction = false
+            undoTimeout()
         }
     }
     if (undoButton) UndoButton(onClick = {
@@ -63,6 +69,10 @@ internal fun CheckUndoAction(
         undoButton = false
         taskState.checkTaskAction = false
     })
+
+    if (!isWindowFocused && undoButton) {
+        taskState.cancelReminderAction = true
+    }
 }
 
 

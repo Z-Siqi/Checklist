@@ -77,7 +77,7 @@ fun TaskItem(
         var isDismissedId by rememberSaveable { mutableIntStateOf(0) }
         LaunchedEffect(true) { isDismissedId++ }
         if (isDismissedId < 1) {
-            taskState.deleteTaskToHistory(id, context)
+            taskState.deleteTaskToHistory(id)
             taskState.checkTaskAction = true
             taskState.undoActionId = id
         }

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_display_language">CN</string>
+    <string name="app_name">检查清单</string>
+    <string name="edit">编辑</string>
+    <string name="add">添加</string>
+    <string name="back">返回</string>
+    <string name="dismiss">禁用</string>
+    <string name="confirm">确认</string>
+    <string name="warning">注意</string>
+    <string name="cancel">取消</string>
+    <string name="delete">删除</string>
+    <string name="full_date_short">yyyy 年 MMM dd 日 hh:mm a</string>
+
+    <!-- MainLayout -->
+    <string name="tasks">任务</string>
+    <string name="time_format">"EE, MMM dd 日"</string>
+    <string name="top_bar_date">MMMM dd 日</string>
+    <string name="more_options">更多选项</string>
+
+    <!-- TaskLayout -->
+    <string name="task_date_format">yyyy 年 MMM dd 日</string>
+    <string name="task_creation_time">创建日期: %1$s</string>
+    <string name="check">检查</string>
+    <string name="undo">撤销</string>
+    <string name="reminder">提醒</string>
+    <string name="create_task">创建条目</string>
+    <string name="edit_task">编辑任务</string>
+    <string name="task_history">历史记录</string>
+    <string name="delete_all_history">清除所有历史记录?</string>
+    <string name="redo_all_history">重做全部?</string>
+    <string name="redo">重做</string>
+    <string name="nothing_here">这里什么都没有!</string>
+    <string name="pin">固定</string>
+    <string name="pinned_task">固定的任务</string>
+    <string name="select_date">选择日期</string>
+    <string name="pick">选择</string>
+    <string name="input">输入</string>
+
+    <!-- Notification -->
+    <string name="task_reminder">任务提醒</string>
+    <string name="cancel_the_reminder">取消提醒?</string>
+    <string name="description">用于提醒</string>
+    <string name="no_set_reminder_permission">由于没有权限，无法设置提醒</string>
+    <string name="note_brevent">注意：如果 Brevent 在该程式上工作，通知可能无法使用</string>
+    <string name="note_thanox">注意：如果 Thanox 在该程式上工作，通知可能无法使用</string>
+    <string name="no_do_nothing">请不要计划做空气!!</string>
+    <string name="no_change_do_nothing">不要把计划变成空气!!</string>
+    <string name="remind_at_preview">%1$s 小时 %2$s 分钟之后</string>
+    <string name="remind_at">将于 %1$s 提醒</string>
+    <string name="nothing_need_do">选择无需做任何事! \n点击 \'添加\' 以创建任务</string>
+    <string name="setting_remind_warning">不建议设置时间太久的提醒, 而且你不应该将你的计划推迟那么久。 此外，这也可能会导致意外的错误。\n\n点击确认以继续设置.</string>
+    <string name="cannot_set_past">为过去设置提醒是做不到的! lol</string>
+
+</resources>

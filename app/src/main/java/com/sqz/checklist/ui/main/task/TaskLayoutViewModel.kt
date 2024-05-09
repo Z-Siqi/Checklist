@@ -29,6 +29,7 @@ class TaskLayoutViewModel : ViewModel() {
     var setReminderState by mutableStateOf(false)
     var setReminderId by mutableIntStateOf(-0)
     var reminderCard by mutableStateOf(false)
+    var cancelReminderAction by mutableStateOf(false)
 
     fun setReminder(
         delayDuration: Long,
@@ -81,6 +82,15 @@ class TaskLayoutViewModel : ViewModel() {
                 Context.NOTIFICATION_SERVICE
             ) as NotificationManager
             notificationManager.cancel(id)
+        }
+    }
+
+    fun cancelHistoryReminder(context: Context) {
+        viewModelScope.launch {
+            val allIsHistoryIdList = MainActivity.taskDatabase.taskDao().getAllIsHistoryId()
+            for (data in allIsHistoryIdList) {
+                cancelReminder(data.id, context)
+            }
         }
     }
 
@@ -156,11 +166,9 @@ class TaskLayoutViewModel : ViewModel() {
     }
 
     // Delete to History
-    fun deleteTaskToHistory(id: Int, context: Context) {
+    fun deleteTaskToHistory(id: Int) {
         viewModelScope.launch {
             MainActivity.taskDatabase.taskDao().setHistory(1, id)
-            // Cancel reminder
-            cancelReminder(id, context)
             // Give an id for history sequence
             val maxId = MainActivity.taskDatabase.taskDao().getIsHistoryIdTop()
             MainActivity.taskDatabase.taskDao().setHistoryId((maxId + 1), id)
@@ -194,6 +202,8 @@ class TaskLayoutViewModel : ViewModel() {
             MainActivity.taskDatabase.taskDao().setHistory(0, id)
             MainActivity.taskDatabase.taskDao().setHistoryId(0, id)
             arrangeIsHistoryId()
+            undoActionId = -0
+            cancelReminderAction = true
             // Update to LazyColumn
             taskData = MainActivity.taskDatabase.taskDao().getAll(withoutHistory = 1)
             taskHistoryData = MainActivity.taskDatabase.taskDao().getAllOrderByIsHistoryId()
