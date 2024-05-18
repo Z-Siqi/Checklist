@@ -26,12 +26,9 @@ class TaskLayoutViewModel : ViewModel() {
     /**
      * Reminder-related
      * **/
-    var setReminderState by mutableStateOf(false)
-    var setReminderId by mutableIntStateOf(-0)
-    var reminderCard by mutableStateOf(false)
     var cancelReminderAction by mutableStateOf(false)
 
-    fun setReminder(
+    suspend fun setReminder(
         delayDuration: Long,
         timeUnit: TimeUnit,
         id: Int,
@@ -51,15 +48,14 @@ class TaskLayoutViewModel : ViewModel() {
             )
             .setInitialDelay(delayDuration, timeUnit)
             .build()
-        if (setReminderState) {
-            viewModelScope.launch {
-                WorkManager.getInstance(context).enqueue(workRequest)
-                val uuid = workRequest.id.toString()
-                val now = Calendar.getInstance()
-                val remindTime = now.timeInMillis + delayDuration
-                val merge = "$uuid:$remindTime"
-                MainActivity.taskDatabase.taskDao().insertReminder(id = id, string = merge)
-            }
+        viewModelScope.launch {
+            WorkManager.getInstance(context).enqueue(workRequest)
+            val uuid = workRequest.id.toString()
+            val now = Calendar.getInstance()
+            val remindTime = now.timeInMillis + delayDuration
+            val merge = "$uuid:$remindTime"
+            MainActivity.taskDatabase.taskDao().insertReminder(id = id, string = merge)
+            taskData = MainActivity.taskDatabase.taskDao().getAll(withoutHistory = 1)
         }
     }
 

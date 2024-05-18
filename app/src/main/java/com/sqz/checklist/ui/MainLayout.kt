@@ -1,5 +1,8 @@
 package com.sqz.checklist.ui
 
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
 import android.view.SoundEffectConstants
 import android.view.View
 import androidx.compose.animation.AnimatedVisibility
@@ -26,20 +29,26 @@ import androidx.compose.material3.MediumTopAppBar
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.TopAppBarState
 import androidx.compose.material3.VerticalDivider
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -47,6 +56,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -203,14 +213,34 @@ fun TopBar(
             }
         },
         actions = {
-            IconButton(onClick = {
-                onClick()
-                view.playSoundEffect(SoundEffectConstants.CLICK)
-            }) {
-                Icon(
-                    imageVector = Icons.Filled.MoreVert,
-                    contentDescription = stringResource(R.string.more_options)
-                )
+            TooltipBox(
+                positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+                tooltip = {
+                    PlainTooltip(modifier = modifier.padding(top = 25.dp,end = 20.dp)) {
+                        Text(stringResource(R.string.more_options))
+                        val context = LocalContext.current
+                        LaunchedEffect(true) {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                ContextCompat.getSystemService(
+                                    context, Vibrator::class.java
+                                )?.vibrate(
+                                    VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK)
+                                )
+                            } else view.playSoundEffect(SoundEffectConstants.CLICK)
+                        }
+                    }
+                },
+                state = rememberTooltipState()
+            ) {
+                IconButton(onClick = {
+                    onClick()
+                    view.playSoundEffect(SoundEffectConstants.CLICK)
+                }) {
+                    Icon(
+                        imageVector = Icons.Filled.MoreVert,
+                        contentDescription = stringResource(R.string.more_options)
+                    )
+                }
             }
         },
         scrollBehavior = scrollBehavior

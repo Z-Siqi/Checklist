@@ -21,11 +21,8 @@ import androidx.compose.foundation.text.input.insert
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.CardColors
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SwipeToDismissBoxState
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.rememberSwipeToDismissBoxState
@@ -33,6 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -52,6 +50,7 @@ import com.sqz.checklist.MainActivity
 import com.sqz.checklist.R
 import com.sqz.checklist.ui.material.TaskChangeContentCard
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
+import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -63,13 +62,16 @@ fun TaskItem(
     id: Int,
     description: String,
     createDate: LocalDate,
+    reminderCardClick: (id: Int) -> Unit,
+    setReminderClick: (id: Int) -> Unit,
+    reminder: String?,
     isPin: Boolean,
     context: Context,
     itemState: SwipeToDismissBoxState,
     pinnedTask: Boolean = false,
     modifier: Modifier = Modifier,
     taskState: TaskLayoutViewModel = viewModel()
-) {
+) { // Process card action
     val dismissInEndToStart = itemState.currentValue == SwipeToDismissBoxValue.EndToStart
     val dismissInStartToEnd = itemState.currentValue == SwipeToDismissBoxValue.StartToEnd
     val isDismissed = dismissInEndToStart || dismissInStartToEnd
@@ -105,22 +107,18 @@ fun TaskItem(
             stringResource(R.string.task_date_format),
             Locale.getDefault()
         )
-        val reminderState = reminderState(id, context, taskState)
+        val reminderState = reminderState(id, context, reminder)
         ItemBox(
             description = description,
             createDate = stringResource(R.string.task_creation_time, createDate.format(formatter)),
             reminderOnClick = {
                 if (reminderState) {
-                    taskState.reminderCard = true
-                    taskState.setReminderId = id
+                    reminderCardClick(id)
                 } else {
-                    taskState.setReminderState = true
-                    taskState.setReminderId = id
+                    setReminderClick(id)
                 }
             },
-            editOnClick = {
-                taskEditCard = true
-            },
+            editOnClick = { taskEditCard = true },
             timerIconState = reminderState,
             pinOnClick = {
                 if (isPin) {
@@ -130,6 +128,9 @@ fun TaskItem(
                 }
             },
             pinIconState = isPin,
+            tooltipRemindText = if (reminderState) {
+                reminderTooltipText(id)
+            } else null,
             state = itemState,
             horizontalEdge = if (pinnedTask) 10 else 14
         )
@@ -162,6 +163,27 @@ fun TaskItem(
     }
 }
 
+@Composable
+private fun reminderTooltipText(id: Int): String {
+    var remindTime by remember { mutableLongStateOf(0) }
+    LaunchedEffect(true) {
+        val uuidAndTime = MainActivity.taskDatabase.taskDao().getReminderInfo(id)
+        uuidAndTime?.let {
+            val parts = it.split(":")
+            if (parts.size >= 2) {
+                parts[0]
+                val time = parts[1].toLong()
+                remindTime = time
+            }
+        }
+    }
+    val fullDateShort = stringResource(R.string.full_date_short)
+    val formatter = remember {
+        SimpleDateFormat(fullDateShort, Locale.getDefault())
+    }
+    return formatter.format(remindTime)
+}
+
 @RequiresApi(Build.VERSION_CODES.Q)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -190,20 +212,13 @@ private fun Vibrate(
 }
 
 @Composable
-fun cardBackgoundColor(onSlide: Boolean = false): CardColors {
-    return if (!onSlide) {
-        CardDefaults.cardColors(MaterialTheme.colorScheme.secondaryContainer)
-    } else CardDefaults.cardColors(MaterialTheme.colorScheme.secondary)
-}
-
-@Composable
 private fun reminderState( // check the reminder is set or not
     id: Int,
     context: Context,
-    taskState: TaskLayoutViewModel
+    reminder: String?
 ): Boolean {
     var rememberState by rememberSaveable { mutableStateOf(false) }
-    LaunchedEffect(taskState.setReminderState) {
+    LaunchedEffect(reminder) {
         val uuidAndTime = MainActivity.taskDatabase.taskDao().getReminderInfo(id)
         uuidAndTime?.let {
             val parts = it.split(":")
@@ -255,6 +270,7 @@ private fun Preview() {
     )
     TaskItem(
         id = 0, description = "The quick brown fox jumps over the lazy dog.", isPin = false,
-        createDate = LocalDate.now(), context = LocalContext.current, itemState = state
+        createDate = LocalDate.now(), reminderCardClick = {}, setReminderClick = {}, reminder = "",
+        context = LocalContext.current, itemState = state
     )
 }

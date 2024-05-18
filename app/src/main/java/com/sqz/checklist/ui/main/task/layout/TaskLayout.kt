@@ -36,6 +36,7 @@ import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -61,11 +62,11 @@ import com.sqz.checklist.R
 import com.sqz.checklist.database.Task
 import com.sqz.checklist.ui.NavBar
 import com.sqz.checklist.ui.TopBar
-import com.sqz.checklist.ui.material.TaskChangeContentCard
-import com.sqz.checklist.ui.material.WarningAlertDialog
-import com.sqz.checklist.ui.main.task.layout.item.TaskItem
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
+import com.sqz.checklist.ui.main.task.layout.item.TaskItem
+import com.sqz.checklist.ui.material.TaskChangeContentCard
 import com.sqz.checklist.ui.material.TimeSelectDialog
+import com.sqz.checklist.ui.material.WarningAlertDialog
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -126,6 +127,8 @@ fun TaskLayout(
             color = MaterialTheme.colorScheme.surfaceContainer
         ) {
             var undoTask by rememberSaveable { mutableStateOf(false) }
+            var reminderCard by rememberSaveable { mutableIntStateOf(-1) }
+            var setReminder by rememberSaveable { mutableIntStateOf(-1) }
             val lazyState = rememberLazyListState()
             LazyColumn(
                 modifier = modifier.fillMaxSize(),
@@ -164,9 +167,10 @@ fun TaskLayout(
                                         id = it.id,
                                         description = it.description,
                                         createDate = it.createDate,
-                                        isPin = it.isPin,
-                                        context = context,
-                                        itemState = state,
+                                        reminderCardClick = { id -> reminderCard = id },
+                                        setReminderClick = { id -> setReminder = id },
+                                        reminder = it.reminder, isPin = it.isPin,
+                                        context = context, itemState = state,
                                         pinnedTask = true
                                     )
                                 }
@@ -187,7 +191,9 @@ fun TaskLayout(
                         id = it.id,
                         description = it.description,
                         createDate = it.createDate,
-                        isPin = it.isPin,
+                        reminderCardClick = { id -> reminderCard = id },
+                        setReminderClick = { id -> setReminder = id },
+                        reminder = it.reminder, isPin = it.isPin,
                         context = context,
                         itemState = state
                     )
@@ -217,23 +223,41 @@ fun TaskLayout(
                 taskState.cancelHistoryReminder(context)
                 taskState.cancelReminderAction = false
             }
-            if (taskState.reminderCard) { // processing cancel reminder
-                fun dismiss() {
-                    taskState.reminderCard = false
-                    taskState.setReminderId = -0
-                }
-                WarningAlertDialog(
-                    onDismissRequest = { dismiss() },
-                    onConfirmButtonClick = {
-                        taskState.cancelReminder(taskState.setReminderId, context)
-                        dismiss()
+            if (setReminder > 0) { // to set reminder
+                TimeSelectDialog(
+                    onDismissRequest = {
+                        setReminder = -1
+                        view.playSoundEffect(SoundEffectConstants.CLICK)
                     },
-                    onDismissButtonClick = { dismiss() },
+                    onConfirmClick = { timeInMilli ->
+                        coroutineScope.launch {
+                            taskState.setReminder(
+                                timeInMilli,
+                                TimeUnit.MILLISECONDS,
+                                setReminder,
+                                context
+                            )
+                            setReminder = -1
+                        }
+                        view.playSoundEffect(SoundEffectConstants.CLICK)
+                    },
+                    onFailed = { setReminder = -1 },
+                    context = context
+                )
+            }
+            if (reminderCard > 0) { // processing cancel reminder
+                WarningAlertDialog(
+                    onDismissRequest = { reminderCard = -1 },
+                    onConfirmButtonClick = {
+                        taskState.cancelReminder(reminderCard, context)
+                        reminderCard = -1
+                    },
+                    onDismissButtonClick = { reminderCard = -1 },
                     text = {
                         var remindTime by rememberSaveable { mutableLongStateOf(0) }
                         LaunchedEffect(true) {
                             val uuidAndTime = MainActivity.taskDatabase.taskDao()
-                                .getReminderInfo(taskState.setReminderId)
+                                .getReminderInfo(reminderCard)
                             uuidAndTime?.let {
                                 val parts = it.split(":")
                                 if (parts.size >= 2) {
@@ -248,12 +272,7 @@ fun TaskLayout(
                         val formatter = remember {
                             SimpleDateFormat(fullDateShort, Locale.getDefault())
                         }
-                        Text(
-                            text = stringResource(
-                                R.string.remind_at,
-                                formatter.format(remindTime)
-                            )
-                        )
+                        Text(stringResource(R.string.remind_at, formatter.format(remindTime)))
                     }
                 )
             }
@@ -304,33 +323,6 @@ fun TaskLayout(
         doneImeAction = true
     ) else LaunchedEffect(true) {
         state.clearText()
-    }
-    if (taskState.setReminderState) { // to set reminder
-        TimeSelectDialog(
-            onDismissRequest = {
-                taskState.setReminderId = -1
-                taskState.setReminderState = false
-                view.playSoundEffect(SoundEffectConstants.CLICK)
-            },
-            onConfirmClick = { timeInMilli ->
-                coroutineScope.launch {
-                    taskState.setReminder(
-                        timeInMilli,
-                        TimeUnit.MILLISECONDS,
-                        taskState.setReminderId,
-                        context
-                    )
-                    taskState.setReminderId = -1
-                    taskState.setReminderState = false
-                }
-                view.playSoundEffect(SoundEffectConstants.CLICK)
-            },
-            onFailed = {
-                taskState.setReminderId = -1
-                taskState.setReminderState = false
-            },
-            context = context
-        )
     }
 }
 

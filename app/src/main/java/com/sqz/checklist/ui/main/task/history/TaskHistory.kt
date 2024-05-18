@@ -1,5 +1,8 @@
 package com.sqz.checklist.ui.main.task.history
 
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
 import android.view.SoundEffectConstants
 import android.view.View
 import androidx.compose.animation.animateContentSize
@@ -30,12 +33,16 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -46,6 +53,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -54,6 +62,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sqz.checklist.MainActivity
 import com.sqz.checklist.R
@@ -81,7 +90,7 @@ fun TaskHistory(
             HistoryTopBar(onClick = {
                 navBack()
                 view.playSoundEffect(SoundEffectConstants.CLICK)
-            })
+            }, view)
         },
         bottomBar = {
             HistoryNavBar(
@@ -161,6 +170,7 @@ fun TaskHistory(
 @Composable
 private fun HistoryTopBar(
     onClick: () -> Unit,
+    view: View,
     modifier: Modifier = Modifier
 ) {
     TopAppBar(
@@ -168,16 +178,34 @@ private fun HistoryTopBar(
             containerColor = MaterialTheme.colorScheme.primaryContainer,
             titleContentColor = MaterialTheme.colorScheme.primary,
         ),
-        title = {
-            Text(text = "Task History")
-        },
+        title = { Text(text = stringResource(R.string.task_history)) },
         modifier = modifier,
         navigationIcon = {
-            IconButton(onClick = { onClick() }) {
-                Icon(
-                    painter = painterResource(R.drawable.back),
-                    contentDescription = stringResource(R.string.back)
-                )
+            TooltipBox(
+                positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+                tooltip = {
+                    PlainTooltip(modifier = modifier.padding(top = 25.dp, bottom = 20.dp)) {
+                        Text(stringResource(R.string.back))
+                        val context = LocalContext.current
+                        LaunchedEffect(true) {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                ContextCompat.getSystemService(
+                                    context, Vibrator::class.java
+                                )?.vibrate(
+                                    VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK)
+                                )
+                            } else view.playSoundEffect(SoundEffectConstants.CLICK)
+                        }
+                    }
+                },
+                state = rememberTooltipState()
+            ) {
+                IconButton(onClick = { onClick() }) {
+                    Icon(
+                        painter = painterResource(R.drawable.back),
+                        contentDescription = stringResource(R.string.back)
+                    )
+                }
             }
         }
     )

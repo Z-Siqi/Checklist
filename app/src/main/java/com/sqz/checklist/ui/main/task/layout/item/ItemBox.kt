@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardColors
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
@@ -32,15 +34,16 @@ internal fun ItemBox(
     timerIconState: Boolean,
     pinIconState: Boolean,
     pinOnClick: () -> Unit,
+    tooltipRemindText: String?,
     state: SwipeToDismissBoxState,
     horizontalEdge: Int = 14,
     modifier: Modifier = Modifier
-) {
+) { // Swipe-able card UI
     val bgStartEnd = horizontalEdge.dp
     val startEnd = bgStartEnd - 2.dp
     SwipeToDismissBox(
         state = state,
-        backgroundContent = {
+        backgroundContent = { // back of card
             Card(
                 modifier = modifier
                     .fillMaxSize()
@@ -63,7 +66,7 @@ internal fun ItemBox(
                 }
             }
         },
-    ) {
+    ) { // front of card
         OutlinedCard(
             modifier = modifier
                 .fillMaxSize()
@@ -76,17 +79,23 @@ internal fun ItemBox(
                 modifier = modifier.padding(bottom = 8.dp, top = 5.dp, start = 12.dp, end = 11.dp)
             ) {
                 ItemContent(
-                    description = description,
-                    createDate = createDate,
-                    reminderOnClick = reminderOnClick,
-                    editOnClick = editOnClick,
-                    timerIconState = timerIconState,
-                    pinIconState = pinIconState,
-                    pinOnClick = pinOnClick
+                    description = description, createDate = createDate,
+                    descriptionBgColor = cardBackgoundColor(),
+                    reminderOnClick = reminderOnClick, editOnClick = editOnClick,
+                    timerIconState = timerIconState, pinIconState = pinIconState,
+                    pinOnClick = pinOnClick,
+                    tooltipRemindText = tooltipRemindText
                 )
             }
         }
     }
+}
+
+@Composable
+private fun cardBackgoundColor(onSlide: Boolean = false): CardColors {
+    return if (!onSlide) {
+        CardDefaults.cardColors(MaterialTheme.colorScheme.secondaryContainer)
+    } else CardDefaults.cardColors(MaterialTheme.colorScheme.secondary)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -102,6 +111,7 @@ private fun Preview() {
             timerIconState = false,
             pinOnClick = {},
             pinIconState = false,
+            tooltipRemindText = null,
             state = rememberSwipeToDismissBoxState()
         )
     }

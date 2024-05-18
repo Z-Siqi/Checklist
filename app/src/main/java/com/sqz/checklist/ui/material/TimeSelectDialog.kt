@@ -8,6 +8,7 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.util.Log
 import android.view.SoundEffectConstants
+import android.view.View
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -223,15 +224,20 @@ fun TimeSelectDialog(
     )
     if (datePickDialog) {
         DatePickDialog(
-            onDismissRequest = { datePickDialog = false },
+            onDismissRequest = {
+                datePickDialog = false
+                view.playSoundEffect(SoundEffectConstants.CLICK)
+            },
             onConfirm = {
                 isDatePick = true
                 datePickDialog = false
+                view.playSoundEffect(SoundEffectConstants.CLICK)
             },
             selectedDate = {
                 rememberDays = it
             },
-            context = context
+            context = context,
+            view = view
         )
     }
     if (isDatePick && rememberDays > 0) {
@@ -248,6 +254,7 @@ private fun DatePickDialog(
     onConfirm: () -> Unit,
     selectedDate: (day: Int) -> Unit,
     context: Context,
+    view: View,
     modifier: Modifier = Modifier
 ) {
     var invalid by rememberSaveable { mutableStateOf(false) }
@@ -300,6 +307,7 @@ private fun DatePickDialog(
                     selectedDate((day))
                 } else selectedDate((day))
             }
+            view.playSoundEffect(SoundEffectConstants.CLICK)
         }
         if (dialog) {
             WarningAlertDialog(
@@ -390,6 +398,6 @@ private fun TimePreview() {
 private fun DatePreview() {
     DatePickDialog(
         onDismissRequest = {}, onConfirm = {}, selectedDate = {},
-        context = LocalContext.current
+        context = LocalContext.current, LocalView.current
     )
 }
