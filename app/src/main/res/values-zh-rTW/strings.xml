@@ -17,6 +17,7 @@
     <string name="time_format">"EE, MMM dd 日"</string>
     <string name="top_bar_date">MMMM dd 日</string>
     <string name="more_options">更多選項</string>
+    <string name="scroll_to_end">捲動\n捲動至末尾</string>
 
     <!-- TaskLayout -->
     <string name="task_date_format">yyyy 年 MMM dd 日</string>
@@ -50,6 +51,6 @@
     <string name="remind_at">將在 %1$s 之後提醒</string>
     <string name="nothing_need_do">你現在無事可做! \n點擊 \'添加\' 為你的生活添加壓力 lol</string>
     <string name="setting_remind_warning">不推薦設置時間太久的提醒, 而且你不應該放你計劃如此之久的鴿子。 還有就是這可能遇上潛在的問題（幹，要是真有問題還得我修） \n\n點擊確認以繼續摸魚</string>
-    <string name="cannot_set_past">提醒讓過去的你避開問題是不可能的! lol</string>
+    <string name="cannot_set_past">提醒讓過去的你避開麻煩是不可能的! lol</string>
 
 </resources>

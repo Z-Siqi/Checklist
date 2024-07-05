@@ -1,8 +1,5 @@
 package com.sqz.checklist.ui.main.task.history
 
-import android.os.Build
-import android.os.VibrationEffect
-import android.os.Vibrator
 import android.view.SoundEffectConstants
 import android.view.View
 import androidx.compose.animation.animateContentSize
@@ -33,16 +30,12 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedCard
-import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TooltipBox
-import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -53,7 +46,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -62,13 +54,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sqz.checklist.MainActivity
 import com.sqz.checklist.R
 import com.sqz.checklist.database.Task
 import com.sqz.checklist.ui.material.WarningAlertDialog
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
+import com.sqz.checklist.ui.material.TextTooltipBox
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -78,8 +70,8 @@ import java.util.Locale
 @Composable
 fun TaskHistory(
     navBack: () -> Unit,
-    taskState: TaskLayoutViewModel = viewModel(),
     modifier: Modifier = Modifier,
+    taskState: TaskLayoutViewModel = viewModel(),
     item: List<Task> = taskState.loadTaskHistoryData(MainActivity.taskDatabase.taskDao())
 ) {
     val view = LocalView.current
@@ -90,7 +82,7 @@ fun TaskHistory(
             HistoryTopBar(onClick = {
                 navBack()
                 view.playSoundEffect(SoundEffectConstants.CLICK)
-            }, view)
+            })
         },
         bottomBar = {
             HistoryNavBar(
@@ -170,7 +162,6 @@ fun TaskHistory(
 @Composable
 private fun HistoryTopBar(
     onClick: () -> Unit,
-    view: View,
     modifier: Modifier = Modifier
 ) {
     TopAppBar(
@@ -181,24 +172,9 @@ private fun HistoryTopBar(
         title = { Text(text = stringResource(R.string.task_history)) },
         modifier = modifier,
         navigationIcon = {
-            TooltipBox(
-                positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
-                tooltip = {
-                    PlainTooltip(modifier = modifier.padding(top = 25.dp, bottom = 20.dp)) {
-                        Text(stringResource(R.string.back))
-                        val context = LocalContext.current
-                        LaunchedEffect(true) {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                                ContextCompat.getSystemService(
-                                    context, Vibrator::class.java
-                                )?.vibrate(
-                                    VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK)
-                                )
-                            } else view.playSoundEffect(SoundEffectConstants.CLICK)
-                        }
-                    }
-                },
-                state = rememberTooltipState()
+            TextTooltipBox(
+                textRid = R.string.back,
+                topLeftExtraPadding = true
             ) {
                 IconButton(onClick = { onClick() }) {
                     Icon(
@@ -215,9 +191,9 @@ private fun HistoryTopBar(
 private fun HistoryNavBar(
     deleteAllView: () -> Unit,
     redoAllView: () -> Unit,
+    modifier: Modifier = Modifier,
     taskState: TaskLayoutViewModel = viewModel(),
-    view: View,
-    modifier: Modifier = Modifier
+    view: View
 ) {
     val coroutineScope = rememberCoroutineScope()
     NavigationBar(
@@ -286,9 +262,9 @@ private fun ItemBox(
     description: String,
     createDate: LocalDate,
     hide: Boolean,
+    modifier: Modifier = Modifier,
     taskState: TaskLayoutViewModel = viewModel(),
-    view: View,
-    modifier: Modifier = Modifier
+    view: View
 ) {
     val border = if (taskState.selectedId == id) {
         BorderStroke(3.dp, MaterialTheme.colorScheme.tertiary)

@@ -15,6 +15,9 @@ interface TaskDao {
     @Query("SELECT * FROM task WHERE isHistory = 1 ORDER BY isHistoryId")
     suspend fun getAllOrderByIsHistoryId(): List<Task>
 
+    @Query("SELECT * FROM task WHERE isHistory = 0 AND reminder != ''")
+    suspend fun getIsRemindedList(): List<Task>
+
 
     /* Get Value Actions */
     @Query("SELECT reminder FROM task WHERE id = :id")
@@ -72,4 +75,7 @@ interface TaskDao {
 
     @Query("DELETE FROM task WHERE isHistory = 1")
     suspend fun deleteAllHistory()
+
+    @Query("UPDATE task SET reminder = '' WHERE id = :id")
+    suspend fun deleteReminder(id: Int)
 }

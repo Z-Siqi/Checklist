@@ -36,8 +36,8 @@ internal fun ItemBox(
     pinOnClick: () -> Unit,
     tooltipRemindText: String?,
     state: SwipeToDismissBoxState,
-    horizontalEdge: Int = 14,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    horizontalEdge: Int = 14
 ) { // Swipe-able card UI
     val bgStartEnd = horizontalEdge.dp
     val startEnd = bgStartEnd - 2.dp

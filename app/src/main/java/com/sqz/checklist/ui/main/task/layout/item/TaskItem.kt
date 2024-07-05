@@ -59,17 +59,14 @@ import java.util.UUID
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskItem(
-    id: Int,
-    description: String,
-    createDate: LocalDate,
+    taskData: TaskData,
     reminderCardClick: (id: Int) -> Unit,
     setReminderClick: (id: Int) -> Unit,
-    reminder: String?,
     isPin: Boolean,
     context: Context,
     itemState: SwipeToDismissBoxState,
-    pinnedTask: Boolean = false,
     modifier: Modifier = Modifier,
+    pinnedTask: Boolean = false,
     taskState: TaskLayoutViewModel = viewModel()
 ) { // Process card action
     val dismissInEndToStart = itemState.currentValue == SwipeToDismissBoxValue.EndToStart
@@ -79,11 +76,11 @@ fun TaskItem(
         var isDismissedId by rememberSaveable { mutableIntStateOf(0) }
         LaunchedEffect(true) { isDismissedId++ }
         if (isDismissedId < 1) {
-            taskState.deleteTaskToHistory(id)
+            taskState.deleteTaskToHistory(taskData.id)
             taskState.checkTaskAction = true
-            taskState.undoActionId = id
+            taskState.undoActionId = taskData.id
         }
-        if (!taskState.getIsHistory(id)) LaunchedEffect(true) {
+        if (!taskState.getIsHistory(taskData.id)) LaunchedEffect(true) {
             itemState.reset()
         }
     } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -107,29 +104,32 @@ fun TaskItem(
             stringResource(R.string.task_date_format),
             Locale.getDefault()
         )
-        val reminderState = reminderState(id, context, reminder)
+        val reminderState = reminderState(taskData.id, context, taskData.reminder)
         ItemBox(
-            description = description,
-            createDate = stringResource(R.string.task_creation_time, createDate.format(formatter)),
+            description = taskData.description,
+            createDate = stringResource(
+                R.string.task_creation_time,
+                taskData.createDate.format(formatter)
+            ),
             reminderOnClick = {
                 if (reminderState) {
-                    reminderCardClick(id)
+                    reminderCardClick(taskData.id)
                 } else {
-                    setReminderClick(id)
+                    setReminderClick(taskData.id)
                 }
             },
             editOnClick = { taskEditCard = true },
             timerIconState = reminderState,
             pinOnClick = {
                 if (isPin) {
-                    taskState.pinState(id = id, set = 0)
+                    taskState.pinState(id = taskData.id, set = 0)
                 } else {
-                    taskState.pinState(id = id, set = 1)
+                    taskState.pinState(id = taskData.id, set = 1)
                 }
             },
             pinIconState = isPin,
             tooltipRemindText = if (reminderState) {
-                reminderTooltipText(id)
+                reminderTooltipText(taskData.id)
             } else null,
             state = itemState,
             horizontalEdge = if (pinnedTask) 10 else 14
@@ -138,14 +138,14 @@ fun TaskItem(
         if (taskEditCard) {
             LaunchedEffect(true) {
                 textState.clearText()
-                textState.edit { insert(0, description) }
+                textState.edit { insert(0, taskData.description) }
             }
             val noChangeDoNothing = stringResource(R.string.no_change_do_nothing)
             TaskChangeContentCard(
                 onDismissRequest = { taskEditCard = false },
                 confirm = {
                     if (textState.text.toString() != "") {
-                        taskState.editTask(id = id, edit = textState.text.toString())
+                        taskState.editTask(id = taskData.id, edit = textState.text.toString())
                         taskEditCard = false
                     } else {
                         Toast.makeText(context, noChangeDoNothing, Toast.LENGTH_SHORT).show()
@@ -158,7 +158,7 @@ fun TaskItem(
             )
         } else LaunchedEffect(true) {
             textState.clearText()
-            textState.edit { insert(0, description) }
+            textState.edit { insert(0, taskData.description) }
         }
     }
 }
@@ -269,8 +269,8 @@ private fun Preview() {
         positionalThreshold = { screenWidthPx * 0.38f },
     )
     TaskItem(
-        id = 0, description = "The quick brown fox jumps over the lazy dog.", isPin = false,
-        createDate = LocalDate.now(), reminderCardClick = {}, setReminderClick = {}, reminder = "",
+        TaskData(0, "The quick brown fox jumps over the lazy dog.", LocalDate.now(), ""),
+        isPin = false, reminderCardClick = {}, setReminderClick = {},
         context = LocalContext.current, itemState = state
     )
 }

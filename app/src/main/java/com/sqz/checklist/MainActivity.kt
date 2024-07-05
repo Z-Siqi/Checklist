@@ -34,7 +34,10 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    MainLayout()
+                    MainLayout(
+                        context = applicationContext,
+                        view = window.decorView
+                    )
                 }
             }
         }

@@ -106,6 +106,30 @@ class TaskLayoutViewModel : ViewModel() {
         return taskData
     }
 
+    // Reminded task
+    private var isRemindedData by mutableStateOf(listOf<Task>())
+    fun remindedState(load: Boolean = false): List<Task> {
+        viewModelScope.launch {
+            if (load) {
+                isRemindedData = MainActivity.taskDatabase.taskDao().getIsRemindedList()
+            } else {
+                for (data in isRemindedData) {
+                    data.reminder?.let {
+                        val parts = it.split(":")
+                        if (parts.size >= 2) {
+                            parts[0]
+                            val time = parts[1].toLong()
+                            if (time < System.currentTimeMillis() - 43200000) {
+                                MainActivity.taskDatabase.taskDao().deleteReminder(data.id)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return isRemindedData
+    }
+
     // Set task pin
     private var isPinTaskData by mutableStateOf(listOf<Task>())
     fun pinState(id: Int = 0, set: Int = 0, load: Boolean = false): List<Task> {

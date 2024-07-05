@@ -1,8 +1,6 @@
 package com.sqz.checklist.ui
 
-import android.os.Build
-import android.os.VibrationEffect
-import android.os.Vibrator
+import android.content.Context
 import android.view.SoundEffectConstants
 import android.view.View
 import androidx.compose.animation.AnimatedVisibility
@@ -20,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.CaretScope
 import androidx.compose.material3.DividerDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -29,26 +28,23 @@ import androidx.compose.material3.MediumTopAppBar
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
-import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
+import androidx.compose.material3.TooltipState
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.TopAppBarState
 import androidx.compose.material3.VerticalDivider
-import androidx.compose.material3.rememberTooltipState
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -56,7 +52,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -64,6 +59,7 @@ import androidx.navigation.compose.rememberNavController
 import com.sqz.checklist.R
 import com.sqz.checklist.ui.main.task.history.TaskHistory
 import com.sqz.checklist.ui.main.task.layout.TaskLayout
+import com.sqz.checklist.ui.material.TextTooltipBox
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -75,7 +71,7 @@ enum class MainLayoutNav {
 
 /** Top level of MainLayout **/
 @Composable
-fun MainLayout() {
+fun MainLayout(context: Context, view: View) {
     val navController = rememberNavController()
     NavHost(
         navController = navController,
@@ -84,7 +80,7 @@ fun MainLayout() {
         composable(MainLayoutNav.TaskLayout.name) {
             TaskLayout(toTaskHistory = {
                 navController.navigate(MainLayoutNav.TaskHistory.name)
-            })
+            }, context = context, view = view)
         }
         composable(MainLayoutNav.TaskHistory.name) {
             val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -99,10 +95,13 @@ fun MainLayout() {
 }
 
 /** MainLayout NavigationBar **/
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NavBar(
     icon: @Composable () -> Unit,
     label: @Composable () -> Unit,
+    tooltipContent: @Composable (CaretScope.() -> Unit),
+    tooltipState: TooltipState,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -145,13 +144,21 @@ fun NavBar(
                 MaterialTheme.colorScheme.onSurface
             } else DividerDefaults.color
         )
-        NavigationBarItem(
-            colors = NavigationBarItemDefaults.colors(MaterialTheme.colorScheme.primary),
-            icon = icon,
-            label = label,
-            selected = false,
-            onClick = onClick
-        )
+        Row(modifier = modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+            TooltipBox(
+                positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+                tooltip = tooltipContent,
+                state = tooltipState
+            ) {
+                NavigationBarItem(
+                    colors = NavigationBarItemDefaults.colors(MaterialTheme.colorScheme.primary),
+                    icon = icon,
+                    label = label,
+                    selected = false,
+                    onClick = onClick
+                )
+            }
+        }
     }
 }
 
@@ -213,24 +220,9 @@ fun TopBar(
             }
         },
         actions = {
-            TooltipBox(
-                positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
-                tooltip = {
-                    PlainTooltip(modifier = modifier.padding(top = 25.dp,end = 20.dp)) {
-                        Text(stringResource(R.string.more_options))
-                        val context = LocalContext.current
-                        LaunchedEffect(true) {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                                ContextCompat.getSystemService(
-                                    context, Vibrator::class.java
-                                )?.vibrate(
-                                    VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK)
-                                )
-                            } else view.playSoundEffect(SoundEffectConstants.CLICK)
-                        }
-                    }
-                },
-                state = rememberTooltipState()
+            TextTooltipBox(
+                textRid = R.string.more_options,
+                topRightExtraPadding = true
             ) {
                 IconButton(onClick = {
                     onClick()
@@ -287,6 +279,8 @@ private fun Preview() {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     Scaffold(
         topBar = { TopBar(scrollBehavior, rememberTopAppBarState(), {}, LocalView.current) },
-        bottomBar = { NavBar({ Icon(Icons.Filled.AddCircle, "") }, { Text("Add") }, {}) }
+        bottomBar = {
+            NavBar({ Icon(Icons.Filled.AddCircle, "") }, { Text("Add") }, {}, TooltipState(), {})
+        }
     ) { Modifier.padding(it) }
 }

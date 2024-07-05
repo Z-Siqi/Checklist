@@ -37,6 +37,7 @@ internal fun CheckUndoAction(
 
     var undoButton by rememberSaveable { mutableStateOf(false) }
     var rememberScroll by rememberSaveable { mutableIntStateOf(0) }
+    var rememberScrollIndex by rememberSaveable { mutableIntStateOf(0) }
     var rememberTime by rememberSaveable { mutableIntStateOf(0) }
 
     fun undoTimeout() {
@@ -47,21 +48,20 @@ internal fun CheckUndoAction(
 
     LaunchedEffect(true) {
         delay(50)
-        rememberScroll = lazyState.firstVisibleItemIndex
+        rememberScroll = lazyState.firstVisibleItemScrollOffset
+        rememberScrollIndex = lazyState.firstVisibleItemIndex
         undoButton = true
         delay(1500)
-        if (rememberScroll != lazyState.firstVisibleItemIndex) {
-            undoTimeout()
-        } else {
-            while (rememberTime < 5) {
-                delay(500)
-                if (rememberScroll != lazyState.firstVisibleItemIndex) {
-                    undoTimeout()
-                }
-                rememberTime++
+        val isTimeout = rememberScroll > lazyState.firstVisibleItemScrollOffset + 10 ||
+                rememberScroll < lazyState.firstVisibleItemScrollOffset - 10
+        while (rememberTime < 7) {
+            delay(500)
+            if (rememberScrollIndex != lazyState.firstVisibleItemIndex || isTimeout) {
+                undoTimeout()
             }
-            undoTimeout()
+            rememberTime++
         }
+        undoTimeout()
     }
     if (undoButton) UndoButton(onClick = {
         taskState.undoTaskAction = true
