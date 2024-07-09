@@ -111,7 +111,18 @@ class TaskLayoutViewModel : ViewModel() {
     fun remindedState(load: Boolean = false): List<Task> {
         viewModelScope.launch {
             if (load) {
-                isRemindedData = MainActivity.taskDatabase.taskDao().getIsRemindedList()
+                for (data in MainActivity.taskDatabase.taskDao().getIsRemindedList()) {
+                    data.reminder?.let {
+                        val parts = it.split(":")
+                        if (parts.size >= 2) {
+                            parts[0]
+                            val time = parts[1].toLong()
+                            if (time < System.currentTimeMillis() && !isRemindedData.contains(data)) {
+                                isRemindedData += data
+                            }
+                        }
+                    }
+                }
             } else {
                 for (data in isRemindedData) {
                     data.reminder?.let {
