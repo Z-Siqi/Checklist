@@ -162,7 +162,7 @@ fun TaskLayout(
             } else LaunchedEffect(true) { // processing after checked
                 delay(100)
                 taskState.autoDeleteHistoryTask(5)
-                taskState.remindedState() // delete reminder info which 12h ago
+                taskState.remindedState(autoDel = true) // delete reminder info which 12h ago
             }
             // cancel set reminder when checked
             if (taskState.cancelReminderAction) {
@@ -297,8 +297,7 @@ private fun LazyList(
             item {
                 val remindedHeight = (35 + (120 * isRemindedItem.size)).dp
                 val animatedRemindedHeight by animateDpAsState(
-                    targetValue = remindedHeight,
-                    label = "Reminded Height"
+                    targetValue = remindedHeight, label = "Reminded Height"
                 )
                 Spacer(modifier = modifier.height(10.dp))
                 OutlinedCard(
@@ -309,7 +308,7 @@ private fun LazyList(
                     colors = CardDefaults.cardColors(MaterialTheme.colorScheme.tertiaryContainer)
                 ) {
                     Text(
-                        text = "The task just reminded",
+                        text = stringResource(R.string.just_reminded),
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.tertiary,
@@ -318,9 +317,7 @@ private fun LazyList(
                     LazyColumn {
                         items(isRemindedItem, key = { it.id }) {
                             val state = rememberSwipeToDismissBoxState(
-                                positionalThreshold = {
-                                    screenWidthPx * 0.35f
-                                },
+                                positionalThreshold = { screenWidthPx * 0.35f },
                             )
                             TaskItem(
                                 taskData = TaskData(
@@ -329,7 +326,7 @@ private fun LazyList(
                                 reminderCardClick = { id -> reminderCard(id) },
                                 setReminderClick = { id -> setReminder(id) },
                                 isPin = it.isPin, context = context, itemState = state,
-                                pinnedTask = true
+                                mode = ItemMode.RemindedTask
                             )
                         }
                     }
@@ -340,8 +337,7 @@ private fun LazyList(
             item {
                 val pinnedHeight = (35 + (120 * pinnedItem.size)).dp
                 val animatedPinnedHeight by animateDpAsState(
-                    targetValue = pinnedHeight,
-                    label = "Pinned Height"
+                    targetValue = pinnedHeight, label = "Pinned Height"
                 )
                 Spacer(modifier = modifier.height(10.dp))
                 OutlinedCard(
@@ -361,9 +357,7 @@ private fun LazyList(
                     LazyColumn {
                         items(pinnedItem, key = { it.id }) {
                             val state = rememberSwipeToDismissBoxState(
-                                positionalThreshold = {
-                                    screenWidthPx * 0.35f
-                                },
+                                positionalThreshold = { screenWidthPx * 0.35f },
                             )
                             TaskItem(
                                 taskData = TaskData(
@@ -372,7 +366,7 @@ private fun LazyList(
                                 reminderCardClick = { id -> reminderCard(id) },
                                 setReminderClick = { id -> setReminder(id) },
                                 isPin = it.isPin, context = context, itemState = state,
-                                pinnedTask = true
+                                mode = ItemMode.PinnedTask
                             )
                         }
                     }
@@ -382,15 +376,14 @@ private fun LazyList(
         item { Spacer(modifier = modifier.height(20.dp)) }
         items(item, key = { it.id }) {
             val state = rememberSwipeToDismissBoxState(
-                positionalThreshold = {
-                    screenWidthPx * 0.35f
-                },
+                positionalThreshold = { screenWidthPx * 0.35f },
             )
             TaskItem(
                 taskData = TaskData(it.id, it.description, it.createDate, it.reminder),
                 reminderCardClick = { id -> reminderCard(id) },
                 setReminderClick = { id -> setReminder(id) },
-                isPin = it.isPin, context = context, itemState = state
+                isPin = it.isPin, context = context, itemState = state,
+                mode = ItemMode.NormalTask
             )
             undoTask(state)
         }

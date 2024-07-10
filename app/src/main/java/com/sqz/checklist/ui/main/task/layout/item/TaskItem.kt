@@ -50,6 +50,7 @@ import com.sqz.checklist.MainActivity
 import com.sqz.checklist.R
 import com.sqz.checklist.ui.material.TaskChangeContentCard
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
+import com.sqz.checklist.ui.main.task.layout.ItemMode
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -65,8 +66,8 @@ fun TaskItem(
     isPin: Boolean,
     context: Context,
     itemState: SwipeToDismissBoxState,
+    mode: ItemMode,
     modifier: Modifier = Modifier,
-    pinnedTask: Boolean = false,
     taskState: TaskLayoutViewModel = viewModel()
 ) { // Process card action
     val dismissInEndToStart = itemState.currentValue == SwipeToDismissBoxValue.EndToStart
@@ -104,13 +105,14 @@ fun TaskItem(
             stringResource(R.string.task_date_format),
             Locale.getDefault()
         )
-        val reminderState = reminderState(taskData.id, context, taskData.reminder)
+        val reminderState = reminderState(taskData.id, context, taskData.reminder, taskState)
         ItemBox(
             description = taskData.description,
-            createDate = stringResource(
-                R.string.task_creation_time,
-                taskData.createDate.format(formatter)
-            ),
+            dateText = if (mode == ItemMode.RemindedTask) {
+                stringResource(R.string.task_reminded_time, reminderTimeText(taskData.id))
+            } else {
+                stringResource(R.string.task_creation_time, taskData.createDate.format(formatter))
+            },
             reminderOnClick = {
                 if (reminderState) {
                     reminderCardClick(taskData.id)
@@ -120,19 +122,24 @@ fun TaskItem(
             },
             editOnClick = { taskEditCard = true },
             timerIconState = reminderState,
-            pinOnClick = {
-                if (isPin) {
-                    taskState.pinState(id = taskData.id, set = 0)
+            topRightIconOnClick = {
+                if (mode == ItemMode.RemindedTask) {
+                    taskState.remindedState(id = taskData.id)
                 } else {
-                    taskState.pinState(id = taskData.id, set = 1)
+                    if (isPin) {
+                        taskState.pinState(id = taskData.id, set = 0)
+                    } else {
+                        taskState.pinState(id = taskData.id, set = 1)
+                    }
                 }
             },
             pinIconState = isPin,
             tooltipRemindText = if (reminderState) {
-                reminderTooltipText(taskData.id)
+                reminderTimeText(taskData.id)
             } else null,
             state = itemState,
-            horizontalEdge = if (pinnedTask) 10 else 14
+            horizontalEdge = if (mode == ItemMode.PinnedTask) 10 else 14,
+            mode = mode
         )
         val textState = rememberTextFieldState()
         if (taskEditCard) {
@@ -163,8 +170,9 @@ fun TaskItem(
     }
 }
 
+/** The text of reminder time **/
 @Composable
-private fun reminderTooltipText(id: Int): String {
+private fun reminderTimeText(id: Int): String {
     var remindTime by remember { mutableLongStateOf(0) }
     LaunchedEffect(true) {
         val uuidAndTime = MainActivity.taskDatabase.taskDao().getReminderInfo(id)
@@ -181,7 +189,7 @@ private fun reminderTooltipText(id: Int): String {
     val formatter = remember {
         SimpleDateFormat(fullDateShort, Locale.getDefault())
     }
-    return formatter.format(remindTime)
+    return if (remindTime <= 1000L) "" else formatter.format(remindTime)
 }
 
 @RequiresApi(Build.VERSION_CODES.Q)
@@ -215,7 +223,8 @@ private fun Vibrate(
 private fun reminderState( // check the reminder is set or not
     id: Int,
     context: Context,
-    reminder: String?
+    reminder: String?,
+    taskState: TaskLayoutViewModel = viewModel()
 ): Boolean {
     var rememberState by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(reminder) {
@@ -232,6 +241,12 @@ private fun reminderState( // check the reminder is set or not
                             rememberState = !(workInfo != null && workInfo.state.isFinished)
                         }
                 } else {
+                    taskState.refreshList(
+                        noHistoryTask = true,
+                        noPinTask = true,
+                        noRemindedTask = false,
+                        noNormalTask = true
+                    )
                     rememberState = false
                 }
             } else {
@@ -271,6 +286,6 @@ private fun Preview() {
     TaskItem(
         TaskData(0, "The quick brown fox jumps over the lazy dog.", LocalDate.now(), ""),
         isPin = false, reminderCardClick = {}, setReminderClick = {},
-        context = LocalContext.current, itemState = state
+        context = LocalContext.current, itemState = state, mode = ItemMode.NormalTask
     )
 }

@@ -51,27 +51,31 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.sqz.checklist.R
+import com.sqz.checklist.ui.main.task.layout.ItemMode
 import com.sqz.checklist.ui.material.InfoAlertDialog
 
 @Composable
 internal fun ItemContent(
     description: String,
     createDate: String,
-    descriptionBgColor: CardColors = CardDefaults.cardColors(Color.Transparent),
     reminderOnClick: () -> Unit,
     editOnClick: () -> Unit,
     timerIconState: Boolean,
-    pinOnClick: () -> Unit,
-    pinIconState: Boolean,
+    topRightIconOnClick: () -> Unit,
+    topRightIconState: Boolean,
+    mode: ItemMode,
+    modifier: Modifier = Modifier,
+    descriptionBgColor: CardColors = CardDefaults.cardColors(Color.Transparent),
     tooltipRemindText: String?,
-    modifier: Modifier = Modifier
 ) { // The card details UI
     val view = LocalView.current
     Column {
         ContentTop(
-            description = description, pinOnClick = pinOnClick,
-            pinIcon = if (pinIconState) R.drawable.pinned else R.drawable.pin,
-            cardColors = descriptionBgColor,
+            description = description, topRightIconOnClick = topRightIconOnClick,
+            topRightIcon = if (mode == ItemMode.RemindedTask) R.drawable.close else {
+                if (topRightIconState) R.drawable.pinned else R.drawable.pin
+            },
+            cardColors = descriptionBgColor, mode = mode,
             view = view
         )
         Spacer(modifier = modifier.weight(1f))
@@ -87,9 +91,10 @@ internal fun ItemContent(
 @Composable
 private fun ContentTop(
     description: String,
-    pinOnClick: () -> Unit,
-    pinIcon: Int,
+    topRightIconOnClick: () -> Unit,
+    topRightIcon: Int,
     cardColors: CardColors,
+    mode: ItemMode,
     view: View,
     modifier: Modifier = Modifier
 ) {
@@ -127,16 +132,20 @@ private fun ContentTop(
             }
         }
         Spacer(modifier = modifier.weight(1f))
-        Tooltip(tooltipText = stringResource(R.string.pin), view = view) {
+        val isModeRemindedTask = mode == ItemMode.RemindedTask
+        Tooltip(
+            tooltipText = stringResource(if (isModeRemindedTask) R.string.cancel_highlight else R.string.pin),
+            view = view
+        ) {
             IconButton(
-                modifier = modifier.rotate(40f),
+                modifier = if (isModeRemindedTask) modifier else modifier.rotate(40f),
                 onClick = {
-                    pinOnClick()
+                    topRightIconOnClick()
                     view.playSoundEffect(SoundEffectConstants.CLICK)
                 }
             ) {
                 Icon(
-                    painter = painterResource(pinIcon),
+                    painter = painterResource(topRightIcon),
                     contentDescription = stringResource(R.string.pin)
                 )
             }
@@ -160,6 +169,7 @@ private fun ContentBottom(
             fontWeight = FontWeight.Bold,
             fontSize = 12.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            lineHeight = 14.sp,
             modifier = modifier.padding(start = 2.dp)
         )
         Spacer(
@@ -235,8 +245,8 @@ private fun Preview() {
         ItemContent(
             description = "description", createDate = "createDate",
             reminderOnClick = {}, editOnClick = {},
-            timerIconState = false, pinOnClick = {},
-            tooltipRemindText = null, pinIconState = false
+            timerIconState = false, topRightIconOnClick = {},
+            tooltipRemindText = null, topRightIconState = false, mode = ItemMode.NormalTask
         )
     }
 }

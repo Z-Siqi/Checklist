@@ -23,19 +23,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.sqz.checklist.ui.main.task.layout.ItemMode
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun ItemBox(
     description: String,
-    createDate: String,
+    dateText: String,
     reminderOnClick: () -> Unit,
     editOnClick: () -> Unit,
     timerIconState: Boolean,
     pinIconState: Boolean,
-    pinOnClick: () -> Unit,
+    topRightIconOnClick: () -> Unit,
     tooltipRemindText: String?,
     state: SwipeToDismissBoxState,
+    mode: ItemMode,
     modifier: Modifier = Modifier,
     horizontalEdge: Int = 14
 ) { // Swipe-able card UI
@@ -79,12 +81,12 @@ internal fun ItemBox(
                 modifier = modifier.padding(bottom = 8.dp, top = 5.dp, start = 12.dp, end = 11.dp)
             ) {
                 ItemContent(
-                    description = description, createDate = createDate,
+                    description = description, createDate = dateText,
                     descriptionBgColor = cardBackgoundColor(),
                     reminderOnClick = reminderOnClick, editOnClick = editOnClick,
-                    timerIconState = timerIconState, pinIconState = pinIconState,
-                    pinOnClick = pinOnClick,
-                    tooltipRemindText = tooltipRemindText
+                    timerIconState = timerIconState, topRightIconState = pinIconState,
+                    topRightIconOnClick = topRightIconOnClick,
+                    tooltipRemindText = tooltipRemindText, mode = mode
                 )
             }
         }
@@ -105,14 +107,15 @@ private fun Preview() {
     Box(modifier = Modifier.size(500.dp, 120.dp)) {
         ItemBox(
             description = "description",
-            createDate = "createDate",
+            dateText = "createDate",
             reminderOnClick = {},
             editOnClick = {},
             timerIconState = false,
-            pinOnClick = {},
+            topRightIconOnClick = {},
             pinIconState = false,
             tooltipRemindText = null,
-            state = rememberSwipeToDismissBoxState()
+            state = rememberSwipeToDismissBoxState(),
+            mode = ItemMode.NormalTask
         )
     }
 }

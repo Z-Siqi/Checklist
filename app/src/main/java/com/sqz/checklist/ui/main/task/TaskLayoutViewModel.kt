@@ -55,7 +55,7 @@ class TaskLayoutViewModel : ViewModel() {
             val remindTime = now.timeInMillis + delayDuration
             val merge = "$uuid:$remindTime"
             MainActivity.taskDatabase.taskDao().insertReminder(id = id, string = merge)
-            taskData = MainActivity.taskDatabase.taskDao().getAll(withoutHistory = 1)
+            refreshList(true)
         }
     }
 
@@ -78,6 +78,8 @@ class TaskLayoutViewModel : ViewModel() {
                 Context.NOTIFICATION_SERVICE
             ) as NotificationManager
             notificationManager.cancel(id)
+            // Delete reminder info
+            MainActivity.taskDatabase.taskDao().deleteReminder(id)
         }
     }
 
@@ -108,7 +110,7 @@ class TaskLayoutViewModel : ViewModel() {
 
     // Reminded task
     private var isRemindedData by mutableStateOf(listOf<Task>())
-    fun remindedState(load: Boolean = false): List<Task> {
+    fun remindedState(id: Int = -1, autoDel: Boolean = false, load: Boolean = false): List<Task> {
         viewModelScope.launch {
             if (load) {
                 for (data in MainActivity.taskDatabase.taskDao().getIsRemindedList()) {
@@ -117,14 +119,24 @@ class TaskLayoutViewModel : ViewModel() {
                         if (parts.size >= 2) {
                             parts[0]
                             val time = parts[1].toLong()
-                            if (time < System.currentTimeMillis() && !isRemindedData.contains(data)) {
-                                isRemindedData += data
+                            if (time < System.currentTimeMillis()) {
+                                if (isRemindedData.any { item -> item.id == data.id }) {
+                                    isRemindedData = isRemindedData.filter { find ->
+                                        find.id != data.id
+                                    }
+                                    isRemindedData += data
+                                } else {
+                                    isRemindedData += data
+                                }
+                            } else isRemindedData = isRemindedData.filter { find ->
+                                find.id != data.id
                             }
                         }
                     }
                 }
             } else {
-                for (data in isRemindedData) {
+                if (id != -1) MainActivity.taskDatabase.taskDao().deleteReminder(id)
+                if (autoDel) for (data in isRemindedData) {
                     data.reminder?.let {
                         val parts = it.split(":")
                         if (parts.size >= 2) {
@@ -136,6 +148,8 @@ class TaskLayoutViewModel : ViewModel() {
                         }
                     }
                 }
+                //isRemindedData = emptyList()
+                isRemindedData = remindedState(load = true)
             }
         }
         return isRemindedData
@@ -149,8 +163,7 @@ class TaskLayoutViewModel : ViewModel() {
                 isPinTaskData = MainActivity.taskDatabase.taskDao().getAll(1, 0)
             } else {
                 MainActivity.taskDatabase.taskDao().editTaskPin(id, set)
-                taskData = MainActivity.taskDatabase.taskDao().getAll(withoutHistory = 1)
-                isPinTaskData = MainActivity.taskDatabase.taskDao().getAll(1, 0)
+                refreshList(true)
             }
         }
         return isPinTaskData
@@ -161,8 +174,7 @@ class TaskLayoutViewModel : ViewModel() {
         viewModelScope.launch {
             val insert = Task(description = description, createDate = LocalDate.now())
             MainActivity.taskDatabase.taskDao().insertAll(insert)
-            taskData = MainActivity.taskDatabase.taskDao().getAll(withoutHistory = 1)
-            isPinTaskData = MainActivity.taskDatabase.taskDao().getAll(1, 0)
+            refreshList(true)
         }
     }
 
@@ -170,8 +182,7 @@ class TaskLayoutViewModel : ViewModel() {
     fun editTask(id: Int, edit: String) {
         viewModelScope.launch {
             MainActivity.taskDatabase.taskDao().editTask(id, edit)
-            taskData = MainActivity.taskDatabase.taskDao().getAll(withoutHistory = 1)
-            isPinTaskData = MainActivity.taskDatabase.taskDao().getAll(1, 0)
+            refreshList(true)
         }
     }
 
@@ -204,8 +215,7 @@ class TaskLayoutViewModel : ViewModel() {
             val maxId = MainActivity.taskDatabase.taskDao().getIsHistoryIdTop()
             MainActivity.taskDatabase.taskDao().setHistoryId((maxId + 1), id)
             // Update to LazyColumn
-            taskData = MainActivity.taskDatabase.taskDao().getAll(withoutHistory = 1)
-            isPinTaskData = MainActivity.taskDatabase.taskDao().getAll(1, 0)
+            refreshList(true)
         }
     }
 
@@ -236,9 +246,7 @@ class TaskLayoutViewModel : ViewModel() {
             undoActionId = -0
             cancelReminderAction = true
             // Update to LazyColumn
-            taskData = MainActivity.taskDatabase.taskDao().getAll(withoutHistory = 1)
-            taskHistoryData = MainActivity.taskDatabase.taskDao().getAllOrderByIsHistoryId()
-            isPinTaskData = MainActivity.taskDatabase.taskDao().getAll(1, 0)
+            refreshList()
         }
     }
 
@@ -248,7 +256,7 @@ class TaskLayoutViewModel : ViewModel() {
             // Actions
             MainActivity.taskDatabase.taskDao().setAllNotHistory()
             // Update to LazyColumn
-            taskHistoryData = MainActivity.taskDatabase.taskDao().getAll(withoutHistory = 0)
+            refreshList(noPinTask = true, noRemindedTask = true, noNormalTask = true)
         }
     }
 
@@ -260,7 +268,7 @@ class TaskLayoutViewModel : ViewModel() {
         )
         arrangeIsHistoryId()
         // Update to LazyColumn
-        taskHistoryData = MainActivity.taskDatabase.taskDao().getAllOrderByIsHistoryId()
+        refreshList(noPinTask = true, noRemindedTask = true, noNormalTask = true)
     }
 
     // Delete all task from history
@@ -269,7 +277,7 @@ class TaskLayoutViewModel : ViewModel() {
             // Actions
             MainActivity.taskDatabase.taskDao().deleteAllHistory()
             // Update to LazyColumn
-            taskHistoryData = MainActivity.taskDatabase.taskDao().getAll(withoutHistory = 0)
+            refreshList(noPinTask = true, noRemindedTask = true, noNormalTask = true)
         }
     }
 
@@ -283,6 +291,23 @@ class TaskLayoutViewModel : ViewModel() {
             for (data in arrangeIdList) {
                 MainActivity.taskDatabase.taskDao().setIsHistoryId(data.isHistoryId, data.id)
             }
+        }
+    }
+
+    /**
+     * Refresh List
+     * **/
+    suspend fun refreshList(
+        noHistoryTask: Boolean = false,
+        noPinTask: Boolean = false,
+        noRemindedTask: Boolean = false,
+        noNormalTask: Boolean = false,
+    ) {
+        if (!noNormalTask) taskData = MainActivity.taskDatabase.taskDao().getAll(withoutHistory = 1)
+        if (!noPinTask) isPinTaskData = MainActivity.taskDatabase.taskDao().getAll(1, 0)
+        if (!noRemindedTask) remindedState()
+        if (!noHistoryTask) {
+            taskHistoryData = MainActivity.taskDatabase.taskDao().getAllOrderByIsHistoryId()
         }
     }
 

@@ -37,6 +37,9 @@
     <string name="select_date">选择日期</string>
     <string name="pick">选择</string>
     <string name="input">输入</string>
+    <string name="just_reminded">刚刚提醒的任务</string>
+    <string name="task_reminded_time">任务已提醒于: %1$s</string>
+    <string name="cancel_highlight">取消此突出显示</string>
 
     <!-- Notification -->
     <string name="task_reminder">任务提醒</string>
