@@ -125,9 +125,7 @@ class TaskLayoutViewModel : ViewModel() {
                                         find.id != data.id
                                     }
                                     isRemindedData += data
-                                } else {
-                                    isRemindedData += data
-                                }
+                                } else isRemindedData += data
                             } else isRemindedData = isRemindedData.filter { find ->
                                 find.id != data.id
                             }
@@ -135,7 +133,10 @@ class TaskLayoutViewModel : ViewModel() {
                     }
                 }
             } else {
-                if (id != -1) MainActivity.taskDatabase.taskDao().deleteReminder(id)
+                if (id != -1) {
+                    MainActivity.taskDatabase.taskDao().deleteReminder(id)
+                    isRemindedData = isRemindedData.filter { it.id != id }
+                }
                 if (autoDel) for (data in isRemindedData) {
                     data.reminder?.let {
                         val parts = it.split(":")
@@ -148,7 +149,6 @@ class TaskLayoutViewModel : ViewModel() {
                         }
                     }
                 }
-                //isRemindedData = emptyList()
                 isRemindedData = remindedState(load = true)
             }
         }
