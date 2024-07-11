@@ -24,10 +24,9 @@ import java.util.concurrent.TimeUnit
 
 class TaskLayoutViewModel : ViewModel() {
     /**
-     * Reminder-related
+     * ----- Reminder-related -----
      * **/
-    var cancelReminderAction by mutableStateOf(false)
-
+    /** Send a delayed notification to user **/
     suspend fun setReminder(
         delayDuration: Long,
         timeUnit: TimeUnit,
@@ -59,9 +58,9 @@ class TaskLayoutViewModel : ViewModel() {
         }
     }
 
-    // Cancel reminder by id
-    fun cancelReminder(id: Int, context: Context) {
-        viewModelScope.launch {
+    /** Cancel reminder by id. If cancelHistory = true, cancel all reminder which in history **/
+    fun cancelReminder(id: Int = -1, context: Context, cancelHistory: Boolean = false) {
+        if (!cancelHistory && id != -1) viewModelScope.launch {
             // Cancel sent notification
             val uuidAndTime = MainActivity.taskDatabase.taskDao().getReminderInfo(id)
             uuidAndTime?.let {
@@ -80,11 +79,7 @@ class TaskLayoutViewModel : ViewModel() {
             notificationManager.cancel(id)
             // Delete reminder info
             MainActivity.taskDatabase.taskDao().deleteReminder(id)
-        }
-    }
-
-    fun cancelHistoryReminder(context: Context) {
-        viewModelScope.launch {
+        } else viewModelScope.launch {
             val allIsHistoryIdList = MainActivity.taskDatabase.taskDao().getAllIsHistoryId()
             for (data in allIsHistoryIdList) {
                 cancelReminder(data.id, context)
@@ -92,14 +87,12 @@ class TaskLayoutViewModel : ViewModel() {
         }
     }
 
-    /**
-     * Task-related
-     * **/
-    var checkTaskAction by mutableStateOf(false)
-    var undoActionId by mutableIntStateOf(-0)
-    var undoTaskAction by mutableStateOf(false)
+    var cancelReminderAction by mutableStateOf(false)
 
-    // Load saved task
+    /**
+     * ----- Task-related -----
+     **/
+    /**  Load saved task  **/
     private var taskData by mutableStateOf(listOf<Task>())
     fun loadTaskData(dao: TaskDao): List<Task> {
         viewModelScope.launch {
@@ -108,12 +101,19 @@ class TaskLayoutViewModel : ViewModel() {
         return taskData
     }
 
-    // Reminded task
+    var checkTaskAction by mutableStateOf(false)
+    var undoActionId by mutableIntStateOf(-0)
+    var undoTaskAction by mutableStateOf(false)
+
+    /** Reminded task **/
     private var isRemindedData by mutableStateOf(listOf<Task>())
+    // List<Task>
+    /** Remind task. Load list if load = true. If load = false, allow autoDel and id (del reminder info) to work **/
     fun remindedState(id: Int = -1, autoDel: Boolean = false, load: Boolean = false): List<Task> {
         viewModelScope.launch {
             if (load) {
-                for (data in MainActivity.taskDatabase.taskDao().getIsRemindedList()) {
+                isRemindedData = MainActivity.taskDatabase.taskDao().getIsRemindedList()
+                for (data in isRemindedData) {
                     data.reminder?.let {
                         val parts = it.split(":")
                         if (parts.size >= 2) {
@@ -133,10 +133,7 @@ class TaskLayoutViewModel : ViewModel() {
                     }
                 }
             } else {
-                if (id != -1) {
-                    MainActivity.taskDatabase.taskDao().deleteReminder(id)
-                    isRemindedData = isRemindedData.filter { it.id != id }
-                }
+                if (id != -1) MainActivity.taskDatabase.taskDao().deleteReminder(id)
                 if (autoDel) for (data in isRemindedData) {
                     data.reminder?.let {
                         val parts = it.split(":")
@@ -155,7 +152,7 @@ class TaskLayoutViewModel : ViewModel() {
         return isRemindedData
     }
 
-    // Set task pin
+    /** Set task pin. Load list if load = true. If load = false, allow set to work **/
     private var isPinTaskData by mutableStateOf(listOf<Task>())
     fun pinState(id: Int = 0, set: Int = 0, load: Boolean = false): List<Task> {
         viewModelScope.launch {
@@ -169,7 +166,7 @@ class TaskLayoutViewModel : ViewModel() {
         return isPinTaskData
     }
 
-    // Insert task to database
+    /**  Insert task to database  **/
     fun insertTask(description: String) {
         viewModelScope.launch {
             val insert = Task(description = description, createDate = LocalDate.now())
@@ -178,7 +175,7 @@ class TaskLayoutViewModel : ViewModel() {
         }
     }
 
-    // Edit task
+    /** Edit task **/
     fun editTask(id: Int, edit: String) {
         viewModelScope.launch {
             MainActivity.taskDatabase.taskDao().editTask(id, edit)
@@ -186,7 +183,7 @@ class TaskLayoutViewModel : ViewModel() {
         }
     }
 
-    // Load history task
+    /** Load history task **/
     private var taskHistoryData by mutableStateOf(listOf<Task>())
     fun loadTaskHistoryData(dao: TaskDao): List<Task> {
         viewModelScope.launch {
@@ -195,7 +192,7 @@ class TaskLayoutViewModel : ViewModel() {
         return taskHistoryData
     }
 
-    // Get Task is History or Not
+    /** Get Task is History or Not **/
     fun getIsHistory(id: Int): Boolean {
         var value by mutableIntStateOf(-1)
         fun getIsHistoryId(id: Int) {
@@ -207,19 +204,27 @@ class TaskLayoutViewModel : ViewModel() {
         return value == 1
     }
 
-    // Delete to History
-    fun deleteTaskToHistory(id: Int) {
-        viewModelScope.launch {
+    /** Delete to history or Undo to history. Must have toHistory or undoToHistory to be @true **/
+    fun changeTaskVisibility(id: Int, toHistory: Boolean = false, undoToHistory: Boolean = false) {
+        if (toHistory) viewModelScope.launch {
             MainActivity.taskDatabase.taskDao().setHistory(1, id)
             // Give an id for history sequence
             val maxId = MainActivity.taskDatabase.taskDao().getIsHistoryIdTop()
             MainActivity.taskDatabase.taskDao().setHistoryId((maxId + 1), id)
             // Update to LazyColumn
             refreshList(true)
+        } else if (undoToHistory) viewModelScope.launch { // Actions
+            MainActivity.taskDatabase.taskDao().setHistory(0, id)
+            MainActivity.taskDatabase.taskDao().setHistoryId(0, id)
+            arrangeIsHistoryId()
+            undoActionId = -0
+            cancelReminderAction = true
+            // Update to LazyColumn
+            refreshList()
         }
     }
 
-    // Auto Delete History Task
+    /** Auto Delete History Task **/
     fun autoDeleteHistoryTask(start: Int) {
         viewModelScope.launch {
             val value = MainActivity.taskDatabase.taskDao().getIsHistorySum()
@@ -236,31 +241,7 @@ class TaskLayoutViewModel : ViewModel() {
         }
     }
 
-    // Undo to History
-    fun undoTaskToHistory(id: Int) {
-        viewModelScope.launch {
-            // Actions
-            MainActivity.taskDatabase.taskDao().setHistory(0, id)
-            MainActivity.taskDatabase.taskDao().setHistoryId(0, id)
-            arrangeIsHistoryId()
-            undoActionId = -0
-            cancelReminderAction = true
-            // Update to LazyColumn
-            refreshList()
-        }
-    }
-
-    // Redo all task from history
-    fun redoAll() {
-        viewModelScope.launch {
-            // Actions
-            MainActivity.taskDatabase.taskDao().setAllNotHistory()
-            // Update to LazyColumn
-            refreshList(noPinTask = true, noRemindedTask = true, noNormalTask = true)
-        }
-    }
-
-    // Delete action
+    /** Delete action **/
     fun deleteTask(id: Int) = viewModelScope.launch {
         // Actions
         MainActivity.taskDatabase.taskDao().delete(
@@ -271,17 +252,20 @@ class TaskLayoutViewModel : ViewModel() {
         refreshList(noPinTask = true, noRemindedTask = true, noNormalTask = true)
     }
 
-    // Delete all task from history
-    fun deleteAll() {
-        viewModelScope.launch {
-            // Actions
+    /** Redo or Delete all task from history. Must have redo or delete to be @true **/
+    fun doAllTask(redo: Boolean = false, delete: Boolean = false) {
+        if (redo) viewModelScope.launch { // Actions
+            MainActivity.taskDatabase.taskDao().setAllNotHistory()
+            // Update to LazyColumn
+            refreshList(noPinTask = true, noRemindedTask = true, noNormalTask = true)
+        } else if (delete) viewModelScope.launch { // Actions
             MainActivity.taskDatabase.taskDao().deleteAllHistory()
             // Update to LazyColumn
             refreshList(noPinTask = true, noRemindedTask = true, noNormalTask = true)
         }
     }
 
-    // Arrange IsHistoryId
+    /** Arrange IsHistoryId **/
     private fun arrangeIsHistoryId() {
         viewModelScope.launch {
             val allIsHistoryIdList = MainActivity.taskDatabase.taskDao().getAllIsHistoryId()
@@ -296,7 +280,7 @@ class TaskLayoutViewModel : ViewModel() {
 
     /**
      * Refresh List
-     * **/
+     **/
     suspend fun refreshList(
         noHistoryTask: Boolean = false,
         noPinTask: Boolean = false,
@@ -312,10 +296,9 @@ class TaskLayoutViewModel : ViewModel() {
     }
 
     /**
-     * Task History select state
-     * **/
-    var selectedId by mutableIntStateOf(-0)
-    var onSelect by mutableStateOf(false)
+     * ----- Task History select state -----
+     **/
+    /** Select task by id **/
     fun selectTask(id: Int) {
         if (!onSelect) {
             selectedId = id
@@ -326,5 +309,7 @@ class TaskLayoutViewModel : ViewModel() {
         } else selectedId = id
     }
 
+    var selectedId by mutableIntStateOf(-0)
+    var onSelect by mutableStateOf(false)
     var hideSelected by mutableStateOf(false)
 }

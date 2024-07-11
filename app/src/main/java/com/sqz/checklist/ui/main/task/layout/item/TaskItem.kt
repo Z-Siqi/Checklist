@@ -50,7 +50,6 @@ import com.sqz.checklist.MainActivity
 import com.sqz.checklist.R
 import com.sqz.checklist.ui.material.TaskChangeContentCard
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
-import com.sqz.checklist.ui.main.task.layout.ItemMode
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -77,7 +76,7 @@ fun TaskItem(
         var isDismissedId by rememberSaveable { mutableIntStateOf(0) }
         LaunchedEffect(true) { isDismissedId++ }
         if (isDismissedId < 1) {
-            taskState.deleteTaskToHistory(taskData.id)
+            taskState.changeTaskVisibility(taskData.id, toHistory = true)
             taskState.checkTaskAction = true
             taskState.undoActionId = taskData.id
         }

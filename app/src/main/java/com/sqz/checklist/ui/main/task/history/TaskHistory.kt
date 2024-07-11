@@ -67,6 +67,9 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
+/**
+ * Task history screen layout.
+ **/
 @Composable
 fun TaskHistory(
     navBack: () -> Unit,
@@ -136,7 +139,7 @@ fun TaskHistory(
                 WarningAlertDialog(
                     onDismissRequest = { deleteAllView = false },
                     onConfirmButtonClick = {
-                        taskState.deleteAll()
+                        taskState.doAllTask(delete = true)
                         deleteAllView = false
                     },
                     onDismissButtonClick = { deleteAllView = false },
@@ -147,7 +150,7 @@ fun TaskHistory(
                 WarningAlertDialog(
                     onDismissRequest = { redoAllView = false },
                     onConfirmButtonClick = {
-                        taskState.redoAll()
+                        taskState.doAllTask(redo = true)
                         redoAllView = false
                     },
                     onDismissButtonClick = { redoAllView = false },
@@ -240,7 +243,7 @@ private fun HistoryNavBar(
                 if (taskState.onSelect) {
                     coroutineScope.launch {
                         taskState.hideSelected = true
-                        taskState.undoTaskToHistory(taskState.selectedId)
+                        taskState.changeTaskVisibility(taskState.selectedId, undoToHistory = true)
                         delay(100)
                         taskState.selectedId = -0
                         taskState.onSelect = false

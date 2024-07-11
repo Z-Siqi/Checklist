@@ -51,7 +51,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.sqz.checklist.R
-import com.sqz.checklist.ui.main.task.layout.ItemMode
 import com.sqz.checklist.ui.material.InfoAlertDialog
 
 @Composable
