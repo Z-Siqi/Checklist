@@ -17,6 +17,7 @@
     <string name="top_bar_date">dd MMMM</string>
     <string name="more_options">more options</string>
     <string name="scroll_to_end">Scroll\nto end</string>
+    <string name="scroll_to_top">Scroll\nto top</string>
 
     <!-- TaskLayout -->
     <string name="task_date_format">dd MMM yyyy</string>

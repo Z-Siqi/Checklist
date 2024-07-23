@@ -17,7 +17,8 @@
     <string name="time_format">"EE, MMM dd 日"</string>
     <string name="top_bar_date">MMMM dd 日</string>
     <string name="more_options">更多選項</string>
-    <string name="scroll_to_end">捲動\n捲動至末尾</string>
+    <string name="scroll_to_end">捲動\n至末尾</string>
+    <string name="scroll_to_top">捲動\n至頂端</string>
 
     <!-- TaskLayout -->
     <string name="task_date_format">yyyy 年 MMM dd 日</string>

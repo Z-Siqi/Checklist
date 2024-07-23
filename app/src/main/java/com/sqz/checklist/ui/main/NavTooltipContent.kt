@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
@@ -39,9 +40,11 @@ import com.sqz.checklist.R
 
 @Composable
 fun NavTooltipContent(
-    onScrollClick: () -> Unit,
+    onScrollDownClick: () -> Unit,
+    onScrollUpClick: () -> Unit,
     view: View,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    scrollUp: Boolean = false
 ) {
     ElevatedCard(
         modifier = modifier.padding(8.dp),
@@ -68,7 +71,7 @@ fun NavTooltipContent(
                     modifier = modifier
                         .fillMaxSize()
                         .clickable {
-                            onScrollClick()
+                            if (!scrollUp) onScrollDownClick() else onScrollUpClick()
                             view.playSoundEffect(SoundEffectConstants.CLICK)
                         }
                         .padding(top = 3.dp),
@@ -76,13 +79,16 @@ fun NavTooltipContent(
                     verticalArrangement = Arrangement.Center,
                 ) {
                     Text(
-                        text = stringResource(R.string.scroll_to_end),
+                        text = stringResource(if (!scrollUp) R.string.scroll_to_end else R.string.scroll_to_top),
                         lineHeight = 14.sp,
                         textAlign = TextAlign.Center
                     )
-                    Icon(
+                    if (!scrollUp) Icon(
                         imageVector = Icons.Filled.KeyboardArrowDown,
                         contentDescription = stringResource(R.string.scroll_to_end)
+                    ) else Icon(
+                        imageVector = Icons.Filled.KeyboardArrowUp,
+                        contentDescription = stringResource(R.string.scroll_to_top)
                     )
                 }
             }
@@ -103,5 +109,5 @@ fun NavTooltipContent(
 @Preview(showBackground = true)
 @Composable
 private fun Preview() {
-    NavTooltipContent({}, LocalView.current)
+    NavTooltipContent({}, {}, LocalView.current)
 }
