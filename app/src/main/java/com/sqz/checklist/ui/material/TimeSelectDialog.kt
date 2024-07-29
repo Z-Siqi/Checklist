@@ -307,7 +307,11 @@ private fun DatePickDialog(
                     selectedDate((day))
                 } else selectedDate((day))
             }
+        }
+        var old by remember { mutableStateOf(datePickerState.selectedDateMillis) }
+        if (old != datePickerState.selectedDateMillis) LaunchedEffect(true) {
             view.playSoundEffect(SoundEffectConstants.CLICK)
+            old = datePickerState.selectedDateMillis
         }
         if (dialog) {
             WarningAlertDialog(

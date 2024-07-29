@@ -1,12 +1,13 @@
 package com.sqz.checklist.ui.material
 
+import android.annotation.SuppressLint
 import android.view.SoundEffectConstants
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
@@ -43,6 +44,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.DialogProperties
 import com.sqz.checklist.R
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -54,9 +56,9 @@ fun TaskChangeContentCard(
     title: String,
     confirmText: String,
     state: TextFieldState,
+    modifier: Modifier = Modifier,
     lineLimits: TextFieldLineLimits = TextFieldLineLimits.Default,
-    doneImeAction: Boolean = false,
-    modifier: Modifier = Modifier
+    doneImeAction: Boolean = false
 ) {
     val view = LocalView.current
     var clearFocus by rememberSaveable { mutableStateOf(false) }
@@ -69,7 +71,9 @@ fun TaskChangeContentCard(
 
     val scrollState = rememberScrollState()
     AlertDialog(
-        modifier = modifier.width((LocalConfiguration.current.screenWidthDp / 1.2).dp),
+        modifier = modifier
+            .sizeIn(maxWidth = 720.dp)
+            .width((LocalConfiguration.current.screenWidthDp / 1.2).dp),
         onDismissRequest = { releaseFocusAndDismiss() },
         confirmButton = {
             TextButton(onClick = {
@@ -98,15 +102,14 @@ fun TaskChangeContentCard(
             )
         },
         text = {
-            val height = if (LocalConfiguration.current.screenHeightDp >= 700) {
-                (LocalConfiguration.current.screenHeightDp / 5.8).toInt()
-            } else {
-                (LocalConfiguration.current.screenHeightDp / 7.0).toInt()
-            }
+            val screenHeightDp = LocalConfiguration.current.screenHeightDp
+            val height = if (screenHeightDp >= 700) {
+                (screenHeightDp / 5.8).toInt()
+            } else if (screenHeightDp < (LocalConfiguration.current.screenWidthDp / 1.2)) {
+                (screenHeightDp / 3.2).toInt()
+            } else (screenHeightDp / 5.1).toInt()
             OutlinedCard(
-                modifier = modifier
-                    .fillMaxWidth()
-                    .height(height.dp)
+                modifier = modifier.fillMaxWidth() then modifier.height(height.dp)
             ) {
                 val focus = LocalFocusManager.current
                 if (clearFocus) LaunchedEffect(true) {
@@ -134,7 +137,8 @@ fun TaskChangeContentCard(
                     lineLimits = lineLimits,
                 )
             }
-        }
+        },
+        properties = DialogProperties(usePlatformDefaultWidth = false)
     )
 }
 
@@ -201,12 +205,20 @@ fun InfoAlertDialog(
     onDismissRequest: () -> Unit,
     title: String? = null,
     text: String,
-    modifier: Modifier = Modifier
+    @SuppressLint("ModifierParameter") modifier: Modifier = Modifier
 ) {
     val view = LocalView.current
     val scrollState = rememberScrollState()
+    val screenHeightDp = LocalConfiguration.current.screenHeightDp
+    val height = if (screenHeightDp >= 700) {
+        (screenHeightDp / 5.8).toInt()
+    } else if (screenHeightDp < (LocalConfiguration.current.screenWidthDp / 1.2)) {
+        (screenHeightDp / 3.2).toInt()
+    } else (screenHeightDp / 5.1).toInt()
     AlertDialog(
-        modifier = modifier.width((LocalConfiguration.current.screenWidthDp / 1.2).dp),
+        modifier = modifier
+            .width((LocalConfiguration.current.screenWidthDp / 1.2).dp)
+            .sizeIn(maxWidth = 560.dp),
         onDismissRequest = onDismissRequest,
         confirmButton = {
             TextButton(onClick = {
@@ -218,9 +230,7 @@ fun InfoAlertDialog(
         },
         text = {
             OutlinedCard(
-                modifier = modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 100.dp)
+                modifier = modifier.fillMaxWidth() then modifier.height(height.dp)
             ) {
                 Column(
                     modifier.padding(8.dp)
@@ -236,7 +246,8 @@ fun InfoAlertDialog(
                 }
             }
         },
-        title = { if (title != null) Text(text = title) }
+        title = { if (title != null) Text(text = title) },
+        properties = DialogProperties(usePlatformDefaultWidth = false)
     )
 }
 
