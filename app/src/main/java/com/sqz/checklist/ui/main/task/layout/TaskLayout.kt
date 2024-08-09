@@ -289,14 +289,18 @@ private fun ReminderAction(
                         }
                     }
                 }
-                Text(text = stringResource(R.string.cancel_the_reminder))
+                Text(
+                    text = stringResource(R.string.cancel_the_reminder),
+                    fontSize = (15 - 1).sp
+                )
                 val fullDateShort = stringResource(R.string.full_date_short)
                 val formatter = remember { SimpleDateFormat(fullDateShort, Locale.getDefault()) }
                 Text(
-                    stringResource(
+                    text = stringResource(
                         R.string.remind_at,
                         formatter.format(remindTime)
-                    )
+                    ),
+                    fontSize = 15.sp
                 )
             }
         )

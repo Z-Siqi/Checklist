@@ -319,9 +319,9 @@ private fun DatePickDialog(
                 onConfirmButtonClick = {
                     dialog = false
                     onConfirm()
-                }) {
-                Text(text = stringResource(R.string.setting_remind_warning))
-            }
+                },
+                textString = stringResource(R.string.setting_remind_warning)
+            )
         }
         Column(
             verticalArrangement = Arrangement.Center,

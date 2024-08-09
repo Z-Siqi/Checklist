@@ -155,7 +155,8 @@ fun WarningAlertDialog(
     onDismissRequest: () -> Unit,
     onConfirmButtonClick: () -> Unit,
     onDismissButtonClick: () -> Unit = onDismissRequest,
-    text: @Composable () -> Unit
+    textString: String = "",
+    text: @Composable () -> Unit = {},
 ) {
     val view = LocalView.current
     AlertDialog(
@@ -184,7 +185,7 @@ fun WarningAlertDialog(
         },
         title = { Text(text = stringResource(R.string.warning)) },
         text = {
-            Column { text() }
+            Column { if (textString == "") text() else Text(text = textString, fontSize = 15.sp) }
         }
     )
 }
@@ -240,7 +241,8 @@ fun InfoAlertDialog(
                     ) {
                         Text(
                             text = text,
-                            fontSize = 18.sp
+                            fontSize = 19.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }

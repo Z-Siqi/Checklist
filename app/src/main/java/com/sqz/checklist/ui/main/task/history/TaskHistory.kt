@@ -143,7 +143,7 @@ fun TaskHistory(
                         deleteAllView = false
                     },
                     onDismissButtonClick = { deleteAllView = false },
-                    text = { Text(stringResource(R.string.delete_all_history)) }
+                    textString = stringResource(R.string.delete_all_history)
                 )
             }
             if (redoAllView) {
@@ -154,7 +154,7 @@ fun TaskHistory(
                         redoAllView = false
                     },
                     onDismissButtonClick = { redoAllView = false },
-                    text = { Text(stringResource(R.string.redo_all_history)) }
+                    textString = stringResource(R.string.redo_all_history)
                 )
             }
         }
