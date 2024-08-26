@@ -35,6 +35,8 @@ import com.sqz.checklist.ui.main.task.layout.item.TaskItem
 /**
  * --- List of task ---
  **/
+const val CardHeight = 120
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LazyList(
@@ -123,7 +125,7 @@ private fun RemindedItem(
     screenWidthPx: Float, context: Context,
     modifier: Modifier = Modifier
 ) {
-    val remindedHeight = (35 + (120 * isRemindedItem.size)).dp
+    val remindedHeight = (39 + (CardHeight * isRemindedItem.size)).dp
     val animatedRemindedHeight by animateDpAsState(
         targetValue = remindedHeight, label = "Reminded Height"
     )
@@ -170,7 +172,7 @@ private fun PinnedItem(
     screenWidthPx: Float, context: Context,
     modifier: Modifier = Modifier
 ) {
-    val pinnedHeight = (35 + (120 * pinnedItem.size)).dp
+    val pinnedHeight = (39 + (CardHeight * pinnedItem.size)).dp
     val animatedPinnedHeight by animateDpAsState(
         targetValue = pinnedHeight, label = "Pinned Height"
     )
