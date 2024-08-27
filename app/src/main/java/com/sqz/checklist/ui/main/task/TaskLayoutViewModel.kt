@@ -294,22 +294,4 @@ class TaskLayoutViewModel : ViewModel() {
             taskHistoryData = MainActivity.taskDatabase.taskDao().getAllOrderByIsHistoryId()
         }
     }
-
-    /**
-     * ----- Task History select state -----
-     **/
-    /** Select task by id **/
-    fun selectTask(id: Int) {
-        if (!onSelect) {
-            selectedId = id
-            onSelect = true
-        } else if (selectedId == id) {
-            selectedId = -0
-            onSelect = false
-        } else selectedId = id
-    }
-
-    var selectedId by mutableIntStateOf(-0)
-    var onSelect by mutableStateOf(false)
-    var hideSelected by mutableStateOf(false)
 }

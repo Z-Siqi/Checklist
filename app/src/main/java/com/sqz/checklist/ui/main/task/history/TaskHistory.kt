@@ -75,6 +75,7 @@ fun TaskHistory(
     navBack: () -> Unit,
     modifier: Modifier = Modifier,
     taskState: TaskLayoutViewModel = viewModel(),
+    historyState: TaskHistoryViewModel = viewModel(),
     item: List<Task> = taskState.loadTaskHistoryData(MainActivity.taskDatabase.taskDao())
 ) {
     val view = LocalView.current
@@ -110,7 +111,7 @@ fun TaskHistory(
                         id = it.id,
                         description = it.description,
                         createDate = it.createDate,
-                        hide = taskState.hideSelected && taskState.selectedId == it.id,
+                        hide = historyState.hideSelected && historyState.selectedId == it.id,
                         view = view
                     )
                 }
@@ -195,6 +196,7 @@ private fun HistoryNavBar(
     deleteAllView: () -> Unit,
     redoAllView: () -> Unit,
     modifier: Modifier = Modifier,
+    historyState: TaskHistoryViewModel = viewModel(),
     taskState: TaskLayoutViewModel = viewModel(),
     view: View
 ) {
@@ -215,17 +217,15 @@ private fun HistoryNavBar(
             colors = colors,
             icon = { Icon(imageVector = Icons.Filled.Delete, contentDescription = deleteText) },
             label = { Text(text = deleteText) },
-            selected = taskState.onSelect,
+            selected = historyState.onSelect,
             onClick = {
-                if (taskState.onSelect) {
+                if (historyState.onSelect) {
                     coroutineScope.launch {
-                        taskState.hideSelected = true
+                        historyState.hideSelected = true
                         delay(80)
-                        taskState.deleteTask(taskState.selectedId)
+                        taskState.deleteTask(historyState.selectedId)
                         delay(20)
-                        taskState.selectedId = -0
-                        taskState.onSelect = false
-                        taskState.hideSelected = false
+                        historyState.resetSelect()
                     }
                 } else {
                     deleteAllView()
@@ -238,16 +238,14 @@ private fun HistoryNavBar(
             colors = colors,
             icon = { Icon(imageVector = Icons.Filled.Refresh, contentDescription = redoText) },
             label = { Text(text = redoText) },
-            selected = taskState.onSelect,
+            selected = historyState.onSelect,
             onClick = {
-                if (taskState.onSelect) {
+                if (historyState.onSelect) {
                     coroutineScope.launch {
-                        taskState.hideSelected = true
-                        taskState.changeTaskVisibility(taskState.selectedId, undoToHistory = true)
+                        historyState.hideSelected = true
+                        taskState.changeTaskVisibility(historyState.selectedId, undoToHistory = true)
                         delay(100)
-                        taskState.selectedId = -0
-                        taskState.onSelect = false
-                        taskState.hideSelected = false
+                        historyState.resetSelect()
                     }
                 } else {
                     redoAllView()
@@ -266,10 +264,10 @@ private fun ItemBox(
     createDate: LocalDate,
     hide: Boolean,
     modifier: Modifier = Modifier,
-    taskState: TaskLayoutViewModel = viewModel(),
+    historyState: TaskHistoryViewModel = viewModel(),
     view: View
 ) {
-    val border = if (taskState.selectedId == id) {
+    val border = if (historyState.selectedId == id) {
         BorderStroke(3.dp, MaterialTheme.colorScheme.tertiary)
     } else BorderStroke(1.dp, MaterialTheme.colorScheme.surfaceDim)
     Column(
@@ -291,7 +289,7 @@ private fun ItemBox(
             val formatter = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.getDefault())
             val padding = modifier.padding(bottom = 8.dp, top = 12.dp, start = 12.dp, end = 11.dp)
             val onClick = modifier.clickable {
-                taskState.selectTask(id)
+                historyState.selectTask(id)
                 view.playSoundEffect(SoundEffectConstants.CLICK)
             }
             Box(
