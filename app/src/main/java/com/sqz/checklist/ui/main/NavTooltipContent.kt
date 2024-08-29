@@ -31,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -52,20 +53,21 @@ fun NavTooltipContent(
     ) {
         Column(
             modifier = modifier.padding(
-                start = 10.dp,
-                end = 10.dp,
-                top = 20.dp,
-                bottom = 20.dp
+                start = 8.dp,
+                end = 8.dp,
+                top = 10.dp,
+                bottom = 10.dp
             ),
             verticalArrangement = Arrangement.Center
         ) {
+
             Card(
                 shape = ShapeDefaults.Medium,
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                 ),
-                modifier = modifier.size(55.dp, 52.dp)
+                modifier = modifier.size(58.dp, 55.dp)
             ) {
                 Column(
                     modifier = modifier
@@ -81,7 +83,8 @@ fun NavTooltipContent(
                     Text(
                         text = stringResource(if (!scrollUp) R.string.scroll_to_end else R.string.scroll_to_top),
                         lineHeight = 12.sp,
-                        fontSize = 10.sp,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.W500,
                         textAlign = TextAlign.Center
                     )
                     if (!scrollUp) Icon(

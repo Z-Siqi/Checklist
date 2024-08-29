@@ -182,7 +182,7 @@ private fun PinnedItem(
             .height(animatedPinnedHeight)
             .padding(start = 8.dp, end = 8.dp),
         shape = ShapeDefaults.Large,
-        colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerLowest)
+        colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerLow)
     ) {
         Text(
             text = stringResource(R.string.pinned_task),

@@ -49,7 +49,7 @@ internal fun ItemBox(
                 modifier = modifier
                     .fillMaxSize()
                     .padding(start = bgStartEnd, end = bgStartEnd, top = 4.dp, bottom = 4.dp),
-                colors = cardBackgoundColor(true),
+                colors = cardBackgroundColor(true),
                 shape = ShapeDefaults.ExtraLarge
             ) {
                 val views = (state.progress in 0.1f..0.9f)
@@ -72,7 +72,7 @@ internal fun ItemBox(
             modifier = modifier
                 .fillMaxSize()
                 .padding(start = startEnd, end = startEnd, top = 4.dp, bottom = 4.dp),
-            colors = cardBackgoundColor(),
+            colors = cardBackgroundColor(),
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.surfaceDim),
             shape = ShapeDefaults.ExtraLarge
         ) {
@@ -81,7 +81,7 @@ internal fun ItemBox(
             ) {
                 ItemContent(
                     description = description, createDate = dateText,
-                    descriptionBgColor = cardBackgoundColor(),
+                    descriptionBgColor = cardBackgroundColor(),
                     reminderOnClick = reminderOnClick, editOnClick = editOnClick,
                     timerIconState = timerIconState, topRightIconState = pinIconState,
                     topRightIconOnClick = topRightIconOnClick,
@@ -93,7 +93,7 @@ internal fun ItemBox(
 }
 
 @Composable
-private fun cardBackgoundColor(onSlide: Boolean = false): CardColors {
+private fun cardBackgroundColor(onSlide: Boolean = false): CardColors {
     return if (!onSlide) {
         CardDefaults.cardColors(MaterialTheme.colorScheme.secondaryContainer)
     } else CardDefaults.cardColors(MaterialTheme.colorScheme.secondary)
