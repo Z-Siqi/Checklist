@@ -150,7 +150,7 @@ fun TaskLayout(
     ) { paddingValues ->
         Surface(
             modifier = modifier.padding(paddingValues),
-            color = MaterialTheme.colorScheme.surfaceContainer
+            color = MaterialTheme.colorScheme.background
         ) {
             var undoTask by rememberSaveable { mutableStateOf(false) }
             var reminderCard by rememberSaveable { mutableIntStateOf(-1) }

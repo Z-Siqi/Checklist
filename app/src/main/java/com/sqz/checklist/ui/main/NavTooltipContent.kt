@@ -60,12 +60,12 @@ fun NavTooltipContent(
             verticalArrangement = Arrangement.Center
         ) {
             Card(
-                shape = ShapeDefaults.Large,
+                shape = ShapeDefaults.Medium,
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                 ),
-                modifier = modifier.size(80.dp, 75.dp)
+                modifier = modifier.size(55.dp, 52.dp)
             ) {
                 Column(
                     modifier = modifier
@@ -80,7 +80,8 @@ fun NavTooltipContent(
                 ) {
                     Text(
                         text = stringResource(if (!scrollUp) R.string.scroll_to_end else R.string.scroll_to_top),
-                        lineHeight = 14.sp,
+                        lineHeight = 12.sp,
+                        fontSize = 10.sp,
                         textAlign = TextAlign.Center
                     )
                     if (!scrollUp) Icon(
