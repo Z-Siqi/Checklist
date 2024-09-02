@@ -40,11 +40,13 @@ const val CardHeight = 120
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LazyList(
-    item: List<Task>, pinnedItem: List<Task>, isRemindedItem: List<Task>,
+    item: List<Task>,
+    pinnedItem: List<Task>, isRemindedItem: List<Task>, inSearchItem: List<Task>,
     lazyState: LazyListState,
     reminderCard: (Int) -> Unit,
     setReminder: (Int) -> Unit,
     undoTask: (state: SwipeToDismissBoxState) -> Unit,
+    isInSearch: Boolean,
     context: Context,
     modifier: Modifier = Modifier,
 ) {
@@ -53,38 +55,52 @@ fun LazyList(
         modifier = modifier.fillMaxSize(),
         state = lazyState
     ) {
-        if (isRemindedItem.isNotEmpty()) {
-            item {
-                RemindedItem(
-                    isRemindedItem = isRemindedItem,
+        if (!isInSearch) {
+            if (isRemindedItem.isNotEmpty()) {
+                item {
+                    RemindedItem(
+                        isRemindedItem = isRemindedItem,
+                        reminderCard = reminderCard,
+                        setReminder = setReminder,
+                        screenWidthPx = screenWidthPx,
+                        context = context
+                    )
+                }
+            }
+            if (pinnedItem.isNotEmpty()) {
+                item {
+                    PinnedItem(
+                        pinnedItem = pinnedItem,
+                        reminderCard = reminderCard,
+                        setReminder = setReminder,
+                        screenWidthPx = screenWidthPx,
+                        context = context
+                    )
+                }
+            }
+            item { Spacer(modifier = modifier.height(20.dp)) }
+            items(item, key = { it.id }) {
+                MainListItem(
+                    it = it,
                     reminderCard = reminderCard,
                     setReminder = setReminder,
                     screenWidthPx = screenWidthPx,
+                    undoTask = undoTask,
                     context = context
                 )
             }
-        }
-        if (pinnedItem.isNotEmpty()) {
-            item {
-                PinnedItem(
-                    pinnedItem = pinnedItem,
+        } else {
+            item { Spacer(modifier = modifier.height(72.dp)) }
+            items(inSearchItem, key = { it.id }) {
+                MainListItem(
+                    it = it,
                     reminderCard = reminderCard,
                     setReminder = setReminder,
                     screenWidthPx = screenWidthPx,
+                    undoTask = undoTask,
                     context = context
                 )
             }
-        }
-        item { Spacer(modifier = modifier.height(20.dp)) }
-        items(item, key = { it.id }) {
-            MainListItem(
-                it = it,
-                reminderCard = reminderCard,
-                setReminder = setReminder,
-                screenWidthPx = screenWidthPx,
-                undoTask = undoTask,
-                context = context
-            )
         }
         item { Spacer(modifier = modifier.height(10.dp)) }
     }
@@ -182,7 +198,7 @@ private fun PinnedItem(
             .height(animatedPinnedHeight)
             .padding(start = 8.dp, end = 8.dp),
         shape = ShapeDefaults.Large,
-        colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerLow)
+        colors = CardDefaults.cardColors(MaterialTheme.colorScheme.background)
     ) {
         Text(
             text = stringResource(R.string.pinned_task),

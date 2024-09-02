@@ -8,12 +8,15 @@ import android.view.View
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
@@ -39,10 +42,13 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.sqz.checklist.R
 
+enum class OnClickType {
+    ScrollDown, ScrollUp, Search
+}
+
 @Composable
 fun NavTooltipContent(
-    onScrollDownClick: () -> Unit,
-    onScrollUpClick: () -> Unit,
+    onClickType: (OnClickType) -> Unit,
     view: View,
     modifier: Modifier = Modifier,
     scrollUp: Boolean = false
@@ -60,41 +66,44 @@ fun NavTooltipContent(
             ),
             verticalArrangement = Arrangement.Center
         ) {
-
-            Card(
-                shape = ShapeDefaults.Medium,
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                ),
-                modifier = modifier.size(58.dp, 55.dp)
-            ) {
-                Column(
-                    modifier = modifier
-                        .fillMaxSize()
-                        .clickable {
-                            if (!scrollUp) onScrollDownClick() else onScrollUpClick()
-                            view.playSoundEffect(SoundEffectConstants.CLICK)
-                        }
-                        .padding(top = 3.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    Text(
-                        text = stringResource(if (!scrollUp) R.string.scroll_to_end else R.string.scroll_to_top),
-                        lineHeight = 12.sp,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.W500,
-                        textAlign = TextAlign.Center
-                    )
-                    if (!scrollUp) Icon(
-                        imageVector = Icons.Filled.KeyboardArrowDown,
-                        contentDescription = stringResource(R.string.scroll_to_end)
-                    ) else Icon(
-                        imageVector = Icons.Filled.KeyboardArrowUp,
-                        contentDescription = stringResource(R.string.scroll_to_top)
-                    )
+            NavButton(onClick = {
+                onClickType(OnClickType.Search)
+                view.playSoundEffect(SoundEffectConstants.CLICK)
+            }) {
+                Icon(
+                    imageVector = Icons.Filled.Search,
+                    contentDescription = stringResource(R.string.search)
+                )
+                Spacer(modifier = modifier.height(2.dp))
+                Text(
+                    text = stringResource(R.string.search),
+                    lineHeight = 12.sp,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.W500,
+                    textAlign = TextAlign.Center
+                )
+            }
+            Spacer(modifier = modifier.size(height = 10.dp, width = 10.dp))
+            NavButton(
+                onClick = {
+                    if (!scrollUp) onClickType(OnClickType.ScrollDown) else onClickType(OnClickType.ScrollUp)
+                    view.playSoundEffect(SoundEffectConstants.CLICK)
                 }
+            ) {
+                Text(
+                    text = stringResource(if (!scrollUp) R.string.scroll_to_end else R.string.scroll_to_top),
+                    lineHeight = 12.sp,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.W500,
+                    textAlign = TextAlign.Center
+                )
+                if (!scrollUp) Icon(
+                    imageVector = Icons.Filled.KeyboardArrowDown,
+                    contentDescription = stringResource(R.string.scroll_to_end)
+                ) else Icon(
+                    imageVector = Icons.Filled.KeyboardArrowUp,
+                    contentDescription = stringResource(R.string.scroll_to_top)
+                )
             }
         }
     }
@@ -110,8 +119,33 @@ fun NavTooltipContent(
     }
 }
 
+@Composable
+private fun NavButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    Card(
+        shape = ShapeDefaults.Medium,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+        ),
+        modifier = modifier.size(58.dp, 55.dp)
+    ) {
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .clickable { onClick() }
+                .padding(top = 3.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) { content() }
+    }
+}
+
 @Preview(showBackground = true)
 @Composable
 private fun Preview() {
-    NavTooltipContent({}, {}, LocalView.current)
+    NavTooltipContent({}, LocalView.current)
 }

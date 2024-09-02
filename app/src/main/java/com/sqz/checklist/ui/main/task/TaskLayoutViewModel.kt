@@ -278,6 +278,18 @@ class TaskLayoutViewModel : ViewModel() {
         }
     }
 
+    private var inSearchData by mutableStateOf(listOf<Task>())
+    fun updateInSearch(searchText: String = "", reset: Boolean = false): List<Task> {
+        if (searchText.isNotEmpty()) viewModelScope.launch {
+            inSearchData = MainActivity.taskDatabase.taskDao().searchedList(searchText)
+        }
+        if (reset) {
+            val reset by mutableStateOf(listOf<Task>())
+            inSearchData = reset
+        }
+        return this.inSearchData
+    }
+
     /**
      * Refresh List
      **/

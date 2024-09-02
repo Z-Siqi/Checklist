@@ -55,5 +55,6 @@
     <string name="nothing_need_do">Nothing need to do! \nClick \'Add\' to create a task</string>
     <string name="setting_remind_warning">Setting reminders that are too long is not recommended, and you shouldn\'t put off your plans for that long. Additionally this may cause unintended problems. \n\nClick Confirm to continue set.</string>
     <string name="cannot_set_past">Cannot set reminder for the past! lol</string>
+    <string name="search">Search</string>
 
 </resources>
