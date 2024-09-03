@@ -18,7 +18,7 @@ interface TaskDao {
     @Query("SELECT * FROM task WHERE isHistory = 0 AND reminder != ''")
     suspend fun getIsRemindedList(): List<Task>
 
-    @Query("SELECT * FROM task WHERE isHistory = 0 AND description LIKE :search || '%'")
+    @Query("SELECT * FROM task WHERE isHistory = 0 AND description LIKE '%' || :search || '%'")
     suspend fun searchedList(search: String): List<Task>
 
 

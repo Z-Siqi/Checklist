@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
@@ -178,38 +179,10 @@ fun TaskLayout(
                 isInSearch = searchState,
                 context = context
             )
-            if (searchState) { // Search function
-                val textFieldState = rememberTextFieldState()
-                Column(modifier = modifier.fillMaxSize()) {
-                    OutlinedCard(
-                        modifier = modifier
-                            .fillMaxWidth()
-                            .padding(start = 18.dp, end = 18.dp, top = 12.dp)
-                            .height(50.dp),
-                        shape = ShapeDefaults.ExtraLarge
-                    ) {
-                        BasicTextField(
-                            modifier = modifier
-                                .fillMaxSize()
-                                .padding(start = 8.dp, end = 8.dp, top = 10.dp, bottom = 8.dp)
-                                .horizontalScroll(rememberScrollState()),
-                            state = textFieldState,
-                            lineLimits = TextFieldLineLimits.SingleLine,
-                            textStyle = TextStyle(
-                                fontSize = 24.sp,
-                                textAlign = TextAlign.Start
-                            )
-                        )
-                        var oldText by remember { mutableStateOf("") }
-                        if (textFieldState.text.toString() != oldText || taskState.undoTaskAction) {
-                            LaunchedEffect(key1 = true) {
-                                taskState.updateInSearch(textFieldState.text.toString())
-                                oldText = textFieldState.text.toString()
-                            }
-                        }
-                    }
-                }
-            }
+            TaskSearchBar( // Search function
+                searchState = searchState,
+                taskState = taskState
+            )
             if (item.isEmpty()) { // Show text if not any task
                 var delayed by rememberSaveable { mutableStateOf(false) }
                 if (delayed) {
@@ -230,20 +203,11 @@ fun TaskLayout(
                     delayed = true
                 }
             }
-            if (taskState.checkTaskAction) { // ture if task is checked
-                CheckUndoAction(lazyState, taskState)
-                taskState.updateInSearch(reset = true)
-            } else LaunchedEffect(true) { // processing after checked
-                delay(100)
-                taskState.autoDeleteHistoryTask(5)
-                taskState.remindedState(autoDel = true) // delete reminder info which 12h ago
-                Log.d("TaskLayout", "Auto del history tasks & del reminder info that 12h ago")
-            }
-            if (taskState.undoTaskAction) { // processing undo
-                taskState.changeTaskVisibility(taskState.undoActionId, undoToHistory = true)
-                undoTask = true
-                taskState.undoTaskAction = false
-            }
+            CheckTaskAction( // processing check & undo
+                whenUndo = { undoTask = true },
+                taskState = taskState,
+                lazyState = lazyState
+            )
             val state = rememberTextFieldState() // to add task
             val noDoNothing = stringResource(R.string.no_do_nothing)
             if (taskAddCard) TaskChangeContentCard(
@@ -274,6 +238,68 @@ fun TaskLayout(
             taskState = taskState,
             coroutineScope = coroutineScope
         )
+    }
+}
+
+@Composable
+private fun TaskSearchBar(
+    searchState: Boolean,
+    taskState: TaskLayoutViewModel,
+    modifier: Modifier = Modifier
+) {
+    val textFieldState = rememberTextFieldState()
+    if (searchState) Column(modifier = modifier.fillMaxSize()) {
+        OutlinedCard(
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(start = 18.dp, end = 18.dp, top = 12.dp)
+                .height(50.dp),
+            shape = ShapeDefaults.ExtraLarge
+        ) {
+            BasicTextField(
+                modifier = modifier
+                    .fillMaxSize()
+                    .padding(start = 8.dp, end = 8.dp, top = 10.dp, bottom = 8.dp)
+                    .horizontalScroll(rememberScrollState()),
+                state = textFieldState,
+                lineLimits = TextFieldLineLimits.SingleLine,
+                textStyle = TextStyle(
+                    fontSize = 24.sp,
+                    textAlign = TextAlign.Start
+                )
+            )
+            var oldText by remember { mutableStateOf("") }
+            if (textFieldState.text.toString() != oldText || taskState.undoTaskAction) {
+                LaunchedEffect(key1 = true) {
+                    taskState.updateInSearch(textFieldState.text.toString())
+                    oldText = textFieldState.text.toString()
+                }
+            } else if (textFieldState.text.toString().isEmpty()) LaunchedEffect(key1 = true) {
+                taskState.updateInSearch(initWithAll = true)
+            }
+        }
+    }
+}
+
+@Composable
+private fun CheckTaskAction(
+    whenUndo: () -> Unit,
+    taskState: TaskLayoutViewModel,
+    lazyState: LazyListState
+) {
+    if (taskState.checkTaskAction) { // ture if task is checked
+        CheckUndoAction(lazyState, taskState)
+        taskState.updateInSearch(reset = true)
+    } else LaunchedEffect(true) { // processing after checked
+        delay(100)
+        taskState.autoDeleteHistoryTask(5)
+        taskState.remindedState(autoDel = true) // delete reminder info which 12h ago
+        Log.d("TaskLayout", "Auto del history tasks & del reminder info that 12h ago")
+    }
+    if (taskState.undoTaskAction) { // processing undo
+        taskState.changeTaskVisibility(taskState.undoActionId, undoToHistory = true)
+        whenUndo()
+        taskState.undoTaskAction = false
     }
 }
 
