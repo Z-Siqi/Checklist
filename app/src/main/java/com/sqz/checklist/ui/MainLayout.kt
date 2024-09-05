@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.CaretScope
 import androidx.compose.material3.DividerDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -32,6 +31,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
+import androidx.compose.material3.TooltipScope
 import androidx.compose.material3.TooltipState
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
@@ -100,7 +100,7 @@ fun MainLayout(context: Context, view: View) {
 fun NavBar(
     icon: @Composable () -> Unit,
     label: @Composable () -> Unit,
-    tooltipContent: @Composable (CaretScope.() -> Unit),
+    tooltipContent: @Composable (TooltipScope.() -> Unit),
     tooltipState: TooltipState,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
