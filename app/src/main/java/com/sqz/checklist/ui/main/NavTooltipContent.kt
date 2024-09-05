@@ -55,7 +55,7 @@ fun NavTooltipContent(
 ) {
     ElevatedCard(
         modifier = modifier.padding(8.dp),
-        colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surface)
+        colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceBright)
     ) {
         Column(
             modifier = modifier.padding(

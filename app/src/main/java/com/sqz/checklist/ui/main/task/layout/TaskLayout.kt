@@ -98,10 +98,10 @@ fun TaskLayout(
     val tooltipState = rememberTooltipState(isPersistent = true)
 
     var taskAddCard by rememberSaveable { mutableStateOf(false) }
-    var menu by rememberSaveable { mutableStateOf(false) }
     var searchState by rememberSaveable { mutableStateOf(false) }
 
     Scaffold(modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
+        var menu by rememberSaveable { mutableStateOf(false) }
         NavTooltipContent(textRid = R.string.task_history, onClickToTaskHistory = {
             taskState.checkTaskAction = false
             menu = false
@@ -259,7 +259,7 @@ private fun TaskSearchBar(
             BasicTextField(
                 modifier = modifier
                     .fillMaxSize()
-                    .padding(start = 8.dp, end = 8.dp, top = 10.dp, bottom = 8.dp)
+                    .padding(start = 5.dp, end = 5.dp, top = 10.dp, bottom = 8.dp)
                     .horizontalScroll(rememberScrollState()),
                 state = textFieldState,
                 lineLimits = TextFieldLineLimits.SingleLine,
