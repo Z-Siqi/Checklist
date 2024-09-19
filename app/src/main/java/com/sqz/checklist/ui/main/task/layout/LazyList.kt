@@ -10,7 +10,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.ShapeDefaults
@@ -26,8 +25,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sqz.checklist.R
 import com.sqz.checklist.database.Task
+import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
 import com.sqz.checklist.ui.main.task.layout.item.ItemMode
 import com.sqz.checklist.ui.main.task.layout.item.TaskData
 import com.sqz.checklist.ui.main.task.layout.item.TaskItem
@@ -37,7 +38,6 @@ import com.sqz.checklist.ui.main.task.layout.item.TaskItem
  **/
 const val CardHeight = 120
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LazyList(
     item: List<Task>,
@@ -49,6 +49,7 @@ fun LazyList(
     isInSearch: Boolean,
     context: Context,
     modifier: Modifier = Modifier,
+    taskState: TaskLayoutViewModel = viewModel()
 ) {
     val screenWidthPx = LocalConfiguration.current.screenWidthDp * LocalDensity.current.density
     LazyColumn(
@@ -63,7 +64,8 @@ fun LazyList(
                         reminderCard = reminderCard,
                         setReminder = setReminder,
                         screenWidthPx = screenWidthPx,
-                        context = context
+                        context = context,
+                        taskState = taskState
                     )
                 }
             }
@@ -74,7 +76,8 @@ fun LazyList(
                         reminderCard = reminderCard,
                         setReminder = setReminder,
                         screenWidthPx = screenWidthPx,
-                        context = context
+                        context = context,
+                        taskState = taskState
                     )
                 }
             }
@@ -86,7 +89,8 @@ fun LazyList(
                     setReminder = setReminder,
                     screenWidthPx = screenWidthPx,
                     undoTask = undoTask,
-                    context = context
+                    context = context,
+                    taskState = taskState
                 )
             }
         } else {
@@ -98,7 +102,8 @@ fun LazyList(
                     setReminder = setReminder,
                     screenWidthPx = screenWidthPx,
                     undoTask = undoTask,
-                    context = context
+                    context = context,
+                    taskState = taskState
                 )
             }
         }
@@ -109,7 +114,6 @@ fun LazyList(
 /**
  * Task list item
  **/
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MainListItem(
     it: Task,
@@ -118,6 +122,7 @@ private fun MainListItem(
     screenWidthPx: Float,
     undoTask: (state: SwipeToDismissBoxState) -> Unit,
     context: Context,
+    taskState: TaskLayoutViewModel = viewModel()
 ) {
     val state = rememberSwipeToDismissBoxState(
         positionalThreshold = { screenWidthPx * 0.35f },
@@ -127,19 +132,19 @@ private fun MainListItem(
         reminderCardClick = { id -> reminderCard(id) },
         setReminderClick = { id -> setReminder(id) },
         isPin = it.isPin, context = context, itemState = state,
-        mode = ItemMode.NormalTask
+        mode = ItemMode.NormalTask, taskState = taskState
     )
     undoTask(state)
 }
 
 /** Reminded item list **/
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun RemindedItem(
     isRemindedItem: List<Task>,
     reminderCard: (Int) -> Unit, setReminder: (Int) -> Unit,
     screenWidthPx: Float, context: Context,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    taskState: TaskLayoutViewModel = viewModel()
 ) {
     val remindedHeight = (39 + (CardHeight * isRemindedItem.size)).dp
     val animatedRemindedHeight by animateDpAsState(
@@ -172,7 +177,7 @@ private fun RemindedItem(
                     reminderCardClick = { id -> reminderCard(id) },
                     setReminderClick = { id -> setReminder(id) },
                     isPin = it.isPin, context = context, itemState = state,
-                    mode = ItemMode.RemindedTask
+                    mode = ItemMode.RemindedTask, taskState = taskState
                 )
             }
         }
@@ -180,13 +185,13 @@ private fun RemindedItem(
 }
 
 /** Pinned item list **/
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PinnedItem(
     pinnedItem: List<Task>,
     reminderCard: (Int) -> Unit, setReminder: (Int) -> Unit,
     screenWidthPx: Float, context: Context,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    taskState: TaskLayoutViewModel = viewModel()
 ) {
     val pinnedHeight = (39 + (CardHeight * pinnedItem.size)).dp
     val animatedPinnedHeight by animateDpAsState(
@@ -219,7 +224,7 @@ private fun PinnedItem(
                     reminderCardClick = { id -> reminderCard(id) },
                     setReminderClick = { id -> setReminder(id) },
                     isPin = it.isPin, context = context, itemState = state,
-                    mode = ItemMode.PinnedTask
+                    mode = ItemMode.PinnedTask, taskState = taskState
                 )
             }
         }

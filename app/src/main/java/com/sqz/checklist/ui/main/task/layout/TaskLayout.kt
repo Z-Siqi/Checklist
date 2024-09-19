@@ -1,13 +1,9 @@
 package com.sqz.checklist.ui.main.task.layout
 
 import android.content.Context
-import android.os.Build
-import android.os.VibrationEffect
-import android.os.Vibrator
 import android.util.Log
-import android.view.SoundEffectConstants
 import android.view.View
-import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -20,26 +16,19 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.input.TextFieldLineLimits
-import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.rememberTextFieldState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AddCircle
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
-import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberTooltipState
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -47,6 +36,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -60,17 +50,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sqz.checklist.MainActivity
 import com.sqz.checklist.R
 import com.sqz.checklist.database.Task
-import com.sqz.checklist.ui.NavBar
 import com.sqz.checklist.ui.TopBar
 import com.sqz.checklist.ui.main.NavTooltipContent
-import com.sqz.checklist.ui.main.OnClickType
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
-import com.sqz.checklist.ui.material.TaskChangeContentCard
 import com.sqz.checklist.ui.reminder.ReminderAction
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -95,71 +81,30 @@ fun TaskLayout(
     val coroutineScope = rememberCoroutineScope()
     val topBarState = rememberTopAppBarState()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(topBarState)
-    val tooltipState = rememberTooltipState(isPersistent = true)
 
-    var taskAddCard by rememberSaveable { mutableStateOf(false) }
-    var searchState by rememberSaveable { mutableStateOf(false) }
-
-    Scaffold(modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
-        var menu by rememberSaveable { mutableStateOf(false) }
-        NavTooltipContent(textRid = R.string.task_history, onClickToTaskHistory = {
-            taskState.checkTaskAction = false
-            menu = false
-            toTaskHistory()
-        }, onDismissRequest = { menu = false }, expanded = menu, view = view)
-        TopBar(scrollBehavior, topBarState, onClick = { menu = true }, view)
-    }, bottomBar = {
-        val buttonInfo = stringResource(if (!searchState) R.string.add else R.string.cancel)
-        val screenHeight = LocalConfiguration.current.screenHeightDp
-        val canScroll = remember {
-            derivedStateOf { lazyState.layoutInfo.totalItemsCount * 120 > screenHeight }
+    Scaffold(
+        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = {
+            var menu by rememberSaveable { mutableStateOf(false) }
+            NavTooltipContent(textRid = R.string.task_history, onClickToTaskHistory = {
+                taskState.checkTaskAction = false
+                menu = false
+                toTaskHistory()
+            }, onDismissRequest = { menu = false }, expanded = menu, view = view)
+            TopBar(scrollBehavior, topBarState, onClick = { menu = true }, view)
         }
-        NavBar(icon = {
-            val icons = if (!searchState) Icons.Filled.AddCircle else Icons.Filled.Close
-            Icon(icons, contentDescription = buttonInfo)
-        }, label = { Text(buttonInfo) }, tooltipContent = {
-            if (canScroll.value && !searchState) NavTooltipContent(
-                onClickType = { onClickType ->
-                    when (onClickType) {
-                        OnClickType.Search -> {
-                            tooltipState.dismiss()
-                            searchState = true
-                        }
-
-                        OnClickType.ScrollUp -> coroutineScope.launch {
-                            tooltipState.dismiss()
-                            lazyState.animateScrollToItem(0)
-                        }
-
-                        OnClickType.ScrollDown -> coroutineScope.launch {
-                            tooltipState.dismiss()
-                            lazyState.animateScrollToItem(lazyState.layoutInfo.totalItemsCount)
-                        }
-                    }
-                },
-                view = view,
-                scrollUp = !lazyState.canScrollForward
-            ) else PlainTooltip {
-                Text(text = buttonInfo)
-                LaunchedEffect(true) { // click feedback
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) ContextCompat.getSystemService(
-                        context, Vibrator::class.java
-                    )?.vibrate(
-                        VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK)
-                    ) else view.playSoundEffect(SoundEffectConstants.CLICK)
-                }
-            }
-        }, tooltipState = tooltipState, onClick = {
-            if (!searchState) taskAddCard = true else {
-                searchState = false
-                taskState.updateInSearch(reset = true)
-            }
-            view.playSoundEffect(SoundEffectConstants.CLICK)
-        })
-    }) { paddingValues ->
+    ) { paddingValues ->
         var undoTask by rememberSaveable { mutableStateOf(false) }
         var reminderCard by rememberSaveable { mutableIntStateOf(-1) }
         var setReminder by rememberSaveable { mutableIntStateOf(-1) }
+
+        val navConnector = taskState.navExtendedConnector.collectAsState().value
+        NavBarConnectorAction(
+            navConnector = navConnector,
+            lazyState = lazyState,
+            updateNavConnector = taskState::updateNavConnector
+        )
+
         Surface(
             modifier = modifier.padding(paddingValues),
             color = MaterialTheme.colorScheme.surfaceContainerLow
@@ -176,11 +121,12 @@ fun TaskLayout(
                         undoTask = false
                     }
                 },
-                isInSearch = searchState,
-                context = context
+                isInSearch = navConnector.searchState,
+                context = context,
+                taskState = taskState
             )
             TaskSearchBar( // Search function
-                searchState = searchState,
+                searchState = navConnector.searchState,
                 taskState = taskState
             )
             if (item.isEmpty()) { // Show text if not any task
@@ -208,25 +154,6 @@ fun TaskLayout(
                 taskState = taskState,
                 lazyState = lazyState
             )
-            val state = rememberTextFieldState() // to add task
-            val noDoNothing = stringResource(R.string.no_do_nothing)
-            if (taskAddCard) TaskChangeContentCard(
-                onDismissRequest = { taskAddCard = false },
-                confirm = {
-                    if (state.text.toString() != "") {
-                        taskState.insertTask(state.text.toString())
-                        taskAddCard = false
-                    } else {
-                        Toast.makeText(context, noDoNothing, Toast.LENGTH_SHORT).show()
-                    }
-                },
-                state = state,
-                title = stringResource(R.string.create_task),
-                confirmText = stringResource(R.string.add),
-                doneImeAction = true
-            ) else LaunchedEffect(true) {
-                state.clearText()
-            }
         }
         ReminderAction(
             reminderCard = reminderCard,
@@ -247,8 +174,8 @@ private fun TaskSearchBar(
     taskState: TaskLayoutViewModel,
     modifier: Modifier = Modifier
 ) {
-    val textFieldState = rememberTextFieldState()
     if (searchState) Column(modifier = modifier.fillMaxSize()) {
+        val textFieldState = rememberTextFieldState()
         OutlinedCard(
             modifier = modifier
                 .fillMaxWidth()
@@ -259,7 +186,7 @@ private fun TaskSearchBar(
             BasicTextField(
                 modifier = modifier
                     .fillMaxSize()
-                    .padding(start = 5.dp, end = 5.dp, top = 10.dp, bottom = 8.dp)
+                    .padding(start = 9.dp, end = 9.dp, top = 10.dp, bottom = 8.dp)
                     .horizontalScroll(rememberScrollState()),
                 state = textFieldState,
                 lineLimits = TextFieldLineLimits.SingleLine,
@@ -271,13 +198,59 @@ private fun TaskSearchBar(
             var oldText by remember { mutableStateOf("") }
             if (textFieldState.text.toString() != oldText || taskState.undoTaskAction) {
                 LaunchedEffect(key1 = true) {
-                    taskState.updateInSearch(textFieldState.text.toString())
+                    taskState.searchingText = textFieldState.text.toString()
+                    taskState.updateInSearch(taskState.searchingText)
                     oldText = textFieldState.text.toString()
                 }
             } else if (textFieldState.text.toString().isEmpty()) LaunchedEffect(key1 = true) {
                 taskState.updateInSearch(initWithAll = true)
             }
         }
+    }
+    if (searchState) BackHandler {
+        taskState.updateNavConnector(
+            NavExtendedConnectData(searchState = false),
+            NavExtendedConnectData(searchState = true)
+        )
+    }
+}
+
+@Composable
+private fun NavBarConnectorAction(
+    navConnector: NavExtendedConnectData,
+    lazyState: LazyListState,
+    updateNavConnector: (data: NavExtendedConnectData, updateSet: NavExtendedConnectData) -> Unit,
+) {
+    val screenHeight = LocalConfiguration.current.screenHeightDp
+    LaunchedEffect(lazyState) {
+        snapshotFlow { lazyState.layoutInfo.totalItemsCount * 120 > screenHeight }.collect {
+            updateNavConnector(
+                NavExtendedConnectData(canScroll = it),
+                NavExtendedConnectData(canScroll = true)
+            )
+        }
+    }
+    LaunchedEffect(lazyState) {
+        snapshotFlow { lazyState.canScrollForward }.collect {
+            updateNavConnector(
+                NavExtendedConnectData(canScrollForward = it),
+                NavExtendedConnectData(canScrollForward = true)
+            )
+        }
+    }
+    if (navConnector.scrollToFirst) LaunchedEffect(true) {
+        lazyState.animateScrollToItem(0)
+        updateNavConnector(
+            NavExtendedConnectData(scrollToFirst = false),
+            NavExtendedConnectData(scrollToFirst = true)
+        )
+    }
+    if (navConnector.scrollToBottom) LaunchedEffect(true) {
+        lazyState.animateScrollToItem(lazyState.layoutInfo.totalItemsCount)
+        updateNavConnector(
+            NavExtendedConnectData(scrollToBottom = false),
+            NavExtendedConnectData(scrollToBottom = true)
+        )
     }
 }
 
@@ -289,7 +262,6 @@ private fun CheckTaskAction(
 ) {
     if (taskState.checkTaskAction) { // ture if task is checked
         CheckUndoAction(lazyState, taskState)
-        taskState.updateInSearch(reset = true)
     } else LaunchedEffect(true) { // processing after checked
         delay(100)
         taskState.autoDeleteHistoryTask(5)

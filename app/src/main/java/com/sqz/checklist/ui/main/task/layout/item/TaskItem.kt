@@ -21,7 +21,6 @@ import androidx.compose.foundation.text.input.insert
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.SwipeToDismissBoxState
 import androidx.compose.material3.SwipeToDismissBoxValue
@@ -56,7 +55,6 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import java.util.UUID
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskItem(
     taskData: TaskData,
@@ -192,7 +190,6 @@ private fun reminderTimeText(id: Int): String {
 }
 
 @RequiresApi(Build.VERSION_CODES.Q)
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun Vibrate(
     context: Context,
@@ -241,7 +238,6 @@ private fun reminderState( // check the reminder is set or not
                         }
                 } else {
                     taskState.refreshList(
-                        noHistoryTask = true,
                         noPinTask = true,
                         noRemindedTask = false,
                         noNormalTask = true
@@ -274,7 +270,6 @@ fun AnimateInFinishedTask(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Preview
 @Composable
 private fun Preview() {

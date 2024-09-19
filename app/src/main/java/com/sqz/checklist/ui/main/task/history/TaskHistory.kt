@@ -18,17 +18,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ShapeDefaults
@@ -38,10 +32,11 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -58,11 +53,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sqz.checklist.MainActivity
 import com.sqz.checklist.R
 import com.sqz.checklist.database.Task
-import com.sqz.checklist.ui.material.WarningAlertDialog
-import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
 import com.sqz.checklist.ui.material.TextTooltipBox
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -74,26 +65,20 @@ import java.util.Locale
 fun TaskHistory(
     navBack: () -> Unit,
     modifier: Modifier = Modifier,
-    taskState: TaskLayoutViewModel = viewModel(),
     historyState: TaskHistoryViewModel = viewModel(),
-    item: List<Task> = taskState.loadTaskHistoryData(MainActivity.taskDatabase.taskDao())
+    item: List<Task> = historyState.taskHistoryData.collectAsState().value.also { historyState.updateTaskHistoryData() }
 ) {
     val view = LocalView.current
-    var deleteAllView by rememberSaveable { mutableStateOf(false) }
-    var redoAllView by rememberSaveable { mutableStateOf(false) }
+    var fixFastClickBackError by remember { mutableStateOf(false) }
     Scaffold(
         topBar = {
             HistoryTopBar(onClick = {
-                navBack()
-                view.playSoundEffect(SoundEffectConstants.CLICK)
+                if (!fixFastClickBackError) {
+                    navBack()
+                    view.playSoundEffect(SoundEffectConstants.CLICK)
+                    fixFastClickBackError = true
+                }
             })
-        },
-        bottomBar = {
-            HistoryNavBar(
-                deleteAllView = { deleteAllView = true },
-                redoAllView = { redoAllView = true },
-                view = view
-            )
         }
     ) { paddingValues ->
         Surface(
@@ -112,7 +97,8 @@ fun TaskHistory(
                         description = it.description,
                         createDate = it.createDate,
                         hide = historyState.hideSelected && historyState.selectedId == it.id,
-                        view = view
+                        view = view,
+                        historyState = historyState
                     )
                 }
                 item {
@@ -135,28 +121,6 @@ fun TaskHistory(
                 }
             } else LaunchedEffect(item) {
                 value = MainActivity.taskDatabase.taskDao().getIsHistorySum()
-            }
-            if (deleteAllView) {
-                WarningAlertDialog(
-                    onDismissRequest = { deleteAllView = false },
-                    onConfirmButtonClick = {
-                        taskState.doAllTask(delete = true)
-                        deleteAllView = false
-                    },
-                    onDismissButtonClick = { deleteAllView = false },
-                    textString = stringResource(R.string.delete_all_history)
-                )
-            }
-            if (redoAllView) {
-                WarningAlertDialog(
-                    onDismissRequest = { redoAllView = false },
-                    onConfirmButtonClick = {
-                        taskState.doAllTask(redo = true)
-                        redoAllView = false
-                    },
-                    onDismissButtonClick = { redoAllView = false },
-                    textString = stringResource(R.string.redo_all_history)
-                )
             }
         }
     }
@@ -189,72 +153,6 @@ private fun HistoryTopBar(
             }
         }
     )
-}
-
-@Composable
-private fun HistoryNavBar(
-    deleteAllView: () -> Unit,
-    redoAllView: () -> Unit,
-    modifier: Modifier = Modifier,
-    historyState: TaskHistoryViewModel = viewModel(),
-    taskState: TaskLayoutViewModel = viewModel(),
-    view: View
-) {
-    val coroutineScope = rememberCoroutineScope()
-    NavigationBar(
-        modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.primaryContainer,
-        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-    ) {
-        val colors = NavigationBarItemDefaults.colors(
-            indicatorColor = MaterialTheme.colorScheme.inversePrimary,
-            selectedIconColor = MaterialTheme.colorScheme.inverseSurface,
-            disabledIconColor = MaterialTheme.colorScheme.primary
-        )
-        Spacer(modifier = modifier.weight(0.5f))
-        val deleteText = stringResource(R.string.delete)
-        NavigationBarItem(
-            colors = colors,
-            icon = { Icon(imageVector = Icons.Filled.Delete, contentDescription = deleteText) },
-            label = { Text(text = deleteText) },
-            selected = historyState.onSelect,
-            onClick = {
-                if (historyState.onSelect) {
-                    coroutineScope.launch {
-                        historyState.hideSelected = true
-                        delay(80)
-                        taskState.deleteTask(historyState.selectedId)
-                        delay(20)
-                        historyState.resetSelect()
-                    }
-                } else {
-                    deleteAllView()
-                }
-                view.playSoundEffect(SoundEffectConstants.CLICK)
-            }
-        )
-        val redoText = stringResource(R.string.redo)
-        NavigationBarItem(
-            colors = colors,
-            icon = { Icon(imageVector = Icons.Filled.Refresh, contentDescription = redoText) },
-            label = { Text(text = redoText) },
-            selected = historyState.onSelect,
-            onClick = {
-                if (historyState.onSelect) {
-                    coroutineScope.launch {
-                        historyState.hideSelected = true
-                        taskState.changeTaskVisibility(historyState.selectedId, undoToHistory = true)
-                        delay(100)
-                        historyState.resetSelect()
-                    }
-                } else {
-                    redoAllView()
-                }
-                view.playSoundEffect(SoundEffectConstants.CLICK)
-            }
-        )
-        Spacer(modifier = modifier.weight(0.5f))
-    }
 }
 
 @Composable
