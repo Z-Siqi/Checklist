@@ -27,8 +27,6 @@ import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 class TaskLayoutViewModel : ViewModel() {
-    //private val _listState = MutableStateFlow(ListData())
-    //val listState: MutableStateFlow<ListData> = _listState
 
     private val _navExtendedConnectData = MutableStateFlow(NavExtendedConnectData())
     val navExtendedConnector: MutableStateFlow<NavExtendedConnectData> = _navExtendedConnectData
@@ -128,7 +126,6 @@ class TaskLayoutViewModel : ViewModel() {
 
     /** Reminded task **/
     private var isRemindedData by mutableStateOf(listOf<Task>())
-    // List<Task>
     /** Remind task. Load list if load = true. If load = false, allow autoDel and id (del reminder info) to work **/
     fun remindedState(id: Int = -1, autoDel: Boolean = false, load: Boolean = false): List<Task> {
         viewModelScope.launch {
@@ -262,7 +259,7 @@ class TaskLayoutViewModel : ViewModel() {
         if (searchText.isNotEmpty()) viewModelScope.launch {
             inSearchData = MainActivity.taskDatabase.taskDao().searchedList(searchText)
         }
-        if (initWithAll) viewModelScope.launch {
+        if (initWithAll || searchingText.isEmpty()) viewModelScope.launch {
             searchingText = ""
             inSearchData = MainActivity.taskDatabase.taskDao().getAll(withoutHistory = 1)
         }
