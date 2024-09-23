@@ -1,15 +1,13 @@
 package com.sqz.checklist.ui.main.task.history
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sqz.checklist.MainActivity
 import com.sqz.checklist.database.Task
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -28,19 +26,59 @@ class TaskHistoryViewModel : ViewModel() {
     }
 
     /** Redo or Delete all task from history **/
-    fun doAllTask(doAllTaskAction: DoAllTaskAction) = viewModelScope.launch {
+    fun doAllTask(doAllTaskAction: DoTaskAction) = viewModelScope.launch {
         when (doAllTaskAction) {
-            DoAllTaskAction.Redo -> MainActivity.taskDatabase.taskDao().setAllNotHistory()
-            DoAllTaskAction.Delete -> MainActivity.taskDatabase.taskDao().deleteAllHistory()
+            DoTaskAction.Redo -> MainActivity.taskDatabase.taskDao().setAllNotHistory()
+            DoTaskAction.Delete -> MainActivity.taskDatabase.taskDao().deleteAllHistory()
         }
         // Update to LazyColumn
         updateTaskHistoryData()
     }
 
-    enum class DoAllTaskAction { Redo, Delete }
+    enum class DoTaskAction { Redo, Delete }
+
+    /** Control the History Selection State **/
+    private val _selectState = MutableStateFlow(SelectData())
+    val selectState: StateFlow<SelectData> = _selectState.asStateFlow()
+    fun setSelectTask(id: Int) {
+        _selectState.update {
+            if (!it.onSelect) {
+                it.copy(
+                    selectedId = id,
+                    onSelect = true
+                )
+            } else if (it.selectedId == id) {
+                it.copy(
+                    selectedId = -0,
+                    onSelect = false
+                )
+            } else {
+                it.copy(selectedId = id)
+            }
+        }
+    }
+
+    /** Reset Select State as Default **/
+    fun resetSelectState() {
+        _selectState.value = SelectData()
+    }
+
+    /** Delete or Undo to history as id **/
+    fun removeFromHistory(action: DoTaskAction, id: Int) = viewModelScope.launch {
+        _selectState.update { // Hide before remove is for animation
+            it.copy(hideSelected = true)
+        }
+        delay(80)
+        when (action) {
+            DoTaskAction.Delete -> deleteTask(id)
+            DoTaskAction.Redo -> changeTaskVisibilityAsUndo(id)
+        }
+        delay(20)
+        resetSelectState()
+    }
 
     /** Delete action **/
-    fun deleteTask(id: Int) = viewModelScope.launch {
+    private fun deleteTask(id: Int) = viewModelScope.launch {
         // Actions
         MainActivity.taskDatabase.taskDao().delete(
             Task(id = id, description = "", createDate = LocalDate.MIN)
@@ -51,35 +89,12 @@ class TaskHistoryViewModel : ViewModel() {
     }
 
     /** Undo to history **/
-    fun changeTaskVisibilityAsUndo(id: Int) = viewModelScope.launch { // Actions
+    private fun changeTaskVisibilityAsUndo(id: Int) = viewModelScope.launch {
+        // Actions
         MainActivity.taskDatabase.taskDao().setHistory(0, id)
         MainActivity.taskDatabase.taskDao().setHistoryId(0, id)
         arrangeHistoryId()
         // Update to LazyColumn
         updateTaskHistoryData()
-    }
-
-    /** Select task by id **/
-    fun selectTask(id: Int) {
-        if (!onSelect) {
-            selectedId = id
-            onSelect = true
-        } else if (selectedId == id) {
-            selectedId = -0
-            onSelect = false
-        } else {
-            selectedId = id
-        }
-    }
-
-    var selectedId by mutableIntStateOf(-0)
-    var onSelect by mutableStateOf(false)
-    var hideSelected by mutableStateOf(false)
-
-    /** Reset select state (selectedId, onSelect, hideSelected) **/
-    fun resetSelect() {
-        this.selectedId = -0
-        this.onSelect = false
-        this.hideSelected = false
     }
 }

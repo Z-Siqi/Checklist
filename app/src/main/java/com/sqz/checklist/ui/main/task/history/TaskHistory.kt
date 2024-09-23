@@ -58,6 +58,12 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
+data class SelectData(
+    val selectedId: Int = -0,
+    val onSelect: Boolean = false,
+    val hideSelected: Boolean = false // Hide in a short time before remove (for animation)
+)
+
 /**
  * Task history screen layout.
  **/
@@ -85,6 +91,7 @@ fun TaskHistory(
             modifier = modifier.padding(paddingValues),
             color = MaterialTheme.colorScheme.surfaceContainer
         ) {
+            val selectState = historyState.selectState.collectAsState().value
             LazyColumn(
                 modifier = modifier.fillMaxSize()
             ) {
@@ -93,12 +100,11 @@ fun TaskHistory(
                 }
                 items(item, key = { it.id }) {
                     ItemBox(
-                        id = it.id,
-                        description = it.description,
-                        createDate = it.createDate,
-                        hide = historyState.hideSelected && historyState.selectedId == it.id,
-                        view = view,
-                        historyState = historyState
+                        item = it,
+                        selectState = selectState,
+                        onItemClick = { historyState.setSelectTask(it.id) },
+                        hide = selectState.hideSelected && selectState.selectedId == it.id,
+                        view = view
                     )
                 }
                 item {
@@ -157,15 +163,14 @@ private fun HistoryTopBar(
 
 @Composable
 private fun ItemBox(
-    id: Int,
-    description: String,
-    createDate: LocalDate,
+    item: Task,
+    selectState: SelectData,
     hide: Boolean,
+    onItemClick: () -> Unit,
     modifier: Modifier = Modifier,
-    historyState: TaskHistoryViewModel = viewModel(),
     view: View
 ) {
-    val border = if (historyState.selectedId == id) {
+    val border = if (selectState.selectedId == item.id) {
         BorderStroke(3.dp, MaterialTheme.colorScheme.tertiary)
     } else BorderStroke(1.dp, MaterialTheme.colorScheme.surfaceDim)
     Column(
@@ -187,13 +192,11 @@ private fun ItemBox(
             val formatter = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.getDefault())
             val padding = modifier.padding(bottom = 8.dp, top = 12.dp, start = 12.dp, end = 11.dp)
             val onClick = modifier.clickable {
-                historyState.selectTask(id)
+                onItemClick()
                 view.playSoundEffect(SoundEffectConstants.CLICK)
             }
-            Box(
-                modifier = modifier.fillMaxSize() then onClick
-            ) {
-                val time = stringResource(R.string.task_creation_time, createDate.format(formatter))
+            Box(modifier = modifier.fillMaxSize() then onClick) {
+                val time = stringResource(R.string.task_creation_time, item.createDate.format(formatter))
                 Box(modifier = padding) {
                     Column {
                         Column(
@@ -203,7 +206,7 @@ private fun ItemBox(
                             horizontalAlignment = Alignment.Start
                         ) {
                             Text(
-                                text = description,
+                                text = item.description,
                                 modifier = modifier.padding(top = 0.dp),
                                 fontSize = 21.sp,
                                 overflow = TextOverflow.Ellipsis

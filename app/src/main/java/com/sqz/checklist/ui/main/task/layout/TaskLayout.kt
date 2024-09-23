@@ -86,11 +86,19 @@ fun TaskLayout(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             var menu by rememberSaveable { mutableStateOf(false) }
-            NavTooltipContent(textRid = R.string.task_history, onClickToTaskHistory = {
-                taskState.checkTaskAction = false
-                menu = false
-                toTaskHistory()
-            }, onDismissRequest = { menu = false }, expanded = menu, view = view)
+            NavTooltipContent(
+                onClickToTaskHistory = {
+                    taskState.checkTaskAction = false
+                    menu = false
+                    toTaskHistory()
+                },
+                onClickToSearch = {
+                    val it = NavExtendedConnectData(searchState = true)
+                    taskState.updateNavConnector(it, it)
+                    menu = false
+                },
+                onDismissRequest = { menu = false }, expanded = menu, view = view
+            )
             TopBar(scrollBehavior, topBarState, onClick = { menu = true }, view)
         }
     ) { paddingValues ->

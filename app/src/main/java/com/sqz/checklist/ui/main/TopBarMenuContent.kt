@@ -20,9 +20,9 @@ import com.sqz.checklist.R
 
 @Composable
 fun NavTooltipContent(
-    textRid: Int,
     onDismissRequest: () -> Unit,
     onClickToTaskHistory: () -> Unit,
+    onClickToSearch: () -> Unit,
     view: View,
     modifier: Modifier = Modifier,
     expanded: Boolean = false,
@@ -44,7 +44,14 @@ fun NavTooltipContent(
                         onClickToTaskHistory()
                         view.playSoundEffect(SoundEffectConstants.CLICK)
                     },
-                    text = { Text(text = stringResource(textRid)) }
+                    text = { Text(text = stringResource(R.string.task_history)) }
+                )
+                DropdownMenuItem(
+                    onClick = {
+                        onClickToSearch()
+                        view.playSoundEffect(SoundEffectConstants.CLICK)
+                    },
+                    text = { Text(text = stringResource(R.string.search)) }
                 )
             }
         }
@@ -54,5 +61,5 @@ fun NavTooltipContent(
 @Preview(showBackground = true)
 @Composable
 private fun Preview() {
-    NavTooltipContent(R.string.app_name, {}, {}, LocalView.current, expanded = true)
+    NavTooltipContent({}, {}, {}, LocalView.current, expanded = true)
 }

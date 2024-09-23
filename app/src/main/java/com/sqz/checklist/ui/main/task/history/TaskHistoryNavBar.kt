@@ -14,17 +14,15 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.sqz.checklist.R
 import com.sqz.checklist.ui.material.WarningAlertDialog
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 @Composable
 fun TaskHistoryNavBar(
@@ -32,7 +30,7 @@ fun TaskHistoryNavBar(
     modifier: Modifier = Modifier,
     historyState: TaskHistoryViewModel,
 ) {
-    val coroutineScope = rememberCoroutineScope()
+    val selectState = historyState.selectState.collectAsState().value
 
     var deleteAllView by rememberSaveable { mutableStateOf(false) }
     var redoAllView by rememberSaveable { mutableStateOf(false) }
@@ -40,8 +38,7 @@ fun TaskHistoryNavBar(
         WarningAlertDialog(
             onDismissRequest = { deleteAllView = false },
             onConfirmButtonClick = {
-                historyState.doAllTask(TaskHistoryViewModel.DoAllTaskAction.Delete)
-                historyState.updateTaskHistoryData()
+                historyState.doAllTask(TaskHistoryViewModel.DoTaskAction.Delete)
                 deleteAllView = false
             },
             textString = stringResource(R.string.delete_all_history)
@@ -51,8 +48,7 @@ fun TaskHistoryNavBar(
         WarningAlertDialog(
             onDismissRequest = { redoAllView = false },
             onConfirmButtonClick = {
-                historyState.doAllTask(TaskHistoryViewModel.DoAllTaskAction.Redo)
-                historyState.updateTaskHistoryData()
+                historyState.doAllTask(TaskHistoryViewModel.DoTaskAction.Redo)
                 redoAllView = false
             },
             textString = stringResource(R.string.redo_all_history)
@@ -75,17 +71,12 @@ fun TaskHistoryNavBar(
             colors = colors,
             icon = { Icon(imageVector = Icons.Filled.Delete, contentDescription = deleteText) },
             label = { Text(text = deleteText) },
-            selected = historyState.onSelect,
+            selected = selectState.onSelect,
             onClick = {
-                if (historyState.onSelect) {
-                    coroutineScope.launch {
-                        historyState.hideSelected = true
-                        delay(80)
-                        historyState.deleteTask(historyState.selectedId)
-                        delay(20)
-                        historyState.resetSelect()
-                    }
-                } else {
+                if (selectState.onSelect) historyState.removeFromHistory(
+                    TaskHistoryViewModel.DoTaskAction.Delete,
+                    selectState.selectedId
+                ) else {
                     deleteAllView = true
                 }
                 view.playSoundEffect(SoundEffectConstants.CLICK)
@@ -96,16 +87,12 @@ fun TaskHistoryNavBar(
             colors = colors,
             icon = { Icon(imageVector = Icons.Filled.Refresh, contentDescription = redoText) },
             label = { Text(text = redoText) },
-            selected = historyState.onSelect,
+            selected = selectState.onSelect,
             onClick = {
-                if (historyState.onSelect) {
-                    coroutineScope.launch {
-                        historyState.hideSelected = true
-                        historyState.changeTaskVisibilityAsUndo(historyState.selectedId)
-                        delay(100)
-                        historyState.resetSelect()
-                    }
-                } else {
+                if (selectState.onSelect) historyState.removeFromHistory(
+                    TaskHistoryViewModel.DoTaskAction.Redo,
+                    selectState.selectedId
+                ) else {
                     redoAllView = true
                 }
                 view.playSoundEffect(SoundEffectConstants.CLICK)
@@ -114,6 +101,6 @@ fun TaskHistoryNavBar(
         Spacer(modifier = modifier.weight(0.5f))
     }
     LaunchedEffect(true) {
-        if (historyState.onSelect) historyState.resetSelect()
+        if (selectState.onSelect) historyState.resetSelectState()
     }
 }
