@@ -237,11 +237,7 @@ private fun reminderState( // check the reminder is set or not
                             rememberState = !(workInfo != null && workInfo.state.isFinished)
                         }
                 } else {
-                    taskState.refreshList(
-                        noPinTask = true,
-                        noRemindedTask = false,
-                        noNormalTask = true
-                    )
+                    taskState.updateListState()
                     rememberState = false
                 }
             } else {

@@ -51,11 +51,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.sqz.checklist.MainActivity
 import com.sqz.checklist.R
 import com.sqz.checklist.database.Task
 import com.sqz.checklist.ui.TopBar
 import com.sqz.checklist.ui.main.NavTooltipContent
+import com.sqz.checklist.ui.main.task.ListData
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
 import com.sqz.checklist.ui.reminder.ReminderAction
 import kotlinx.coroutines.delay
@@ -72,10 +72,7 @@ fun TaskLayout(
     context: Context, view: View,
     modifier: Modifier = Modifier,
     taskState: TaskLayoutViewModel = viewModel(),
-    item: List<Task> = taskState.loadTaskData(MainActivity.taskDatabase.taskDao()),
-    pinnedItem: List<Task> = taskState.pinState(load = true),
-    isRemindedItem: List<Task> = taskState.remindedState(load = true),
-    inSearchItem: List<Task> = taskState.updateInSearch()
+    listState: ListData = taskState.listState.collectAsState().value,
 ) {
     val lazyState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
@@ -118,8 +115,7 @@ fun TaskLayout(
             color = MaterialTheme.colorScheme.surfaceContainerLow
         ) {
             LazyList( // LazyColumn lists
-                item = item, pinnedItem = pinnedItem,
-                isRemindedItem = isRemindedItem, inSearchItem = inSearchItem,
+                listState = listState,
                 lazyState = lazyState,
                 reminderCard = { reminderCard = it },
                 setReminder = { setReminder = it },
@@ -137,7 +133,7 @@ fun TaskLayout(
                 searchState = navConnector.searchState,
                 taskState = taskState
             )
-            if (item.isEmpty()) { // Show text if not any task
+            if (listState.item.isEmpty()) { // Show text if not any task
                 var delayed by rememberSaveable { mutableStateOf(false) }
                 if (delayed) {
                     Column(
@@ -289,6 +285,6 @@ private fun Preview() {
     val item = listOf(Task(0, "The quick brown fox jumps over the lazy dog.", LocalDate.now()))
     TaskLayout(
         {}, LocalContext.current, LocalView.current,
-        item = item, pinnedItem = item, isRemindedItem = item
+        listState = ListData(item, item, item)
     )
 }

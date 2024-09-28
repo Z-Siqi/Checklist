@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sqz.checklist.R
 import com.sqz.checklist.database.Task
+import com.sqz.checklist.ui.main.task.ListData
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
 import com.sqz.checklist.ui.main.task.layout.item.ItemMode
 import com.sqz.checklist.ui.main.task.layout.item.TaskData
@@ -40,8 +41,7 @@ const val CardHeight = 120
 
 @Composable
 fun LazyList(
-    item: List<Task>,
-    pinnedItem: List<Task>, isRemindedItem: List<Task>, inSearchItem: List<Task>,
+    listState: ListData,
     lazyState: LazyListState,
     reminderCard: (Int) -> Unit,
     setReminder: (Int) -> Unit,
@@ -57,10 +57,10 @@ fun LazyList(
         state = lazyState
     ) {
         if (!isInSearch) {
-            if (isRemindedItem.isNotEmpty()) {
+            if (listState.isRemindedItem.isNotEmpty()) {
                 item {
                     RemindedItem(
-                        isRemindedItem = isRemindedItem,
+                        isRemindedItem = listState.isRemindedItem,
                         reminderCard = reminderCard,
                         setReminder = setReminder,
                         screenWidthPx = screenWidthPx,
@@ -69,10 +69,10 @@ fun LazyList(
                     )
                 }
             }
-            if (pinnedItem.isNotEmpty()) {
+            if (listState.pinnedItem.isNotEmpty()) {
                 item {
                     PinnedItem(
-                        pinnedItem = pinnedItem,
+                        pinnedItem = listState.pinnedItem,
                         reminderCard = reminderCard,
                         setReminder = setReminder,
                         screenWidthPx = screenWidthPx,
@@ -82,7 +82,7 @@ fun LazyList(
                 }
             }
             item { Spacer(modifier = modifier.height(20.dp)) }
-            items(item, key = { it.id }) {
+            items(listState.item, key = { it.id }) {
                 MainListItem(
                     it = it,
                     reminderCard = reminderCard,
@@ -95,7 +95,7 @@ fun LazyList(
             }
         } else {
             item { Spacer(modifier = modifier.height(72.dp)) }
-            items(inSearchItem, key = { it.id }) {
+            items(listState.inSearchItem, key = { it.id }) {
                 MainListItem(
                     it = it,
                     reminderCard = reminderCard,

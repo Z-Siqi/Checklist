@@ -2,6 +2,7 @@ package com.sqz.checklist.ui.main.task
 
 import android.app.NotificationManager
 import android.content.Context
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -14,11 +15,12 @@ import androidx.work.WorkManager
 import com.sqz.checklist.MainActivity
 import com.sqz.checklist.R
 import com.sqz.checklist.database.Task
-import com.sqz.checklist.database.TaskDao
 import com.sqz.checklist.notification.DelayedNotificationWorker
 import com.sqz.checklist.ui.main.task.history.arrangeHistoryId
 import com.sqz.checklist.ui.main.task.layout.NavExtendedConnectData
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -42,6 +44,29 @@ class TaskLayoutViewModel : ViewModel() {
         }
     }
 
+    private val _listState = MutableStateFlow(ListData())
+    val listState: StateFlow<ListData> = _listState.asStateFlow()
+    fun updateListState(init: Boolean = false) = viewModelScope.launch {
+        _listState.update { lists ->
+            val remindedList = MainActivity.taskDatabase.taskDao().getIsRemindedList().dropWhile {
+                val parts = it.reminder?.split(":")
+                val timeMillisData = if (parts?.size!! >= 2) parts[1].toLong() else -1L
+                if (timeMillisData == -1L) Log.e("LoadingList", "Task reminder data error!")
+                !(timeMillisData != -1L && timeMillisData < System.currentTimeMillis())
+            }
+            lists.copy(
+                item = MainActivity.taskDatabase.taskDao().getAll(withoutHistory = 1),
+                pinnedItem = MainActivity.taskDatabase.taskDao().getAll(1, 0),
+                isRemindedItem = remindedList,
+            )
+        }
+        if (!init) updateInSearch(searchingText)
+    }
+
+    init {
+        updateListState(init = true)
+    }
+
     /**
      * ----- Reminder-related -----
      */
@@ -52,7 +77,7 @@ class TaskLayoutViewModel : ViewModel() {
         id: Int,
         context: Context
     ) {
-        val description = taskData.find { it.id == id }?.description
+        val description = _listState.value.item.find { it.id == id }?.description
         val workRequest = OneTimeWorkRequestBuilder<DelayedNotificationWorker>()
             .setInputData(
                 Data.Builder()
@@ -73,7 +98,7 @@ class TaskLayoutViewModel : ViewModel() {
             val remindTime = now.timeInMillis + delayDuration
             val merge = "$uuid:$remindTime"
             MainActivity.taskDatabase.taskDao().insertReminder(id = id, string = merge)
-            refreshList()
+            updateListState()
         }
     }
 
@@ -111,77 +136,36 @@ class TaskLayoutViewModel : ViewModel() {
     /**
      * ----- Task-related -----
      */
-    /**  Load saved task  **/
-    private var taskData by mutableStateOf(listOf<Task>())
-    fun loadTaskData(dao: TaskDao): List<Task> {
-        viewModelScope.launch {
-            taskData = dao.getAll(withoutHistory = 1)
-        }
-        return taskData
-    }
-
     var checkTaskAction by mutableStateOf(false)
     var undoActionId by mutableIntStateOf(-0)
     var undoTaskAction by mutableStateOf(false)
 
-    /** Reminded task **/
-    private var isRemindedData by mutableStateOf(listOf<Task>())
-    /** Remind task. Load list if load = true. If load = false, allow autoDel and id (del reminder info) to work **/
-    fun remindedState(id: Int = -1, autoDel: Boolean = false, load: Boolean = false): List<Task> {
+    /** Remind task. autoDel and id (del reminder info) **/
+    fun remindedState(id: Int = -1, autoDel: Boolean = false) {
         viewModelScope.launch {
-            if (load) {
-                isRemindedData = MainActivity.taskDatabase.taskDao().getIsRemindedList()
-                for (data in isRemindedData) {
-                    data.reminder?.let {
-                        val parts = it.split(":")
-                        if (parts.size >= 2) {
-                            parts[0]
-                            val time = parts[1].toLong()
-                            if (time < System.currentTimeMillis()) {
-                                if (isRemindedData.any { item -> item.id == data.id }) {
-                                    isRemindedData = isRemindedData.filter { find ->
-                                        find.id != data.id
-                                    }
-                                    isRemindedData += data
-                                } else isRemindedData += data
-                            } else isRemindedData = isRemindedData.filter { find ->
-                                find.id != data.id
-                            }
+            if (id != -1) MainActivity.taskDatabase.taskDao().deleteReminder(id)
+            if (autoDel) for (data in _listState.value.isRemindedItem) {
+                data.reminder?.let {
+                    val parts = it.split(":")
+                    if (parts.size >= 2) {
+                        parts[0]
+                        val time = parts[1].toLong()
+                        if (time < System.currentTimeMillis() - 43200000) {
+                            MainActivity.taskDatabase.taskDao().deleteReminder(data.id)
                         }
                     }
                 }
-            } else {
-                if (id != -1) MainActivity.taskDatabase.taskDao().deleteReminder(id)
-                if (autoDel) for (data in isRemindedData) {
-                    data.reminder?.let {
-                        val parts = it.split(":")
-                        if (parts.size >= 2) {
-                            parts[0]
-                            val time = parts[1].toLong()
-                            if (time < System.currentTimeMillis() - 43200000) {
-                                MainActivity.taskDatabase.taskDao().deleteReminder(data.id)
-                            }
-                        }
-                    }
-                }
-                isRemindedData = remindedState(load = true)
             }
+            updateListState()
         }
-        return isRemindedData
     }
 
     /** Set task pin. Load list if load = true. If load = false, allow set to work **/
-    private var isPinTaskData by mutableStateOf(listOf<Task>())
-    fun pinState(id: Int = 0, set: Int = 0, load: Boolean = false): List<Task> {
+    fun pinState(id: Int = 0, set: Int = 0){
         viewModelScope.launch {
-            if (load) {
-                isPinTaskData = MainActivity.taskDatabase.taskDao().getAll(1, 0)
-            } else {
-                MainActivity.taskDatabase.taskDao().editTaskPin(id, set)
-                refreshList()
-            }
+            MainActivity.taskDatabase.taskDao().editTaskPin(id, set)
+            updateListState()
         }
-        return isPinTaskData
     }
 
     /**  Insert task to database  **/
@@ -189,7 +173,7 @@ class TaskLayoutViewModel : ViewModel() {
         viewModelScope.launch {
             val insert = Task(description = description, createDate = LocalDate.now())
             MainActivity.taskDatabase.taskDao().insertAll(insert)
-            refreshList()
+            updateListState()
         }
     }
 
@@ -197,7 +181,7 @@ class TaskLayoutViewModel : ViewModel() {
     fun editTask(id: Int, edit: String) {
         viewModelScope.launch {
             MainActivity.taskDatabase.taskDao().editTask(id, edit)
-            refreshList()
+            updateListState()
         }
     }
 
@@ -221,7 +205,7 @@ class TaskLayoutViewModel : ViewModel() {
             val maxId = MainActivity.taskDatabase.taskDao().getIsHistoryIdTop()
             MainActivity.taskDatabase.taskDao().setHistoryId((maxId + 1), id)
             // Update to LazyColumn
-            refreshList()
+            updateListState()
         } else if (undoToHistory) viewModelScope.launch { // Actions
             MainActivity.taskDatabase.taskDao().setHistory(0, id)
             MainActivity.taskDatabase.taskDao().setHistoryId(0, id)
@@ -229,7 +213,7 @@ class TaskLayoutViewModel : ViewModel() {
             undoActionId = -0
             cancelReminderAction = true
             // Update to LazyColumn
-            refreshList()
+            updateListState()
         }
     }
 
@@ -252,37 +236,20 @@ class TaskLayoutViewModel : ViewModel() {
 
     /** Search Task **/
     var searchingText by mutableStateOf("")
-    private var inSearchData by mutableStateOf(listOf<Task>())
     fun updateInSearch(
         searchText: String = "", reset: Boolean = false, initWithAll: Boolean = false
-    ): List<Task> {
-        if (searchText.isNotEmpty()) viewModelScope.launch {
-            inSearchData = MainActivity.taskDatabase.taskDao().searchedList(searchText)
-        }
-        if (initWithAll || searchingText.isEmpty()) viewModelScope.launch {
-            searchingText = ""
-            inSearchData = MainActivity.taskDatabase.taskDao().getAll(withoutHistory = 1)
-        }
-        if (reset) {
-            searchingText = ""
-            val resetList by mutableStateOf(listOf<Task>())
-            inSearchData = resetList
-        }
-        return this.inSearchData
-    }
-
-    /**
-     * Refresh List
-     **/
-    suspend fun refreshList(
-        noPinTask: Boolean = false,
-        noRemindedTask: Boolean = false,
-        noNormalTask: Boolean = false,
-        noInSearchTask: Boolean = false,
     ) {
-        if (!noNormalTask) taskData = MainActivity.taskDatabase.taskDao().getAll(withoutHistory = 1)
-        if (!noPinTask) isPinTaskData = MainActivity.taskDatabase.taskDao().getAll(1, 0)
-        if (!noRemindedTask) remindedState()
-        if (!noInSearchTask) updateInSearch(searchingText)
+        suspend fun returnList(): List<Task> {
+            if (searchText.isNotEmpty()) {
+                return MainActivity.taskDatabase.taskDao().searchedList(searchText)
+            }
+            if (initWithAll || searchingText.isEmpty()) {
+                searchingText = ""
+                return MainActivity.taskDatabase.taskDao().getAll(withoutHistory = 1)
+            }
+            if (reset) searchingText = ""
+            return listOf()
+        }
+        viewModelScope.launch { _listState.update { it.copy(inSearchItem = returnList()) } }
     }
 }

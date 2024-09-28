@@ -28,7 +28,11 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.TopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -50,8 +54,10 @@ import com.sqz.checklist.ui.main.task.history.TaskHistoryViewModel
 import com.sqz.checklist.ui.main.task.layout.TaskLayout
 import com.sqz.checklist.ui.main.task.layout.taskExtendedNavButton
 import com.sqz.checklist.ui.material.TextTooltipBox
+import kotlinx.coroutines.delay
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.Calendar
 import java.util.Locale
 
 enum class MainLayoutNav {
@@ -255,7 +261,20 @@ fun TopBar(
 
 @Composable
 private fun topBarContent(pattern: String): String {
-    val currentDate = LocalDate.now()
     val formatter = DateTimeFormatter.ofPattern(pattern, Locale.getDefault())
-    return currentDate.format(formatter)
+    var dateTime by remember { mutableStateOf(LocalDate.now().format(formatter))}
+    LaunchedEffect(Unit) { // Auto update date time when date change
+        val calendar = Calendar.getInstance()
+        calendar.add(Calendar.DAY_OF_YEAR, 1)
+        calendar.set(Calendar.HOUR_OF_DAY, 0)
+        calendar.set(Calendar.MINUTE, 0)
+        calendar.set(Calendar.SECOND, 0)
+        calendar.set(Calendar.MILLISECOND, 0)
+        val setUpdateWaitingTime = calendar.timeInMillis - System.currentTimeMillis()
+        while(true) {
+            delay(setUpdateWaitingTime)
+            dateTime = LocalDate.now().format(formatter)
+        }
+    }
+    return dateTime
 }
