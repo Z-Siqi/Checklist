@@ -48,11 +48,11 @@ class TaskLayoutViewModel : ViewModel() {
     val listState: StateFlow<ListData> = _listState.asStateFlow()
     fun updateListState(init: Boolean = false) = viewModelScope.launch {
         _listState.update { lists ->
-            val remindedList = MainActivity.taskDatabase.taskDao().getIsRemindedList().dropWhile {
+            val remindedList = MainActivity.taskDatabase.taskDao().getIsRemindedList().filter {
                 val parts = it.reminder?.split(":")
                 val timeMillisData = if (parts?.size!! >= 2) parts[1].toLong() else -1L
                 if (timeMillisData == -1L) Log.e("LoadingList", "Task reminder data error!")
-                !(timeMillisData != -1L && timeMillisData < System.currentTimeMillis())
+                timeMillisData != -1L && timeMillisData < System.currentTimeMillis()
             }
             lists.copy(
                 item = MainActivity.taskDatabase.taskDao().getAll(withoutHistory = 1),
@@ -145,15 +145,11 @@ class TaskLayoutViewModel : ViewModel() {
         viewModelScope.launch {
             if (id != -1) MainActivity.taskDatabase.taskDao().deleteReminder(id)
             if (autoDel) for (data in _listState.value.isRemindedItem) {
-                data.reminder?.let {
-                    val parts = it.split(":")
-                    if (parts.size >= 2) {
-                        parts[0]
-                        val time = parts[1].toLong()
-                        if (time < System.currentTimeMillis() - 43200000) {
-                            MainActivity.taskDatabase.taskDao().deleteReminder(data.id)
-                        }
-                    }
+                val parts = data.reminder?.split(":")
+                val timeMillisData = if (parts?.size!! >= 2) parts[1].toLong() else -1L
+                val delReminderTime = timeMillisData < System.currentTimeMillis() - 43200000
+                if (timeMillisData != -1L && delReminderTime) {
+                    MainActivity.taskDatabase.taskDao().deleteReminder(data.id)
                 }
             }
             updateListState()
