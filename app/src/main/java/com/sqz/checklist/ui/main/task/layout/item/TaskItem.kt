@@ -4,7 +4,6 @@ import android.content.Context
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
-import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
@@ -15,13 +14,19 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.text.input.clearText
-import androidx.compose.foundation.text.input.insert
-import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ShapeDefaults
+import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxState
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.rememberSwipeToDismissBoxState
@@ -29,7 +34,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -41,14 +45,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat.getSystemService
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.work.WorkManager
-import com.sqz.checklist.MainActivity
 import com.sqz.checklist.R
-import com.sqz.checklist.ui.material.TaskChangeContentCard
-import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
+import com.sqz.checklist.database.Task
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -57,34 +59,28 @@ import java.util.UUID
 
 @Composable
 fun TaskItem(
-    taskData: TaskData,
-    reminderCardClick: (id: Int) -> Unit,
-    setReminderClick: (id: Int) -> Unit,
-    isPin: Boolean,
+    task: Task,
+    onTaskItemClick: (task: Task, type: CardClickType, reminderState: Boolean) -> Unit,
+    checked: (id: Int) -> Unit,
+    getIsHistory: Boolean,
     context: Context,
     itemState: SwipeToDismissBoxState,
     mode: ItemMode,
-    modifier: Modifier = Modifier,
-    taskState: TaskLayoutViewModel = viewModel()
+    modifier: Modifier = Modifier
 ) { // Process card action
-    val dismissInEndToStart = itemState.currentValue == SwipeToDismissBoxValue.EndToStart
-    val dismissInStartToEnd = itemState.currentValue == SwipeToDismissBoxValue.StartToEnd
-    val isDismissed = dismissInEndToStart || dismissInStartToEnd
-    if (isDismissed) {
-        var isDismissedId by rememberSaveable { mutableIntStateOf(0) }
-        LaunchedEffect(true) { isDismissedId++ }
-        if (isDismissedId < 1) {
-            taskState.changeTaskVisibility(taskData.id, toHistory = true)
-            taskState.checkTaskAction = true
-            taskState.undoActionId = taskData.id
-        }
-        if (!taskState.getIsHistory(taskData.id)) LaunchedEffect(true) {
-            itemState.reset()
-        }
-    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        Vibrate(context, itemState)
+    val remindTime = @Composable { // The text of reminder time
+        val parts = task.reminder?.split(":")
+        val getTimeInLong = if (parts != null && parts.size >= 2) parts[1].toLong() else 0L
+        val fullDateShort = stringResource(R.string.full_date_short)
+        if (getTimeInLong <= 1000L) null else SimpleDateFormat(
+            fullDateShort,
+            Locale.getDefault()
+        ).format(getTimeInLong)
     }
-    val height = if (!isDismissed) 120.dp else 0.dp
+    val formatter = DateTimeFormatter.ofPattern(
+        stringResource(R.string.task_date_format),
+        Locale.getDefault()
+    )
     Column(
         modifier = modifier
             .animateContentSize(
@@ -93,100 +89,103 @@ fun TaskItem(
                     stiffness = Spring.StiffnessMedium
                 )
             )
-            .height(height),
+            .height(swipeToDismissControl(itemState, { checked(task.id) }, getIsHistory, context)),
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        var taskEditCard by rememberSaveable { mutableStateOf(false) }
-        val formatter = DateTimeFormatter.ofPattern(
-            stringResource(R.string.task_date_format),
-            Locale.getDefault()
-        )
-        val reminderState = reminderState(taskData.id, context, taskData.reminder, taskState)
-        ItemBox(
-            description = taskData.description,
-            dateText = if (mode == ItemMode.RemindedTask) {
-                stringResource(R.string.task_reminded_time, reminderTimeText(taskData.id))
-            } else {
-                stringResource(R.string.task_creation_time, taskData.createDate.format(formatter))
-            },
-            reminderOnClick = {
-                if (reminderState) {
-                    reminderCardClick(taskData.id)
-                } else {
-                    setReminderClick(taskData.id)
-                }
-            },
-            editOnClick = { taskEditCard = true },
-            timerIconState = reminderState,
-            topRightIconOnClick = {
-                if (mode == ItemMode.RemindedTask) {
-                    taskState.remindedState(id = taskData.id)
-                } else {
-                    if (isPin) {
-                        taskState.pinState(id = taskData.id, set = 0)
-                    } else {
-                        taskState.pinState(id = taskData.id, set = 1)
-                    }
-                }
-            },
-            pinIconState = isPin,
-            tooltipRemindText = if (reminderState) {
-                reminderTimeText(taskData.id)
-            } else null,
+        val horizontalEdge = if (mode == ItemMode.PinnedTask) 10 else 14
+        val bgStartEnd = horizontalEdge.dp
+        val startEnd = bgStartEnd - 2.dp
+        val viewRange = (itemState.progress in 0.1f..0.9f)
+        val isStartToEnd = itemState.dismissDirection == SwipeToDismissBoxValue.StartToEnd
+        val isEndToStart = itemState.dismissDirection == SwipeToDismissBoxValue.EndToStart
+        SwipeToDismissBox(
             state = itemState,
-            horizontalEdge = if (mode == ItemMode.PinnedTask) 10 else 14,
-            mode = mode
-        )
-        val textState = rememberTextFieldState()
-        if (taskEditCard) {
-            LaunchedEffect(true) {
-                textState.clearText()
-                textState.edit { insert(0, taskData.description) }
-            }
-            val noChangeDoNothing = stringResource(R.string.no_change_do_nothing)
-            TaskChangeContentCard(
-                onDismissRequest = { taskEditCard = false },
-                confirm = {
-                    if (textState.text.toString() != "") {
-                        taskState.editTask(id = taskData.id, edit = textState.text.toString())
-                        taskEditCard = false
-                    } else {
-                        Toast.makeText(context, noChangeDoNothing, Toast.LENGTH_SHORT).show()
+            backgroundContent = { // back of card
+                Card(
+                    modifier = modifier
+                        .fillMaxSize()
+                        .padding(start = bgStartEnd, end = bgStartEnd, top = 4.dp, bottom = 4.dp),
+                    colors = CardDefaults.cardColors(MaterialTheme.colorScheme.secondary),
+                    shape = ShapeDefaults.ExtraLarge
+                ) {
+                    Row(
+                        modifier = modifier.fillMaxSize(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Spacer(modifier = modifier.weight(0.05f))
+                        AnimateInFinishedTask((viewRange && isStartToEnd), Alignment.Start)
+                        Spacer(modifier = modifier.weight(0.7f))
+                        AnimateInFinishedTask((viewRange && isEndToStart), Alignment.End)
+                        Spacer(modifier = modifier.weight(0.05f))
                     }
+                }
+            }
+        ) { // front of card
+            val reminderState = reminderState(context, task.reminder)
+            ItemContent(
+                description = task.description,
+                dateText = if (mode == ItemMode.RemindedTask) {
+                    stringResource(R.string.task_reminded_time, remindTime().toString())
+                } else {
+                    stringResource(
+                        R.string.task_creation_time,
+                        task.createDate.format(formatter)
+                    )
                 },
-                state = textState,
-                title = stringResource(R.string.edit_task),
-                confirmText = stringResource(R.string.edit),
-                doneImeAction = true
+                onClick = { type -> onTaskItemClick(task, type, reminderState) },
+                timerIconState = reminderState,
+                pinIconState = task.isPin,
+                tooltipRemindText = if (reminderState) remindTime() else null,
+                mode = mode,
+                modifier = modifier.padding(
+                    start = startEnd,
+                    end = startEnd,
+                    top = 4.dp,
+                    bottom = 4.dp
+                )
             )
-        } else LaunchedEffect(true) {
-            textState.clearText()
-            textState.edit { insert(0, taskData.description) }
         }
     }
 }
 
-/** The text of reminder time **/
+/** Control the action of swipe to dismiss, @return the height of card **/
 @Composable
-private fun reminderTimeText(id: Int): String {
-    var remindTime by remember { mutableLongStateOf(0) }
-    LaunchedEffect(true) {
-        val uuidAndTime = MainActivity.taskDatabase.taskDao().getReminderInfo(id)
-        uuidAndTime?.let {
-            val parts = it.split(":")
-            if (parts.size >= 2) {
-                parts[0]
-                val time = parts[1].toLong()
-                remindTime = time
+private fun swipeToDismissControl(
+    itemState: SwipeToDismissBoxState,
+    checked: () -> Unit, isHistory: Boolean, context: Context
+): Dp {
+    val dismissInEndToStart = itemState.currentValue == SwipeToDismissBoxValue.EndToStart
+    val dismissInStartToEnd = itemState.currentValue == SwipeToDismissBoxValue.StartToEnd
+    val isDismissed = dismissInEndToStart || dismissInStartToEnd
+    if (isDismissed) {
+        var isDismissedId by rememberSaveable { mutableIntStateOf(0) }
+        LaunchedEffect(true) { isDismissedId++ }
+        if (isDismissedId < 1) checked()
+        if (!isHistory) LaunchedEffect(true) {
+            itemState.reset()
+        }
+    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        Vibrate(context, itemState)
+    }
+    return if (!isDismissed) 120.dp else 0.dp
+}
+
+/** check the reminder is set or not **/
+@Composable
+private fun reminderState(context: Context, reminder: String?): Boolean {
+    var rememberState by rememberSaveable { mutableStateOf(false) }
+    val parts = reminder?.split(":")
+    if (parts != null && parts.size >= 2) {
+        val uuid = parts[0]
+        val workManager = WorkManager.getInstance(context)
+        if (uuid != "undefined") {
+            workManager.getWorkInfoByIdLiveData(UUID.fromString(uuid)).observeForever { workInfo ->
+                rememberState = !(workInfo != null && workInfo.state.isFinished)
             }
         }
     }
-    val fullDateShort = stringResource(R.string.full_date_short)
-    val formatter = remember {
-        SimpleDateFormat(fullDateShort, Locale.getDefault())
-    }
-    return if (remindTime <= 1000L) "" else formatter.format(remindTime)
+    return rememberState
 }
 
 @RequiresApi(Build.VERSION_CODES.Q)
@@ -216,50 +215,10 @@ private fun Vibrate(
 }
 
 @Composable
-private fun reminderState( // check the reminder is set or not
-    id: Int,
-    context: Context,
-    reminder: String?,
-    taskState: TaskLayoutViewModel = viewModel()
-): Boolean {
-    var rememberState by rememberSaveable { mutableStateOf(false) }
-    LaunchedEffect(reminder) {
-        val uuidAndTime = MainActivity.taskDatabase.taskDao().getReminderInfo(id)
-        uuidAndTime?.let {
-            val parts = it.split(":")
-            if (parts.size >= 2) {
-                val uuid = parts[0]
-                parts[1].toLong()
-                val workManager = WorkManager.getInstance(context)
-                if (uuid != "undefined") {
-                    workManager.getWorkInfoByIdLiveData(UUID.fromString(uuid))
-                        .observeForever { workInfo ->
-                            rememberState = !(workInfo != null && workInfo.state.isFinished)
-                        }
-                } else {
-                    taskState.updateListState()
-                    rememberState = false
-                }
-            } else {
-                rememberState = false
-            }
-        }
-    }
-    return rememberState
-}
-
-@Composable
-fun AnimateInFinishedTask(
-    visible: Boolean = false,
-    alignment: Alignment.Horizontal
-) {
+private fun AnimateInFinishedTask(visible: Boolean = false, alignment: Alignment.Horizontal) {
     AnimatedVisibility(
         visible = visible,
-        enter = expandHorizontally(
-            expandFrom = alignment
-        ) + fadeIn(
-            initialAlpha = 0.5f
-        ),
+        enter = expandHorizontally(expandFrom = alignment) + fadeIn(initialAlpha = 0.5f),
         exit = fadeOut()
     ) {
         Icon(imageVector = Icons.Filled.Check, contentDescription = stringResource(R.string.check))
@@ -274,8 +233,7 @@ private fun Preview() {
         positionalThreshold = { screenWidthPx * 0.38f },
     )
     TaskItem(
-        TaskData(0, "The quick brown fox jumps over the lazy dog.", LocalDate.now(), ""),
-        isPin = false, reminderCardClick = {}, setReminderClick = {},
-        context = LocalContext.current, itemState = state, mode = ItemMode.NormalTask
+        Task(0, "The quick brown fox jumps over the lazy dog.", LocalDate.now()),
+        { _, _, _ -> }, {}, false, LocalContext.current, state, ItemMode.NormalTask
     )
 }

@@ -22,11 +22,6 @@ interface TaskDao {
     suspend fun searchedList(search: String): List<Task>
 
 
-    /* Get Value Actions */
-    @Query("SELECT reminder FROM task WHERE id = :id")
-    suspend fun getReminderInfo(id: Int): String?
-
-
     /* Insert & Edit Actions */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(vararg task: Task)

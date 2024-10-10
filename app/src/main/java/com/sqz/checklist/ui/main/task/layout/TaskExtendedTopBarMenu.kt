@@ -1,4 +1,4 @@
-package com.sqz.checklist.ui.main
+package com.sqz.checklist.ui.main.task.layout
 
 import android.view.SoundEffectConstants
 import android.view.View
@@ -11,22 +11,30 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.sqz.checklist.R
 
+/**
+ * Top bar menu content.
+ * @return close menu request when return 0
+ */
 @Composable
-fun NavTooltipContent(
-    onDismissRequest: () -> Unit,
+fun topBarExtendedMenu(
+    state: Boolean = false,
     onClickToTaskHistory: () -> Unit,
     onClickToSearch: () -> Unit,
     view: View,
     modifier: Modifier = Modifier,
-    expanded: Boolean = false,
-) {
+) : Int {
+    var closeMenu by remember { mutableIntStateOf(-1) }
+    LaunchedEffect(closeMenu) { if (state) closeMenu = 1 }
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -35,14 +43,15 @@ fun NavTooltipContent(
     ) {
         Column(verticalArrangement = Arrangement.Top) {
             DropdownMenu(
-                expanded = expanded,
-                onDismissRequest = onDismissRequest,
+                expanded = state,
+                onDismissRequest = { closeMenu = 0 },
                 modifier = modifier
             ) {
                 DropdownMenuItem(
                     onClick = {
                         onClickToTaskHistory()
                         view.playSoundEffect(SoundEffectConstants.CLICK)
+                        closeMenu = 0
                     },
                     text = { Text(text = stringResource(R.string.task_history)) }
                 )
@@ -50,16 +59,12 @@ fun NavTooltipContent(
                     onClick = {
                         onClickToSearch()
                         view.playSoundEffect(SoundEffectConstants.CLICK)
+                        closeMenu = 0
                     },
                     text = { Text(text = stringResource(R.string.search)) }
                 )
             }
         }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun Preview() {
-    NavTooltipContent({}, {}, {}, LocalView.current, expanded = true)
+    return closeMenu
 }

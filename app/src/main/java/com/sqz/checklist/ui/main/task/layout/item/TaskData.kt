@@ -1,10 +1,8 @@
 package com.sqz.checklist.ui.main.task.layout.item
 
-import java.time.LocalDate
+import com.sqz.checklist.ui.reminder.ReminderData
 
 data class TaskData(
-    val id: Int,
-    val description: String,
-    val createDate: LocalDate,
-    val reminder: String?
+    val reminder: ReminderData = ReminderData(),
+    val editState: EditState = EditState(),
 )

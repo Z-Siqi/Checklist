@@ -3,21 +3,28 @@ package com.sqz.checklist.ui.main.task
 import android.app.NotificationManager
 import android.content.Context
 import android.util.Log
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.work.Data
-import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.sqz.checklist.MainActivity
 import com.sqz.checklist.R
 import com.sqz.checklist.database.Task
-import com.sqz.checklist.notification.DelayedNotificationWorker
+import com.sqz.checklist.notification.NotificationCreator
 import com.sqz.checklist.ui.main.task.history.arrangeHistoryId
+import com.sqz.checklist.ui.main.task.layout.ListData
 import com.sqz.checklist.ui.main.task.layout.NavExtendedConnectData
+import com.sqz.checklist.ui.main.task.layout.item.CardClickType
+import com.sqz.checklist.ui.main.task.layout.item.EditState
+import com.sqz.checklist.ui.main.task.layout.item.TaskData
+import com.sqz.checklist.ui.main.task.layout.check.CheckDataState
+import com.sqz.checklist.ui.reminder.ReminderActionType
+import com.sqz.checklist.ui.reminder.ReminderData
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -34,11 +41,12 @@ class TaskLayoutViewModel : ViewModel() {
     val navExtendedConnector: MutableStateFlow<NavExtendedConnectData> = _navExtendedConnectData
     fun updateNavConnector(data: NavExtendedConnectData, updateSet: NavExtendedConnectData) {
         _navExtendedConnectData.update {
+            val searchState = data.searchState
             it.copy(
                 canScroll = if (updateSet.canScroll) data.canScroll else it.canScroll,
                 scrollToFirst = if (updateSet.scrollToFirst) data.scrollToFirst else it.scrollToFirst,
                 scrollToBottom = if (updateSet.scrollToBottom) data.scrollToBottom else it.scrollToBottom,
-                searchState = if (updateSet.searchState) data.searchState else it.searchState,
+                searchState = if (updateSet.searchState) searchState else it.searchState,
                 canScrollForward = if (updateSet.canScrollForward) data.canScrollForward else it.canScrollForward
             )
         }
@@ -46,7 +54,7 @@ class TaskLayoutViewModel : ViewModel() {
 
     private val _listState = MutableStateFlow(ListData())
     val listState: StateFlow<ListData> = _listState.asStateFlow()
-    fun updateListState(init: Boolean = false) = viewModelScope.launch {
+    private fun updateListState(init: Boolean = false) = viewModelScope.launch {
         _listState.update { lists ->
             val remindedList = MainActivity.taskDatabase.taskDao().getIsRemindedList().filter {
                 val parts = it.reminder?.split(":")
@@ -71,29 +79,18 @@ class TaskLayoutViewModel : ViewModel() {
      * ----- Reminder-related -----
      */
     /** Send a delayed notification to user **/
-    suspend fun setReminder(
-        delayDuration: Long,
-        timeUnit: TimeUnit,
-        id: Int,
-        context: Context
-    ) {
+    suspend fun setReminder(delayDuration: Long, timeUnit: TimeUnit, id: Int, context: Context) {
         val description = _listState.value.item.find { it.id == id }?.description
-        val workRequest = OneTimeWorkRequestBuilder<DelayedNotificationWorker>()
-            .setInputData(
-                Data.Builder()
-                    .putString("channelId", context.getString(R.string.tasks))
-                    .putString("channelName", context.getString(R.string.task_reminder))
-                    .putString("channelDescription", context.getString(R.string.description))
-                    .putString("title", description)
-                    .putString("content", "")
-                    .putInt("notifyId", id)
-                    .build()
-            )
-            .setInitialDelay(delayDuration, timeUnit)
-            .build()
+        val notification = NotificationCreator().create(
+            channelId = context.getString(R.string.tasks),
+            channelName = context.getString(R.string.task_reminder),
+            channelDescription = context.getString(R.string.description),
+            description = description!!, notifyId = id,
+            delayDuration = delayDuration, timeUnit = timeUnit,
+            context = context
+        )
         viewModelScope.launch {
-            WorkManager.getInstance(context).enqueue(workRequest)
-            val uuid = workRequest.id.toString()
+            val uuid = notification.toString()
             val now = Calendar.getInstance()
             val remindTime = now.timeInMillis + delayDuration
             val merge = "$uuid:$remindTime"
@@ -103,42 +100,97 @@ class TaskLayoutViewModel : ViewModel() {
     }
 
     /** Cancel reminder by id. If cancelHistory = true, cancel all reminder which in history **/
-    fun cancelReminder(id: Int = -1, context: Context, cancelHistory: Boolean = false) {
+    fun cancelReminder(
+        id: Int = -1, reminder: String?, context: Context, cancelHistory: Boolean = false
+    ) {
         if (!cancelHistory && id != -1) viewModelScope.launch {
-            // Cancel sent notification
-            val uuidAndTime = MainActivity.taskDatabase.taskDao().getReminderInfo(id)
-            uuidAndTime?.let {
-                val parts = it.split(":")
-                if (parts.size >= 2) {
-                    val uuid = parts[0]
-                    parts[1].toLong()
-                    val workManager = WorkManager.getInstance(context)
-                    workManager.cancelWorkById(UUID.fromString(uuid))
-                }
+            try { // Cancel sent notification
+                val workManager = WorkManager.getInstance(context)
+                val parts = reminder?.split(":")
+                val uuid = if (parts?.size!! >= 2) parts[0] else null
+                if (uuid != null) workManager.cancelWorkById(UUID.fromString(uuid))
+            } catch (e: Exception) {
+                Log.e("UUID", "${e.message}")
             }
-            // Delete notification if showed
-            val notificationManager = context.getSystemService(
+            val notificationManager = context.getSystemService( // Delete notification if showed
                 Context.NOTIFICATION_SERVICE
             ) as NotificationManager
             notificationManager.cancel(id)
             // Delete reminder info
             MainActivity.taskDatabase.taskDao().deleteReminder(id)
         } else viewModelScope.launch {
-            val allIsHistoryIdList = MainActivity.taskDatabase.taskDao().getAllIsHistoryId()
+            val allIsHistoryIdList = MainActivity.taskDatabase.taskDao().getAllOrderByIsHistoryId()
             for (data in allIsHistoryIdList) {
-                cancelReminder(data.id, context)
+                cancelReminder(data.id, data.reminder, context)
             }
         }
     }
 
-    var cancelReminderAction by mutableStateOf(false)
-
     /**
      * ----- Task-related -----
      */
-    var checkTaskAction by mutableStateOf(false)
-    var undoActionId by mutableIntStateOf(-0)
-    var undoTaskAction by mutableStateOf(false)
+    private val _undo = MutableStateFlow(CheckDataState())
+    val undo: MutableStateFlow<CheckDataState> = _undo
+    fun resetUndo(context: Context) { // reset undo state
+        cancelReminder(reminder = null, context = context, cancelHistory = true)
+        _undo.value = CheckDataState()
+    }
+
+    fun taskChecked(id: Int, context: Context) = _undo.update { // when task is checked
+        changeTaskVisibility(id, toHistory = true, context = context)
+        it.copy(checkTaskAction = true, undoActionId = id)
+    }
+
+    fun undoTimeout(lazyState: LazyListState, context: Context): Boolean { // process undo button
+        var rememberScroll by mutableIntStateOf(0)
+        var rememberScrollIndex by mutableIntStateOf(0)
+        val undoTimeout = { resetUndo(context) }
+        if (_undo.value.checkTaskAction) viewModelScope.launch {
+            while (true) {
+                delay(50)
+                rememberScroll = lazyState.firstVisibleItemScrollOffset
+                rememberScrollIndex = lazyState.firstVisibleItemIndex
+                _undo.update { it.copy(undoButtonState = true) }
+                delay(1500)
+                val isTimeout = rememberScroll > lazyState.firstVisibleItemScrollOffset + 10 ||
+                        rememberScroll < lazyState.firstVisibleItemScrollOffset - 10
+                for (i in 1..7) {
+                    delay(500)
+                    if (rememberScrollIndex != lazyState.firstVisibleItemIndex || isTimeout) break
+                }
+                undoTimeout()
+                break
+            }
+        }
+        return _undo.value.undoButtonState
+    }
+
+    private val _taskData = MutableStateFlow(TaskData())
+    val taskData: MutableStateFlow<TaskData> = _taskData
+    fun resetTaskData() = run { _taskData.value = TaskData() }
+
+    /** Task click action **/
+    fun onTaskItemClick(task: Task, type: CardClickType, reminderState: Boolean) {
+        fun reminderAction(id: Int, info: String?, set: Boolean) = _taskData.update {
+            val booleanToType = if (set) ReminderActionType.Set else ReminderActionType.Cancel
+            it.copy(reminder = ReminderData(id, info, booleanToType, true))
+        }
+        when (type) {
+            CardClickType.Reminder -> reminderAction(task.id, task.reminder, !reminderState)
+            CardClickType.Pin -> pinState(task.id, !task.isPin)
+            CardClickType.Close -> remindedState(id = task.id)
+            CardClickType.Edit -> {
+                _taskData.update { it.copy(editState = EditState(task.id, task.description, true)) }
+            }
+        }
+    }
+
+    /** Set task pin **/
+    private fun pinState(id: Int, set: Boolean) = viewModelScope.launch {
+        val booleanToInt = if (set) 1 else 0
+        MainActivity.taskDatabase.taskDao().editTaskPin(id, booleanToInt)
+        updateListState()
+    }
 
     /** Remind task. autoDel and id (del reminder info) **/
     fun remindedState(id: Int = -1, autoDel: Boolean = false) {
@@ -156,21 +208,11 @@ class TaskLayoutViewModel : ViewModel() {
         }
     }
 
-    /** Set task pin. Load list if load = true. If load = false, allow set to work **/
-    fun pinState(id: Int = 0, set: Int = 0){
-        viewModelScope.launch {
-            MainActivity.taskDatabase.taskDao().editTaskPin(id, set)
-            updateListState()
-        }
-    }
-
     /**  Insert task to database  **/
-    fun insertTask(description: String) {
-        viewModelScope.launch {
-            val insert = Task(description = description, createDate = LocalDate.now())
-            MainActivity.taskDatabase.taskDao().insertAll(insert)
-            updateListState()
-        }
+    fun insertTask(description: String) = viewModelScope.launch {
+        val insert = Task(description = description, createDate = LocalDate.now())
+        MainActivity.taskDatabase.taskDao().insertAll(insert)
+        updateListState()
     }
 
     /** Edit task **/
@@ -185,16 +227,16 @@ class TaskLayoutViewModel : ViewModel() {
     fun getIsHistory(id: Int): Boolean {
         var value by mutableIntStateOf(-1)
         fun getIsHistoryId(id: Int) {
-            viewModelScope.launch {
-                value = MainActivity.taskDatabase.taskDao().getIsHistory(id)
-            }
+            viewModelScope.launch { value = MainActivity.taskDatabase.taskDao().getIsHistory(id) }
         }
         getIsHistoryId(id)
         return value == 1
     }
 
     /** Delete to history or Undo to history. Must have toHistory or undoToHistory to be @true **/
-    fun changeTaskVisibility(id: Int, toHistory: Boolean = false, undoToHistory: Boolean = false) {
+    fun changeTaskVisibility(
+        id: Int, toHistory: Boolean = false, undoToHistory: Boolean = false, context: Context
+    ) {
         if (toHistory) viewModelScope.launch {
             MainActivity.taskDatabase.taskDao().setHistory(1, id)
             // Give an id for history sequence
@@ -206,8 +248,7 @@ class TaskLayoutViewModel : ViewModel() {
             MainActivity.taskDatabase.taskDao().setHistory(0, id)
             MainActivity.taskDatabase.taskDao().setHistoryId(0, id)
             arrangeHistoryId()
-            undoActionId = -0
-            cancelReminderAction = true
+            resetUndo(context)
             // Update to LazyColumn
             updateListState()
         }
@@ -220,10 +261,7 @@ class TaskLayoutViewModel : ViewModel() {
             if (value > start) {
                 val id = MainActivity.taskDatabase.taskDao().getIsHistoryBottomKeyId()
                 MainActivity.taskDatabase.taskDao().delete(
-                    Task(
-                        id = id, description = "",
-                        createDate = LocalDate.MIN
-                    )
+                    Task(id = id, description = "", createDate = LocalDate.MIN)
                 )
                 arrangeHistoryId()
             }

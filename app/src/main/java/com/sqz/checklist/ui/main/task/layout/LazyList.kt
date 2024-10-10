@@ -25,31 +25,25 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sqz.checklist.R
 import com.sqz.checklist.database.Task
-import com.sqz.checklist.ui.main.task.ListData
+import com.sqz.checklist.ui.main.task.CardHeight
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
 import com.sqz.checklist.ui.main.task.layout.item.ItemMode
-import com.sqz.checklist.ui.main.task.layout.item.TaskData
 import com.sqz.checklist.ui.main.task.layout.item.TaskItem
 
 /**
  * --- List of task ---
  **/
-const val CardHeight = 120
-
 @Composable
 fun LazyList(
     listState: ListData,
     lazyState: LazyListState,
-    reminderCard: (Int) -> Unit,
-    setReminder: (Int) -> Unit,
     undoTask: (state: SwipeToDismissBoxState) -> Unit,
     isInSearch: Boolean,
     context: Context,
     modifier: Modifier = Modifier,
-    taskState: TaskLayoutViewModel = viewModel()
+    taskState: TaskLayoutViewModel
 ) {
     val screenWidthPx = LocalConfiguration.current.screenWidthDp * LocalDensity.current.density
     LazyColumn(
@@ -61,8 +55,6 @@ fun LazyList(
                 item {
                     RemindedItem(
                         isRemindedItem = listState.isRemindedItem,
-                        reminderCard = reminderCard,
-                        setReminder = setReminder,
                         screenWidthPx = screenWidthPx,
                         context = context,
                         taskState = taskState
@@ -73,8 +65,6 @@ fun LazyList(
                 item {
                     PinnedItem(
                         pinnedItem = listState.pinnedItem,
-                        reminderCard = reminderCard,
-                        setReminder = setReminder,
                         screenWidthPx = screenWidthPx,
                         context = context,
                         taskState = taskState
@@ -82,11 +72,9 @@ fun LazyList(
                 }
             }
             item { Spacer(modifier = modifier.height(20.dp)) }
-            items(listState.item, key = { it.id }) {
+            items(listState.item, key = { it.id }) { task ->
                 MainListItem(
-                    it = it,
-                    reminderCard = reminderCard,
-                    setReminder = setReminder,
+                    task = task,
                     screenWidthPx = screenWidthPx,
                     undoTask = undoTask,
                     context = context,
@@ -95,11 +83,9 @@ fun LazyList(
             }
         } else {
             item { Spacer(modifier = modifier.height(72.dp)) }
-            items(listState.inSearchItem, key = { it.id }) {
+            items(listState.inSearchItem, key = { it.id }) { task ->
                 MainListItem(
-                    it = it,
-                    reminderCard = reminderCard,
-                    setReminder = setReminder,
+                    task = task,
                     screenWidthPx = screenWidthPx,
                     undoTask = undoTask,
                     context = context,
@@ -116,23 +102,22 @@ fun LazyList(
  **/
 @Composable
 private fun MainListItem(
-    it: Task,
-    reminderCard: (Int) -> Unit,
-    setReminder: (Int) -> Unit,
+    task: Task,
     screenWidthPx: Float,
     undoTask: (state: SwipeToDismissBoxState) -> Unit,
     context: Context,
-    taskState: TaskLayoutViewModel = viewModel()
+    taskState: TaskLayoutViewModel
 ) {
     val state = rememberSwipeToDismissBoxState(
         positionalThreshold = { screenWidthPx * 0.35f },
     )
     TaskItem(
-        taskData = TaskData(it.id, it.description, it.createDate, it.reminder),
-        reminderCardClick = { id -> reminderCard(id) },
-        setReminderClick = { id -> setReminder(id) },
-        isPin = it.isPin, context = context, itemState = state,
-        mode = ItemMode.NormalTask, taskState = taskState
+        task = task,
+        onTaskItemClick = taskState::onTaskItemClick,
+        checked = { taskState.taskChecked(it, context) },
+        getIsHistory = taskState.getIsHistory(task.id),
+        context = context, itemState = state,
+        mode = ItemMode.NormalTask
     )
     undoTask(state)
 }
@@ -141,10 +126,9 @@ private fun MainListItem(
 @Composable
 private fun RemindedItem(
     isRemindedItem: List<Task>,
-    reminderCard: (Int) -> Unit, setReminder: (Int) -> Unit,
     screenWidthPx: Float, context: Context,
     modifier: Modifier = Modifier,
-    taskState: TaskLayoutViewModel = viewModel()
+    taskState: TaskLayoutViewModel
 ) {
     val remindedHeight = (39 + (CardHeight * isRemindedItem.size)).dp
     val animatedRemindedHeight by animateDpAsState(
@@ -166,18 +150,18 @@ private fun RemindedItem(
             modifier = modifier.padding(start = 9.dp, top = 5.dp, bottom = 5.dp)
         )
         LazyColumn {
-            items(isRemindedItem, key = { it.id }) {
+            items(isRemindedItem, key = { it.id }) { task ->
                 val state = rememberSwipeToDismissBoxState(
                     positionalThreshold = { screenWidthPx * 0.35f },
                 )
                 TaskItem(
-                    taskData = TaskData(
-                        it.id, it.description, it.createDate, it.reminder
-                    ),
-                    reminderCardClick = { id -> reminderCard(id) },
-                    setReminderClick = { id -> setReminder(id) },
-                    isPin = it.isPin, context = context, itemState = state,
-                    mode = ItemMode.RemindedTask, taskState = taskState
+                    task = task,
+                    onTaskItemClick = taskState::onTaskItemClick,
+                    checked = { taskState.taskChecked(it, context) },
+                    getIsHistory = taskState.getIsHistory(task.id),
+                    context = context,
+                    itemState = state,
+                    mode = ItemMode.RemindedTask
                 )
             }
         }
@@ -188,10 +172,9 @@ private fun RemindedItem(
 @Composable
 private fun PinnedItem(
     pinnedItem: List<Task>,
-    reminderCard: (Int) -> Unit, setReminder: (Int) -> Unit,
     screenWidthPx: Float, context: Context,
     modifier: Modifier = Modifier,
-    taskState: TaskLayoutViewModel = viewModel()
+    taskState: TaskLayoutViewModel
 ) {
     val pinnedHeight = (39 + (CardHeight * pinnedItem.size)).dp
     val animatedPinnedHeight by animateDpAsState(
@@ -213,18 +196,18 @@ private fun PinnedItem(
             modifier = modifier.padding(start = 9.dp, top = 5.dp, bottom = 5.dp)
         )
         LazyColumn {
-            items(pinnedItem, key = { it.id }) {
+            items(pinnedItem, key = { it.id }) { task ->
                 val state = rememberSwipeToDismissBoxState(
                     positionalThreshold = { screenWidthPx * 0.35f },
                 )
                 TaskItem(
-                    taskData = TaskData(
-                        it.id, it.description, it.createDate, it.reminder
-                    ),
-                    reminderCardClick = { id -> reminderCard(id) },
-                    setReminderClick = { id -> setReminder(id) },
-                    isPin = it.isPin, context = context, itemState = state,
-                    mode = ItemMode.PinnedTask, taskState = taskState
+                    task = task,
+                    onTaskItemClick = taskState::onTaskItemClick,
+                    checked = { taskState.taskChecked(it, context) },
+                    getIsHistory = taskState.getIsHistory(task.id),
+                    context = context,
+                    itemState = state,
+                    mode = ItemMode.PinnedTask
                 )
             }
         }

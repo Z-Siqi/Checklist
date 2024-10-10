@@ -12,11 +12,16 @@ import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.work.Data
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import com.sqz.checklist.MainActivity
 import com.sqz.checklist.R
+import java.util.UUID
 
-object NotificationObject {
-    fun create(
+class NotificationCreator {
+    /** Config delayed notification worker. NOT using to create notification **/
+    fun creator(
         context: Context,
         channelId: String,
         channelName: String,
@@ -33,36 +38,26 @@ object NotificationObject {
         val notificationManager: NotificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.createNotificationChannel(channel)
-
         val fullScreenIntent = Intent(context, MainActivity::class.java)
         val fullScreenPendingIntent = PendingIntent.getActivity(
             context, 0,
             fullScreenIntent, PendingIntent.FLAG_MUTABLE
         )
-
         // Build and show notification
         val builder = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.drawable.task_icon)
             .setContentTitle(title)
             .setContentText(content)
             .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .setCategory(NotificationCompat.CATEGORY_MESSAGE)
             .setFullScreenIntent(fullScreenPendingIntent, true)
-
         with(NotificationManagerCompat.from(context)) {
             if (ActivityCompat.checkSelfPermission(
                     context,
                     Manifest.permission.POST_NOTIFICATIONS
                 ) != PackageManager.PERMISSION_GRANTED
             ) {
-                // TODO: Consider calling
-                //    ActivityCompat#requestPermissions
-                // here to request the missing permissions, and then overriding
-                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                //                                          int[] grantResults)
-                // to handle the case where the user grants the permission. See the documentation
-                // for ActivityCompat#requestPermissions for more details.
-
                 val packageManager = context.packageManager
                 val checkApp1 = try {
                     packageManager.getPackageInfo("me.piebridge.brevent", 0)
@@ -87,5 +82,34 @@ object NotificationObject {
             }
             this.notify(notifyId, builder.build())
         }
+    }
+
+    /** Create delayed notification **/
+    fun create(
+        channelId: String,
+        channelName: String,
+        channelDescription: String,
+        description: String,
+        content: String = "",
+        notifyId: Int,
+        delayDuration: Long,
+        timeUnit: java.util.concurrent.TimeUnit,
+        context: Context
+    ) : UUID {
+        val workRequest = OneTimeWorkRequestBuilder<DelayedNotificationWorker>()
+            .setInputData(
+                Data.Builder()
+                    .putString("channelId", channelId)
+                    .putString("channelName", channelName)
+                    .putString("channelDescription", channelDescription)
+                    .putString("title", description)
+                    .putString("content", content)
+                    .putInt("notifyId", notifyId)
+                    .build()
+            )
+            .setInitialDelay(delayDuration, timeUnit)
+            .build()
+        WorkManager.getInstance(context).enqueue(workRequest)
+        return workRequest.id
     }
 }

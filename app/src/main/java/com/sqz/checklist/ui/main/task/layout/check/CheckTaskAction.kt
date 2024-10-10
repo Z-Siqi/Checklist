@@ -1,5 +1,7 @@
-package com.sqz.checklist.ui.main.task.layout
+package com.sqz.checklist.ui.main.task.layout.check
 
+import android.content.Context
+import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,11 +13,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalWindowInfo
@@ -29,58 +27,35 @@ import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
 import kotlinx.coroutines.delay
 
 @Composable
-internal fun CheckUndoAction(
+fun CheckTaskAction(
+    whenUndo: () -> Unit,
+    taskState: TaskLayoutViewModel,
     lazyState: LazyListState,
-    taskState: TaskLayoutViewModel
+    context: Context,
 ) {
+    val undo = taskState.undo.collectAsState().value
     val isWindowFocused = LocalWindowInfo.current.isWindowFocused
-
-    var undoButton by rememberSaveable { mutableStateOf(false) }
-    var rememberScroll by rememberSaveable { mutableIntStateOf(0) }
-    var rememberScrollIndex by rememberSaveable { mutableIntStateOf(0) }
-    var rememberTime by rememberSaveable { mutableIntStateOf(0) }
-
-    fun undoTimeout() {
-        undoButton = false
-        taskState.checkTaskAction = false
-        taskState.cancelReminderAction = true
+    if (taskState.undoTimeout(lazyState, context)) UndoButton(
+        onClick = {
+            taskState.changeTaskVisibility(
+                undo.undoActionId,
+                undoToHistory = true,
+                context = context
+            )
+            whenUndo()
+        }) else LaunchedEffect(true) { // processing after checked
+        delay(100)
+        taskState.autoDeleteHistoryTask(5)
+        taskState.remindedState(autoDel = true) // delete reminder info which 12h ago
+        Log.d("TaskLayout", "Auto del history tasks & del reminder info that 12h ago")
     }
-
-    LaunchedEffect(true) {
-        delay(50)
-        rememberScroll = lazyState.firstVisibleItemScrollOffset
-        rememberScrollIndex = lazyState.firstVisibleItemIndex
-        undoButton = true
-        delay(1500)
-        val isTimeout = rememberScroll > lazyState.firstVisibleItemScrollOffset + 10 ||
-                rememberScroll < lazyState.firstVisibleItemScrollOffset - 10
-        while (rememberTime < 7) {
-            delay(500)
-            if (rememberScrollIndex != lazyState.firstVisibleItemIndex || isTimeout) {
-                undoTimeout()
-            }
-            rememberTime++
-        }
-        undoTimeout()
-    }
-    if (undoButton) UndoButton(onClick = {
-        taskState.undoTaskAction = true
-        rememberScroll = 0
-        undoButton = false
-        taskState.checkTaskAction = false
-    })
-
-    if (!isWindowFocused && undoButton) {
-        taskState.cancelReminderAction = true
+    if (!isWindowFocused && undo.undoButtonState) {
+        taskState.cancelReminder(reminder = null, context = context, cancelHistory = true)
     }
 }
 
-
 @Composable
-private fun UndoButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
+private fun UndoButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
     Box(modifier = modifier.fillMaxSize()) {
         FloatingActionButton(
             modifier = modifier
