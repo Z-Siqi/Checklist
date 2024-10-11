@@ -79,13 +79,14 @@ class TaskLayoutViewModel : ViewModel() {
      * ----- Reminder-related -----
      */
     /** Send a delayed notification to user **/
-    suspend fun setReminder(delayDuration: Long, timeUnit: TimeUnit, id: Int, context: Context) {
-        val description = _listState.value.item.find { it.id == id }?.description
+    suspend fun setReminder(
+        delayDuration: Long, timeUnit: TimeUnit, id: Int, description: String, context: Context
+    ) {
         val notification = NotificationCreator().create(
             channelId = context.getString(R.string.tasks),
             channelName = context.getString(R.string.task_reminder),
             channelDescription = context.getString(R.string.description),
-            description = description!!, notifyId = id,
+            description = description, notifyId = id,
             delayDuration = delayDuration, timeUnit = timeUnit,
             context = context
         )
@@ -173,7 +174,7 @@ class TaskLayoutViewModel : ViewModel() {
     fun onTaskItemClick(task: Task, type: CardClickType, reminderState: Boolean) {
         fun reminderAction(id: Int, info: String?, set: Boolean) = _taskData.update {
             val booleanToType = if (set) ReminderActionType.Set else ReminderActionType.Cancel
-            it.copy(reminder = ReminderData(id, info, booleanToType, true))
+            it.copy(reminder = ReminderData(id, info, booleanToType, task.description))
         }
         when (type) {
             CardClickType.Reminder -> reminderAction(task.id, task.reminder, !reminderState)

@@ -23,7 +23,7 @@ data class ReminderData(
     val id: Int = 0,
     val reminderInfo: String? = null,
     val set: ReminderActionType = ReminderActionType.None,
-    val state: Boolean = false,
+    val description: String = "",
 )
 
 /** Processing set and cancel reminder **/
@@ -44,7 +44,13 @@ fun ReminderAction(
             },
             onConfirmClick = { timeInMilli ->
                 coroutineScope.launch {
-                    taskState.setReminder(timeInMilli, TimeUnit.MILLISECONDS, reminder.id, context)
+                    taskState.setReminder(
+                        timeInMilli,
+                        TimeUnit.MILLISECONDS,
+                        reminder.id,
+                        reminder.description,
+                        context
+                    )
                     resetState()
                 }
                 view.playSoundEffect(SoundEffectConstants.CLICK)

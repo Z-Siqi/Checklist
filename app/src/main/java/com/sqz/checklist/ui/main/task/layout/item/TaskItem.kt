@@ -175,13 +175,15 @@ private fun swipeToDismissControl(
 @Composable
 private fun reminderState(context: Context, reminder: String?): Boolean {
     var rememberState by rememberSaveable { mutableStateOf(false) }
-    val parts = reminder?.split(":")
-    if (parts != null && parts.size >= 2) {
-        val uuid = parts[0]
-        val workManager = WorkManager.getInstance(context)
-        if (uuid != "undefined") {
-            workManager.getWorkInfoByIdLiveData(UUID.fromString(uuid)).observeForever { workInfo ->
-                rememberState = !(workInfo != null && workInfo.state.isFinished)
+    LaunchedEffect(reminder) { // the LaunchedEffect is to fix delay after set reminder
+        val parts = reminder?.split(":")
+        if (parts != null && parts.size >= 2) {
+            val uuid = parts[0]
+            val workManager = WorkManager.getInstance(context)
+            if (uuid != "undefined") {
+                workManager.getWorkInfoByIdLiveData(UUID.fromString(uuid)).observeForever { workInfo ->
+                    rememberState = !(workInfo != null && workInfo.state.isFinished)
+                }
             }
         }
     }
