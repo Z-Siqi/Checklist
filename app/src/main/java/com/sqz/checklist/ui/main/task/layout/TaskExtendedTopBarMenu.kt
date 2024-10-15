@@ -1,5 +1,6 @@
 package com.sqz.checklist.ui.main.task.layout
 
+import android.content.Context
 import android.view.SoundEffectConstants
 import android.view.View
 import androidx.compose.foundation.layout.Arrangement
@@ -19,7 +20,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
 import com.sqz.checklist.R
+import com.sqz.checklist.ui.MainLayoutNav
+
+enum class TopBarMenuClickType { History, Search }
 
 /**
  * Top bar menu content.
@@ -28,43 +33,60 @@ import com.sqz.checklist.R
 @Composable
 fun topBarExtendedMenu(
     state: Boolean = false,
-    onClickToTaskHistory: () -> Unit,
-    onClickToSearch: () -> Unit,
+    navController: NavHostController,
+    onClickType: (type: TopBarMenuClickType, context: Context) -> Unit,
     view: View,
     modifier: Modifier = Modifier,
-) : Int {
+): Int {
     var closeMenu by remember { mutableIntStateOf(-1) }
     LaunchedEffect(closeMenu) { if (state) closeMenu = 1 }
-    Row(
+    val taskHistoryClick = {
+        onClickType(TopBarMenuClickType.History, view.context)
+        navController.navigate(MainLayoutNav.TaskHistory.name)
+    }
+    val searchClick = { onClickType(TopBarMenuClickType.Search, view.context) }
+    val menuList = listOf(
+        MenuItem(stringResource(R.string.task_history)) { taskHistoryClick() },
+        MenuItem(stringResource(R.string.search)) { searchClick() }
+    )
+    MenuLayout(
+        expanded = state,
+        onDismissRequest = { closeMenu = 0 },
+        menuItem = menuList,
+        view = view,
         modifier = modifier
-            .fillMaxWidth()
-            .padding(top = 15.dp, end = 8.dp),
-        horizontalArrangement = Arrangement.End
-    ) {
-        Column(verticalArrangement = Arrangement.Top) {
-            DropdownMenu(
-                expanded = state,
-                onDismissRequest = { closeMenu = 0 },
-                modifier = modifier
-            ) {
+    )
+    return closeMenu
+}
+
+@Composable
+private fun MenuLayout(
+    expanded: Boolean, onDismissRequest: () -> Unit, menuItem: List<MenuItem>, view: View,
+    modifier: Modifier = Modifier,
+) = Row(
+    modifier = modifier
+        .fillMaxWidth()
+        .padding(top = 15.dp, end = 8.dp),
+    horizontalArrangement = Arrangement.End
+) {
+    Column(verticalArrangement = Arrangement.Top) {
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = onDismissRequest,
+            modifier = modifier
+        ) {
+            menuItem.forEach {
                 DropdownMenuItem(
                     onClick = {
-                        onClickToTaskHistory()
+                        it.onClick()
                         view.playSoundEffect(SoundEffectConstants.CLICK)
-                        closeMenu = 0
+                        onDismissRequest()
                     },
-                    text = { Text(text = stringResource(R.string.task_history)) }
-                )
-                DropdownMenuItem(
-                    onClick = {
-                        onClickToSearch()
-                        view.playSoundEffect(SoundEffectConstants.CLICK)
-                        closeMenu = 0
-                    },
-                    text = { Text(text = stringResource(R.string.search)) }
+                    text = { Text(text = it.name) }
                 )
             }
         }
     }
-    return closeMenu
 }
+
+data class MenuItem(val name: String, val onClick: () -> Unit)

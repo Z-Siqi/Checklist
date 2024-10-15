@@ -55,6 +55,8 @@ import com.sqz.checklist.database.Task
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
 import com.sqz.checklist.ui.main.task.layout.check.CheckTaskAction
 import com.sqz.checklist.ui.main.task.layout.item.EditState
+import com.sqz.checklist.ui.main.task.layout.item.LazyList
+import com.sqz.checklist.ui.main.task.layout.item.ListData
 import com.sqz.checklist.ui.material.TaskChangeContentCard
 import com.sqz.checklist.ui.reminder.ReminderAction
 import kotlinx.coroutines.delay
@@ -63,7 +65,7 @@ import java.time.LocalDate
 
 /**
  * Top layout of TaskLayout.kt
- **/
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskLayout(
@@ -97,12 +99,10 @@ fun TaskLayout(
                     undoTask = false
                 }
             },
-            isInSearch = navConnector.searchState,
+            isInSearch = { // Search function
+                TaskSearchBar(searchState = listState.searchView, taskState = taskState)
+            },
             context = context,
-            taskState = taskState
-        )
-        TaskSearchBar( // Search function
-            searchState = navConnector.searchState,
             taskState = taskState
         )
         if (listState.item.isEmpty()) { // Show text if not any task
@@ -182,7 +182,7 @@ private fun TaskSearchBar(
     searchState: Boolean,
     taskState: TaskLayoutViewModel,
     modifier: Modifier = Modifier
-) {
+): Boolean {
     val undo = taskState.undo.collectAsState().value
     if (searchState) Column(modifier = modifier.fillMaxSize()) {
         val textFieldState = rememberTextFieldState()
@@ -219,51 +219,55 @@ private fun TaskSearchBar(
     }
     if (searchState) BackHandler {
         taskState.updateNavConnector(
-            NavExtendedConnectData(searchState = false),
-            NavExtendedConnectData(searchState = true)
+            NavConnectData(searchState = false),
+            NavConnectData(searchState = true)
         )
     }
+    return searchState
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun NavBarConnectorAction(
-    navConnector: NavExtendedConnectData,
+    navConnector: NavConnectData,
     lazyState: LazyListState,
     scrollBehavior: TopAppBarScrollBehavior,
-    updateNavConnector: (data: NavExtendedConnectData, updateSet: NavExtendedConnectData) -> Unit,
+    updateNavConnector: (data: NavConnectData, updateSet: NavConnectData) -> Unit,
 ) {
     val screenHeight = LocalConfiguration.current.screenHeightDp
     LaunchedEffect(lazyState) {
         snapshotFlow { lazyState.layoutInfo.totalItemsCount * 120 > screenHeight }.collect {
             updateNavConnector(
-                NavExtendedConnectData(canScroll = it),
-                NavExtendedConnectData(canScroll = true)
+                NavConnectData(canScroll = it), NavConnectData(canScroll = true)
             )
         }
     }
     LaunchedEffect(lazyState) {
         snapshotFlow { lazyState.canScrollForward }.collect {
             updateNavConnector(
-                NavExtendedConnectData(canScrollForward = it),
-                NavExtendedConnectData(canScrollForward = true)
+                NavConnectData(canScrollForward = it), NavConnectData(canScrollForward = true)
             )
         }
     }
-    if (navConnector.scrollToFirst) LaunchedEffect(true) {
+    if (navConnector.scrollToFirst) LaunchedEffect(Unit) {
         lazyState.animateScrollToItem(0)
         scrollBehavior.state.heightOffset = 0f
         updateNavConnector(
-            NavExtendedConnectData(scrollToFirst = false),
-            NavExtendedConnectData(scrollToFirst = true)
+            NavConnectData(scrollToFirst = false), NavConnectData(scrollToFirst = true)
         )
     }
-    if (navConnector.scrollToBottom) LaunchedEffect(true) {
+    if (navConnector.scrollToBottom) LaunchedEffect(Unit) {
         lazyState.animateScrollToItem(lazyState.layoutInfo.totalItemsCount)
         scrollBehavior.state.heightOffset = scrollBehavior.state.heightOffsetLimit
         updateNavConnector(
-            NavExtendedConnectData(scrollToBottom = false),
-            NavExtendedConnectData(scrollToBottom = true)
+            NavConnectData(scrollToBottom = false), NavConnectData(scrollToBottom = true)
+        )
+    }
+    LaunchedEffect(navConnector.scrollToFirst || navConnector.scrollToBottom) {
+        delay(850) // Timeout for scroll state change
+        if (navConnector.scrollToFirst || navConnector.scrollToBottom) updateNavConnector(
+            NavConnectData(scrollToFirst = false, scrollToBottom = false),
+            NavConnectData(scrollToFirst = true, scrollToBottom = true)
         )
     }
 }

@@ -57,6 +57,9 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import java.util.UUID
 
+/**
+ * Swipe-able task item for list (Expected @LazyList call this)
+ */
 @Composable
 fun TaskItem(
     task: Task,

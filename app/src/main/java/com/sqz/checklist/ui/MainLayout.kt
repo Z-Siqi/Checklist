@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import android.view.SoundEffectConstants
 import android.view.View
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
@@ -14,6 +15,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -28,7 +32,6 @@ import com.sqz.checklist.ui.main.task.history.HistoryTopBar
 import com.sqz.checklist.ui.main.task.history.TaskHistory
 import com.sqz.checklist.ui.main.task.history.TaskHistoryNavBar
 import com.sqz.checklist.ui.main.task.history.TaskHistoryViewModel
-import com.sqz.checklist.ui.main.task.layout.NavExtendedConnectData
 import com.sqz.checklist.ui.main.task.layout.TaskLayout
 import com.sqz.checklist.ui.main.task.layout.TaskLayoutTopBar
 import com.sqz.checklist.ui.main.task.layout.taskExtendedNavButton
@@ -57,9 +60,7 @@ fun MainLayout(context: Context, view: View, modifier: Modifier = Modifier) {
         @Suppress("OPT_IN_USAGE_FUTURE_ERROR") val extendedButtonData =
             when (currentRoute) {
                 // TaskLayout Extended Nav Button function
-                MainLayoutNav.TaskLayout.name -> taskExtendedNavButton(
-                    view, context, taskLayoutViewModel
-                )
+                MainLayoutNav.TaskLayout.name -> taskExtendedNavButton(view, taskLayoutViewModel)
                 // The else should never happen, never be called
                 else -> NavExtendedButtonData()
             }
@@ -80,24 +81,23 @@ fun MainLayout(context: Context, view: View, modifier: Modifier = Modifier) {
 
     // Top bar
     val topBarState = rememberTopAppBarState()
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(topBarState)
+    var canScroll by rememberSaveable { mutableStateOf(true) }
+    val scrollBehavior =
+        if (canScroll) TopAppBarDefaults.exitUntilCollapsedScrollBehavior(topBarState)
+        else TopAppBarDefaults.pinnedScrollBehavior() //fix scroll bug when open with landscape mode
+            .also { if (it.state.heightOffset != 0f) it.state.heightOffset = 0f }
     val taskLayoutTopBar = @Composable {
         val onMenuClick: @Composable (setter: Boolean, getter: (Boolean) -> Unit) -> (Unit) =
             { setter, getter -> // setter: open menu. getter: get whether need close menu.
                 val menu = topBarExtendedMenu( // menu UI
                     state = setter,
-                    onClickToTaskHistory = {
-                        taskLayoutViewModel.resetUndo(context)
-                        navController.navigate(MainLayoutNav.TaskHistory.name)
-                    },
-                    onClickToSearch = {
-                        val it = NavExtendedConnectData(searchState = true)
-                        taskLayoutViewModel.updateNavConnector(it, it)
-                    }, view = view
+                    navController = navController,
+                    onClickType = taskLayoutViewModel::onTopBarMenuClick,
+                    view = view
                 )
                 if (menu == 0) getter(false)
             }
-        TaskLayoutTopBar(scrollBehavior, topBarState, onMenuClick = onMenuClick, view)
+        canScroll = TaskLayoutTopBar(scrollBehavior, topBarState, onMenuClick, view)
     }
     val taskHistoryTopBar = @Composable {
         HistoryTopBar(onClick = {
@@ -147,7 +147,7 @@ private fun ContentLayout(
     bottomBar: @Composable () -> Unit = {},
     navigationRail: @Composable () -> Unit = {},
     floatingActionButton: @Composable () -> Unit = {},
-    content: @Composable () -> Unit = {}
+    content: @Composable (paddingValues: PaddingValues) -> Unit = {}
 ) = Row {
     Surface(
         modifier = modifier.weight(1f)
@@ -158,7 +158,7 @@ private fun ContentLayout(
             floatingActionButton = floatingActionButton,
         ) { paddingValues ->
             Surface(modifier = modifier.padding(paddingValues)) {
-                content()
+                content(paddingValues)
             }
         }
     }

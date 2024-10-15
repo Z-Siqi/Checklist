@@ -1,4 +1,4 @@
-package com.sqz.checklist.ui.main.task.layout
+package com.sqz.checklist.ui.main.task.layout.item
 
 import android.content.Context
 import androidx.compose.animation.core.animateDpAsState
@@ -18,6 +18,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
@@ -29,28 +32,27 @@ import com.sqz.checklist.R
 import com.sqz.checklist.database.Task
 import com.sqz.checklist.ui.main.task.CardHeight
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
-import com.sqz.checklist.ui.main.task.layout.item.ItemMode
-import com.sqz.checklist.ui.main.task.layout.item.TaskItem
 
 /**
- * --- List of task ---
- **/
+ * List of TaskLayout (Expected @TaskLayout call this)
+ */
 @Composable
 fun LazyList(
     listState: ListData,
     lazyState: LazyListState,
     undoTask: (state: SwipeToDismissBoxState) -> Unit,
-    isInSearch: Boolean,
+    isInSearch: @Composable () -> Boolean,
     context: Context,
     modifier: Modifier = Modifier,
     taskState: TaskLayoutViewModel
 ) {
+    var inSearch by rememberSaveable { mutableStateOf(false) }
     val screenWidthPx = LocalConfiguration.current.screenWidthDp * LocalDensity.current.density
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         state = lazyState
     ) {
-        if (!isInSearch) {
+        if (!inSearch) {
             if (listState.isRemindedItem.isNotEmpty()) {
                 item {
                     RemindedItem(
@@ -95,11 +97,12 @@ fun LazyList(
         }
         item { Spacer(modifier = modifier.height(10.dp)) }
     }
+    inSearch = isInSearch() // Searching UI & search state
 }
 
 /**
  * Task list item
- **/
+ */
 @Composable
 private fun MainListItem(
     task: Task,

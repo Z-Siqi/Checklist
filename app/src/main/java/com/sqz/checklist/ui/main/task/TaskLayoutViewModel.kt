@@ -16,12 +16,13 @@ import com.sqz.checklist.R
 import com.sqz.checklist.database.Task
 import com.sqz.checklist.notification.NotificationCreator
 import com.sqz.checklist.ui.main.task.history.arrangeHistoryId
-import com.sqz.checklist.ui.main.task.layout.ListData
-import com.sqz.checklist.ui.main.task.layout.NavExtendedConnectData
+import com.sqz.checklist.ui.main.task.layout.item.ListData
+import com.sqz.checklist.ui.main.task.layout.NavConnectData
 import com.sqz.checklist.ui.main.task.layout.item.CardClickType
 import com.sqz.checklist.ui.main.task.layout.item.EditState
 import com.sqz.checklist.ui.main.task.layout.item.TaskData
 import com.sqz.checklist.ui.main.task.layout.check.CheckDataState
+import com.sqz.checklist.ui.main.task.layout.TopBarMenuClickType
 import com.sqz.checklist.ui.reminder.ReminderActionType
 import com.sqz.checklist.ui.reminder.ReminderData
 import kotlinx.coroutines.delay
@@ -37,19 +38,23 @@ import java.util.concurrent.TimeUnit
 
 class TaskLayoutViewModel : ViewModel() {
 
-    private val _navExtendedConnectData = MutableStateFlow(NavExtendedConnectData())
-    val navExtendedConnector: MutableStateFlow<NavExtendedConnectData> = _navExtendedConnectData
-    fun updateNavConnector(data: NavExtendedConnectData, updateSet: NavExtendedConnectData) {
-        _navExtendedConnectData.update {
-            val searchState = data.searchState
-            it.copy(
-                canScroll = if (updateSet.canScroll) data.canScroll else it.canScroll,
-                scrollToFirst = if (updateSet.scrollToFirst) data.scrollToFirst else it.scrollToFirst,
-                scrollToBottom = if (updateSet.scrollToBottom) data.scrollToBottom else it.scrollToBottom,
-                searchState = if (updateSet.searchState) searchState else it.searchState,
-                canScrollForward = if (updateSet.canScrollForward) data.canScrollForward else it.canScrollForward
+    private val _navExtendedConnectData = MutableStateFlow(NavConnectData())
+    val navExtendedConnector: MutableStateFlow<NavConnectData> = _navExtendedConnectData
+    fun updateNavConnector(data: NavConnectData, updateSet: NavConnectData) {
+        _navExtendedConnectData.update { nav ->
+            if (updateSet.searchState) searchView(data.searchState)
+            nav.copy(
+                canScroll = if (updateSet.canScroll) data.canScroll else nav.canScroll,
+                scrollToFirst = if (updateSet.scrollToFirst) data.scrollToFirst else nav.scrollToFirst,
+                scrollToBottom = if (updateSet.scrollToBottom) data.scrollToBottom else nav.scrollToBottom,
+                canScrollForward = if (updateSet.canScrollForward) data.canScrollForward else nav.canScrollForward
             )
         }
+    }
+
+    fun onTopBarMenuClick(type: TopBarMenuClickType, context: Context) = when (type) {
+        TopBarMenuClickType.History -> resetUndo(context)
+        TopBarMenuClickType.Search -> searchView(!_listState.value.searchView)
     }
 
     private val _listState = MutableStateFlow(ListData())
@@ -69,6 +74,11 @@ class TaskLayoutViewModel : ViewModel() {
             )
         }
         if (!init) updateInSearch(searchingText)
+    }
+
+    private fun searchView(setter: Boolean) { //Connect top bar & nav bar search actions
+        _listState.update { it.copy(searchView = setter) }
+        _navExtendedConnectData.update { it.copy(searchState = setter) }
     }
 
     init {
@@ -132,7 +142,7 @@ class TaskLayoutViewModel : ViewModel() {
      */
     private val _undo = MutableStateFlow(CheckDataState())
     val undo: MutableStateFlow<CheckDataState> = _undo
-    fun resetUndo(context: Context) { // reset undo state
+    private fun resetUndo(context: Context) { // reset undo state
         cancelReminder(reminder = null, context = context, cancelHistory = true)
         _undo.value = CheckDataState()
     }
@@ -209,7 +219,7 @@ class TaskLayoutViewModel : ViewModel() {
         }
     }
 
-    /**  Insert task to database  **/
+    /** Insert task to database **/
     fun insertTask(description: String) = viewModelScope.launch {
         val insert = Task(description = description, createDate = LocalDate.now())
         MainActivity.taskDatabase.taskDao().insertAll(insert)

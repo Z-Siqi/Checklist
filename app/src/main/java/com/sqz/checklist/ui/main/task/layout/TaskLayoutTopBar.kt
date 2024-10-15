@@ -55,7 +55,7 @@ fun TaskLayoutTopBar(
     onMenuClick: @Composable (setter: Boolean, getter: (Boolean) -> Unit) -> Unit,
     view: View,
     modifier: Modifier = Modifier
-) {
+): Boolean {
     var menu by remember { mutableStateOf(false) }
     onMenuClick(menu) { menu = it } // able to add the menu UI inside this
 
@@ -69,7 +69,7 @@ fun TaskLayoutTopBar(
     val week = "EEEE"
 
     val title = @Composable {
-        if (topBarState.heightOffset <= topBarState.heightOffsetLimit * 0.7) {
+        if (topBarState.heightOffset <= topBarState.heightOffsetLimit * 0.7 && !topBarForLowScreen) {
             Row(
                 verticalAlignment = Alignment.Bottom
             ) {
@@ -138,7 +138,8 @@ fun TaskLayoutTopBar(
     if (topBarForLowScreen) TopAppBar(
         title = title,
         actions = { actionButton() },
-        colors = colors
+        colors = colors,
+        scrollBehavior = scrollBehavior
     ) else {
         MediumTopAppBar(
             colors = colors,
@@ -173,6 +174,7 @@ fun TaskLayoutTopBar(
             }
         }
     }
+    return !topBarForLowScreen // return if top bar no need to scroll
 }
 
 @Composable
@@ -187,7 +189,7 @@ private fun topBarContent(pattern: String): String {
         calendar.set(Calendar.SECOND, 0)
         calendar.set(Calendar.MILLISECOND, 0)
         val setUpdateWaitingTime = calendar.timeInMillis - System.currentTimeMillis()
-        while(true) {
+        while (true) {
             delay(setUpdateWaitingTime)
             dateTime = LocalDate.now().format(formatter)
         }
