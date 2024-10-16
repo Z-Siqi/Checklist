@@ -130,7 +130,7 @@ fun TaskLayoutTopBar(
     }
 
     val colors = TopAppBarDefaults.topAppBarColors(
-        containerColor = MaterialTheme.colorScheme.primaryContainer,
+        containerColor = if (topBarForLowScreen) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.primaryContainer,
         titleContentColor = MaterialTheme.colorScheme.primary,
         scrolledContainerColor = MaterialTheme.colorScheme.secondaryContainer,
     )

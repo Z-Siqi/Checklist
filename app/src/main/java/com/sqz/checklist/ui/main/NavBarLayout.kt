@@ -1,22 +1,30 @@
 package com.sqz.checklist.ui.main
 
+import android.util.Log
 import androidx.compose.foundation.BasicTooltipBox
 import androidx.compose.foundation.BasicTooltipState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material3.DividerDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailItem
+import androidx.compose.material3.NavigationRailItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.VerticalDivider
@@ -41,36 +49,58 @@ data class NavExtendedButtonData @OptIn(ExperimentalFoundationApi::class) constr
     val onClick: () -> Unit = {},
 )
 
+enum class NavMode { NavBar, NavRail, Disable }
+
 /**
  * Main Navigation Bar Layout
  */
+@Composable
+fun NavBarLayout(
+    mode: NavMode,
+    extendedButtonData: NavExtendedButtonData,
+    selected: (index: MainLayoutNav) -> Boolean,
+    onNavClick: (index: MainLayoutNav) -> Unit,
+    modifier: Modifier = Modifier
+) = when (mode) {
+    NavMode.NavBar -> NavBar(extendedButtonData, selected, onNavClick, modifier)
+    NavMode.NavRail -> NavRailBar(extendedButtonData, selected, onNavClick, modifier)
+    NavMode.Disable -> {
+        val nulLog = { Log.d("NavBarLayout", "The navigation bar is disable") }
+        Spacer(modifier = modifier).also { nulLog() }
+    }
+}
+
+private data class Items(val text: String, val icon: Int) // Navigation bar items
+
+private val items: @Composable () -> List<Items> = {
+    listOf(
+        //Navigation bar buttons
+        Items(stringResource(R.string.tasks), R.drawable.task_icon), //id: 0
+    )
+}
+private val selectedInNav: (index: Int) -> MainLayoutNav = { index ->
+    when (index) { //Link items list id to Navigation
+        0 -> MainLayoutNav.TaskLayout
+        else -> MainLayoutNav.Unknown
+    }
+}
+
+/** Navigation Bar **/
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun NavBar(
+private fun NavBar(
     extendedButtonData: NavExtendedButtonData,
     selected: (index: MainLayoutNav) -> Boolean,
     onNavClick: (index: MainLayoutNav) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    data class Items(
-        val text: String,
-        val icon: Int
-    )
-
-    val items = listOf( //Navigation bar buttons
-        Items(stringResource(R.string.tasks), R.drawable.task_icon), //id: 0
-    )
     NavigationBar(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.primaryContainer,
         contentColor = MaterialTheme.colorScheme.onPrimaryContainer
     ) {
         Spacer(modifier = modifier.weight(0.5f))
-        items.forEachIndexed { index, item ->
-            val selectedInNav = when (index) { //Link items list id to Navigation
-                0 -> MainLayoutNav.TaskLayout
-                else -> MainLayoutNav.Unknown
-            }
+        items().forEachIndexed { index, item ->
             NavigationBarItem(
                 modifier = modifier.weight(1f),
                 colors = NavigationBarItemDefaults.colors(
@@ -86,8 +116,8 @@ fun NavBar(
                     )
                 },
                 label = { Text(item.text) },
-                selected = selected(selectedInNav),
-                onClick = { onNavClick(selectedInNav) }
+                selected = selected(selectedInNav(index)),
+                onClick = { onNavClick(selectedInNav(index)) }
             )
         }
         Spacer(modifier = modifier.weight(0.5f))
@@ -115,11 +145,86 @@ fun NavBar(
     }
 }
 
+/** Navigation Rail **/
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@Composable
+private fun NavRailBar(
+    extendedButtonData: NavExtendedButtonData,
+    selected: (index: MainLayoutNav) -> Boolean,
+    onNavClick: (index: MainLayoutNav) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    NavigationRail(
+        modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.primaryContainer,
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+    ) {
+        Spacer(modifier = modifier.weight(0.5f))
+        items().forEachIndexed { index, item ->
+            NavigationRailItem(
+                modifier = modifier.weight(1f),
+                colors = NavigationRailItemDefaults.colors(
+                    indicatorColor = MaterialTheme.colorScheme.inversePrimary,
+                    selectedIconColor = MaterialTheme.colorScheme.inverseSurface,
+                    disabledIconColor = MaterialTheme.colorScheme.primary
+                ),
+                icon = {
+                    Icon(
+                        painter = painterResource(id = item.icon),
+                        contentDescription = item.text,
+                        modifier = modifier.size(24.dp, 24.dp)
+                    )
+                },
+                label = { Text(item.text) },
+                selected = selected(selectedInNav(index)),
+                onClick = { onNavClick(selectedInNav(index)) }
+            )
+        }
+        Spacer(modifier = modifier.weight(0.5f))
+        HorizontalDivider(
+            modifier = modifier.width(50.dp), color = if (isSystemInDarkTheme()) {
+                MaterialTheme.colorScheme.onSurface
+            } else DividerDefaults.color
+        )
+        Column(modifier = modifier.weight(1f), verticalArrangement = Arrangement.Center) {
+            BasicTooltipBox(
+                positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+                tooltip = extendedButtonData.tooltipContent,
+                state = extendedButtonData.tooltipState
+            ) {
+                NavigationRailItem(
+                    modifier = modifier,
+                    colors = NavigationRailItemDefaults.colors(MaterialTheme.colorScheme.primary),
+                    icon = extendedButtonData.icon,
+                    label = extendedButtonData.label,
+                    selected = false,
+                    onClick = extendedButtonData.onClick
+                )
+            }
+        }
+    }
+}
+
 @Preview
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun Preview() {
+private fun NavPreview() {
     NavBar(
+        extendedButtonData = NavExtendedButtonData(
+            icon = { Icon(Icons.Filled.AddCircle, "") },
+            label = { Text("TEST") },
+            tooltipContent = { Text("TEST") },
+            tooltipState = BasicTooltipState(),
+            onClick = {}
+        ), selected = { true }, onNavClick = {}
+    )
+}
+
+@Preview
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun NavRailPreview() {
+    NavRailBar(
         extendedButtonData = NavExtendedButtonData(
             icon = { Icon(Icons.Filled.AddCircle, "") },
             label = { Text("TEST") },

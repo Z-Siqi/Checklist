@@ -20,13 +20,15 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.sqz.checklist.ui.main.NavBar
+import com.sqz.checklist.ui.main.NavBarLayout
 import com.sqz.checklist.ui.main.NavExtendedButtonData
+import com.sqz.checklist.ui.main.NavMode
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
 import com.sqz.checklist.ui.main.task.history.HistoryTopBar
 import com.sqz.checklist.ui.main.task.history.TaskHistory
@@ -56,7 +58,7 @@ fun MainLayout(context: Context, view: View, modifier: Modifier = Modifier) {
     val taskHistoryViewModel: TaskHistoryViewModel = viewModel()
 
     // Navigation bar
-    val mainNavigationBar = @Composable {
+    val mainNavigationBar: @Composable (mode: NavMode) -> Unit = { mode ->
         @Suppress("OPT_IN_USAGE_FUTURE_ERROR") val extendedButtonData =
             when (currentRoute) {
                 // TaskLayout Extended Nav Button function
@@ -64,7 +66,8 @@ fun MainLayout(context: Context, view: View, modifier: Modifier = Modifier) {
                 // The else should never happen, never be called
                 else -> NavExtendedButtonData()
             }
-        NavBar(
+        NavBarLayout(
+            mode = mode,
             extendedButtonData = extendedButtonData,
             selected = { index -> index.name == currentRoute },
             onNavClick = { index ->
@@ -106,6 +109,14 @@ fun MainLayout(context: Context, view: View, modifier: Modifier = Modifier) {
         })
     }
 
+    // Set Navigation bar mode (Navigation Bar or Navigation Rail)
+    val localConfig = LocalConfiguration.current
+    val screenIsWidth = localConfig.screenWidthDp > localConfig.screenHeightDp * 1.2
+    val navMode = if (!screenIsWidth) NavMode.NavBar else NavMode.Disable
+    val navRailMode = if (screenIsWidth) NavMode.NavRail else NavMode.Disable
+    val navigationBar = @Composable { mainNavigationBar(navMode) }
+    val navigationRailBar = @Composable { mainNavigationBar(navRailMode) }
+
     // Layout
     val nulLog = { Log.d("MainLayout", "Navigation bar or Top bar is disable") }
     val nul = @Composable { Spacer(modifier = modifier).also { nulLog() } }
@@ -118,7 +129,11 @@ fun MainLayout(context: Context, view: View, modifier: Modifier = Modifier) {
         bottomBar = when (currentRoute) {
             MainLayoutNav.TaskHistory.name -> taskHistoryNavBar
             MainLayoutNav.Unknown.name -> nul
-            else -> mainNavigationBar
+            else -> navigationBar
+        },
+        navigationRail = when (currentRoute) {
+            MainLayoutNav.TaskLayout.name -> navigationRailBar
+            else -> nul
         },
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
     ) {
