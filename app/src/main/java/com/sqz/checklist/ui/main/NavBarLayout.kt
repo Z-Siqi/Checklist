@@ -73,8 +73,8 @@ fun NavBarLayout(
 private data class Items(val text: String, val icon: Int) // Navigation bar items
 
 private val items: @Composable () -> List<Items> = {
+    //Navigation bar buttons
     listOf(
-        //Navigation bar buttons
         Items(stringResource(R.string.tasks), R.drawable.task_icon), //id: 0
     )
 }

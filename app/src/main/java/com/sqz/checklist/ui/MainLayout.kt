@@ -57,31 +57,6 @@ fun MainLayout(context: Context, view: View, modifier: Modifier = Modifier) {
     val taskLayoutViewModel: TaskLayoutViewModel = viewModel()
     val taskHistoryViewModel: TaskHistoryViewModel = viewModel()
 
-    // Navigation bar
-    val mainNavigationBar: @Composable (mode: NavMode) -> Unit = { mode ->
-        @Suppress("OPT_IN_USAGE_FUTURE_ERROR") val extendedButtonData =
-            when (currentRoute) {
-                // TaskLayout Extended Nav Button function
-                MainLayoutNav.TaskLayout.name -> taskExtendedNavButton(view, taskLayoutViewModel)
-                // The else should never happen, never be called
-                else -> NavExtendedButtonData()
-            }
-        NavBarLayout(
-            mode = mode,
-            extendedButtonData = extendedButtonData,
-            selected = { index -> index.name == currentRoute },
-            onNavClick = { index ->
-                if (index.name != currentRoute) navController.navigate(index.name) {
-                    popUpTo(0)
-                }
-            },
-            modifier = modifier
-        )
-    }
-    val taskHistoryNavBar = @Composable {
-        TaskHistoryNavBar(view = view, historyState = taskHistoryViewModel)
-    }
-
     // Top bar
     val topBarState = rememberTopAppBarState()
     var canScroll by rememberSaveable { mutableStateOf(true) }
@@ -109,13 +84,40 @@ fun MainLayout(context: Context, view: View, modifier: Modifier = Modifier) {
         })
     }
 
+    // Navigation bar
+    val mainNavigationBar: @Composable (mode: NavMode) -> Unit = { mode ->
+        @Suppress("OPT_IN_USAGE_FUTURE_ERROR") val extendedButtonData =
+            when (currentRoute) {
+                // TaskLayout Extended Nav Button function
+                MainLayoutNav.TaskLayout.name -> taskExtendedNavButton(view, taskLayoutViewModel)
+                // The else should never happen, never be called
+                else -> NavExtendedButtonData()
+            }
+        NavBarLayout(
+            mode = mode,
+            extendedButtonData = extendedButtonData,
+            selected = { index -> index.name == currentRoute },
+            onNavClick = { index ->
+                if (index.name != currentRoute) navController.navigate(index.name) {
+                    popUpTo(0)
+                }
+            },
+            modifier = modifier
+        )
+    }
+    val taskHistoryNavBar: @Composable (mode: NavMode) -> Unit = { mode ->
+        TaskHistoryNavBar(
+            mode = mode,
+            view = view,
+            historyState = taskHistoryViewModel
+        )
+    }
+
     // Set Navigation bar mode (Navigation Bar or Navigation Rail)
     val localConfig = LocalConfiguration.current
     val screenIsWidth = localConfig.screenWidthDp > localConfig.screenHeightDp * 1.2
     val navMode = if (!screenIsWidth) NavMode.NavBar else NavMode.Disable
     val navRailMode = if (screenIsWidth) NavMode.NavRail else NavMode.Disable
-    val navigationBar = @Composable { mainNavigationBar(navMode) }
-    val navigationRailBar = @Composable { mainNavigationBar(navRailMode) }
 
     // Layout
     val nulLog = { Log.d("MainLayout", "Navigation bar or Top bar is disable") }
@@ -126,14 +128,19 @@ fun MainLayout(context: Context, view: View, modifier: Modifier = Modifier) {
             MainLayoutNav.TaskHistory.name -> taskHistoryTopBar
             else -> nul
         },
-        bottomBar = when (currentRoute) {
-            MainLayoutNav.TaskHistory.name -> taskHistoryNavBar
-            MainLayoutNav.Unknown.name -> nul
-            else -> navigationBar
+        bottomBar = {
+            when (currentRoute) {
+                MainLayoutNav.TaskHistory.name -> taskHistoryNavBar(navMode)
+                MainLayoutNav.Unknown.name -> nul()
+                else -> mainNavigationBar(navMode)
+            }
         },
-        navigationRail = when (currentRoute) {
-            MainLayoutNav.TaskLayout.name -> navigationRailBar
-            else -> nul
+        navigationRail = {
+            when (currentRoute) {
+                MainLayoutNav.TaskLayout.name -> mainNavigationBar(navRailMode)
+                MainLayoutNav.TaskHistory.name -> taskHistoryNavBar(navRailMode)
+                else -> nul()
+            }
         },
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
     ) {

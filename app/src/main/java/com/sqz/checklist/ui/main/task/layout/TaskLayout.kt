@@ -7,6 +7,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -19,7 +20,10 @@ import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.insert
 import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.ShapeDefaults
@@ -100,7 +104,7 @@ fun TaskLayout(
                 }
             },
             isInSearch = { // Search function
-                TaskSearchBar(searchState = listState.searchView, taskState = taskState)
+                taskSearchBar(searchState = listState.searchView, taskState = taskState)
             },
             context = context,
             taskState = taskState
@@ -178,7 +182,7 @@ private fun EditTask(
 }
 
 @Composable
-private fun TaskSearchBar(
+private fun taskSearchBar(
     searchState: Boolean,
     taskState: TaskLayoutViewModel,
     modifier: Modifier = Modifier
@@ -193,27 +197,34 @@ private fun TaskSearchBar(
                 .height(50.dp),
             shape = ShapeDefaults.ExtraLarge
         ) {
-            BasicTextField(
-                modifier = modifier
-                    .fillMaxSize()
-                    .padding(start = 9.dp, end = 9.dp, top = 10.dp, bottom = 8.dp)
-                    .horizontalScroll(rememberScrollState()),
-                state = textFieldState,
-                lineLimits = TextFieldLineLimits.SingleLine,
-                textStyle = TextStyle(
-                    fontSize = 24.sp,
-                    textAlign = TextAlign.Start
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    modifier = modifier.padding(start =  10.dp),
+                    imageVector = Icons.Filled.Search,
+                    contentDescription = stringResource(id = R.string.search)
                 )
-            )
-            var oldText by remember { mutableStateOf("") }
-            if (textFieldState.text.toString() != oldText || undo.checkTaskAction) {
-                LaunchedEffect(key1 = true) {
-                    taskState.searchingText = textFieldState.text.toString()
-                    taskState.updateInSearch(taskState.searchingText)
-                    oldText = textFieldState.text.toString()
+                BasicTextField(
+                    modifier = modifier
+                        .fillMaxSize()
+                        .padding(start = 9.dp, end = 9.dp, top = 10.dp, bottom = 8.dp)
+                        .horizontalScroll(rememberScrollState()),
+                    state = textFieldState,
+                    lineLimits = TextFieldLineLimits.SingleLine,
+                    textStyle = TextStyle(
+                        fontSize = 24.sp,
+                        textAlign = TextAlign.Start
+                    )
+                )
+                var oldText by remember { mutableStateOf("") }
+                if (textFieldState.text.toString() != oldText || undo.checkTaskAction) {
+                    LaunchedEffect(key1 = true) {
+                        taskState.searchingText = textFieldState.text.toString()
+                        taskState.updateInSearch(taskState.searchingText)
+                        oldText = textFieldState.text.toString()
+                    }
+                } else if (textFieldState.text.toString().isEmpty()) LaunchedEffect(key1 = true) {
+                    taskState.updateInSearch(initWithAll = true)
                 }
-            } else if (textFieldState.text.toString().isEmpty()) LaunchedEffect(key1 = true) {
-                taskState.updateInSearch(initWithAll = true)
             }
         }
     }
