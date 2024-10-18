@@ -1,6 +1,7 @@
 package com.sqz.checklist.ui.main.task.layout
 
 import android.content.Context
+import android.os.Build
 import android.view.View
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
@@ -94,6 +95,11 @@ fun TaskLayout(
         modifier = modifier,
         color = MaterialTheme.colorScheme.surfaceContainerLow
     ) {
+        val localConfig = LocalConfiguration.current
+        val screenIsWidth = localConfig.screenWidthDp > localConfig.screenHeightDp * 1.2
+        val safePaddingForFullscreen = if (
+            Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE && screenIsWidth
+        ) modifier.padding(start = 23.dp, end = 10.dp) else modifier
         LazyList( // LazyColumn lists
             listState = listState,
             lazyState = lazyState,
@@ -107,7 +113,8 @@ fun TaskLayout(
                 taskSearchBar(searchState = listState.searchView, taskState = taskState)
             },
             context = context,
-            taskState = taskState
+            taskState = taskState,
+            modifier = safePaddingForFullscreen
         )
         if (listState.item.isEmpty()) { // Show text if not any task
             var delayed by rememberSaveable { mutableStateOf(false) }

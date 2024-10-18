@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.sqz.checklist.R
 import com.sqz.checklist.ui.main.NavExtendedButtonData
+import com.sqz.checklist.ui.main.NavMode
 import com.sqz.checklist.ui.main.NavTooltipContent
 import com.sqz.checklist.ui.main.OnClickType
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
@@ -57,6 +58,7 @@ data class NavConnectData(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun taskExtendedNavButton(
+    mode: NavMode,
     view: View,
     viewModel: TaskLayoutViewModel
 ): NavExtendedButtonData {
@@ -73,6 +75,7 @@ fun taskExtendedNavButton(
     val tooltipContent = @Composable {
         val coroutineScope = rememberCoroutineScope()
         if (extendedTooltipState) NavTooltipContent(
+            mode = mode,
             onClickType = { onClickType ->
                 when (onClickType) {
                     OnClickType.Search -> {
@@ -144,8 +147,14 @@ fun taskExtendedNavButton(
 private fun NonExtendedTooltip(text: String, view: View) {
     val localConfig = LocalConfiguration.current
     val landscape = localConfig.screenWidthDp > localConfig.screenHeightDp * 1.1
-    val height = (localConfig.screenHeightDp - if (landscape) 110 else 91).dp
-    val width = if (localConfig.screenWidthDp < 738) 0.1569f else 0.1615f
+    val height = (localConfig.screenHeightDp - if (landscape) 110 else 128).dp
+    val width = when {
+        localConfig.screenWidthDp > 1700 -> 0.08f
+        localConfig.screenWidthDp > 1100 -> 0.1f
+        localConfig.screenWidthDp < 738 -> 0.1569f
+        localConfig.screenWidthDp > 738 -> 0.1615f
+        else -> 0f
+    }
     Row(Modifier.fillMaxWidth(1f), Arrangement.End) {
         TooltipBox(
             positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(height),

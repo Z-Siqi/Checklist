@@ -8,6 +8,7 @@ import android.view.View
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -48,6 +49,7 @@ enum class OnClickType {
 
 @Composable
 fun NavTooltipContent(
+    mode: NavMode,
     onClickType: (OnClickType) -> Unit,
     view: View,
     modifier: Modifier = Modifier,
@@ -57,14 +59,14 @@ fun NavTooltipContent(
         modifier = modifier.padding(8.dp),
         colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceBright)
     ) {
-        Column(
+        ButtonsLayout(
             modifier = modifier.padding(
                 start = 8.dp,
                 end = 8.dp,
                 top = 10.dp,
                 bottom = 10.dp
             ),
-            verticalArrangement = Arrangement.Center
+            mode = mode
         ) {
             NavButton(onClick = {
                 onClickType(OnClickType.Search)
@@ -120,6 +122,26 @@ fun NavTooltipContent(
 }
 
 @Composable
+private fun ButtonsLayout(
+    mode: NavMode,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) = when (mode) {
+    NavMode.Disable -> {}
+    NavMode.NavBar -> Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.Center,
+        content = { content() }
+    )
+
+    NavMode.NavRail -> Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.Center,
+        content = { content() }
+    )
+}
+
+@Composable
 private fun NavButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -147,5 +169,5 @@ private fun NavButton(
 @Preview(showBackground = true)
 @Composable
 private fun Preview() {
-    NavTooltipContent({}, LocalView.current)
+    NavTooltipContent(NavMode.NavBar, {}, LocalView.current)
 }

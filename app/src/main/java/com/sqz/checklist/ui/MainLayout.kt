@@ -89,7 +89,9 @@ fun MainLayout(context: Context, view: View, modifier: Modifier = Modifier) {
         @Suppress("OPT_IN_USAGE_FUTURE_ERROR") val extendedButtonData =
             when (currentRoute) {
                 // TaskLayout Extended Nav Button function
-                MainLayoutNav.TaskLayout.name -> taskExtendedNavButton(view, taskLayoutViewModel)
+                MainLayoutNav.TaskLayout.name -> taskExtendedNavButton(
+                    mode = mode, view = view, viewModel = taskLayoutViewModel
+                )
                 // The else should never happen, never be called
                 else -> NavExtendedButtonData()
             }
@@ -109,7 +111,8 @@ fun MainLayout(context: Context, view: View, modifier: Modifier = Modifier) {
         TaskHistoryNavBar(
             mode = mode,
             view = view,
-            historyState = taskHistoryViewModel
+            historyState = taskHistoryViewModel,
+            modifier = modifier
         )
     }
 

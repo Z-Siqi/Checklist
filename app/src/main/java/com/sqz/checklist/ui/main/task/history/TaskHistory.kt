@@ -1,5 +1,6 @@
 package com.sqz.checklist.ui.main.task.history
 
+import android.os.Build
 import android.view.SoundEffectConstants
 import android.view.View
 import androidx.compose.animation.animateContentSize
@@ -33,6 +34,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -64,6 +66,11 @@ fun TaskHistory(
     item: List<Task> = historyState.taskHistoryData.collectAsState().value.also { historyState.updateTaskHistoryData() }
 ) {
     val view = LocalView.current
+    val localConfig = LocalConfiguration.current
+    val screenIsWidth = localConfig.screenWidthDp > localConfig.screenHeightDp * 1.2
+    val safePaddingForFullscreen = if (
+        Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE && screenIsWidth
+    ) modifier.padding(start = 22.dp, end = 10.dp) else modifier
     Surface(
         modifier = modifier,
         color = MaterialTheme.colorScheme.surfaceContainer
@@ -81,7 +88,8 @@ fun TaskHistory(
                     selectState = selectState,
                     onItemClick = { historyState.setSelectTask(it.id) },
                     hide = selectState.hideSelected && selectState.selectedId == it.id,
-                    view = view
+                    view = view,
+                    modifier = safePaddingForFullscreen
                 )
             }
             item {
@@ -126,10 +134,10 @@ private fun ItemBox(
                 dampingRatio = Spring.DampingRatioNoBouncy,
                 stiffness = Spring.StiffnessHigh
             )
-        ) then modifier.height(if (hide) 0.dp else 120.dp)
+        ) then Modifier.height(if (hide) 0.dp else 120.dp)
     ) {
         OutlinedCard(
-            modifier = modifier
+            modifier = Modifier
                 .fillMaxSize()
                 .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 4.dp),
             colors = CardDefaults.cardColors(MaterialTheme.colorScheme.secondaryContainer),
@@ -137,29 +145,30 @@ private fun ItemBox(
             shape = ShapeDefaults.ExtraLarge
         ) {
             val formatter = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.getDefault())
-            val padding = modifier.padding(bottom = 8.dp, top = 12.dp, start = 12.dp, end = 11.dp)
-            val onClick = modifier.clickable {
+            val padding = Modifier.padding(bottom = 8.dp, top = 12.dp, start = 12.dp, end = 11.dp)
+            val onClick = Modifier.clickable {
                 onItemClick()
                 view.playSoundEffect(SoundEffectConstants.CLICK)
             }
-            Box(modifier = modifier.fillMaxSize() then onClick) {
-                val time = stringResource(R.string.task_creation_time, item.createDate.format(formatter))
+            Box(modifier = Modifier.fillMaxSize() then onClick) {
+                val time =
+                    stringResource(R.string.task_creation_time, item.createDate.format(formatter))
                 Box(modifier = padding) {
                     Column {
                         Column(
-                            modifier = modifier
+                            modifier = Modifier
                                 .fillMaxWidth(0.75f)
                                 .height(50.dp),
                             horizontalAlignment = Alignment.Start
                         ) {
                             Text(
                                 text = item.description,
-                                modifier = modifier.padding(top = 0.dp),
+                                modifier = Modifier.padding(top = 0.dp),
                                 fontSize = 21.sp,
                                 overflow = TextOverflow.Ellipsis
                             )
                         }
-                        Spacer(modifier = modifier.weight(1f))
+                        Spacer(modifier = Modifier.weight(1f))
                         Row(verticalAlignment = Alignment.Bottom) {
                             Text(
                                 text = time,

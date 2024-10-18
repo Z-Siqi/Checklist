@@ -111,7 +111,10 @@ private fun NavigationSelector(
     when (mode) {
         NavMode.NavBar -> NavBar(colors, selected, deleteClick, redoClick, view, modifier)
         NavMode.NavRail -> NavRailBar(colors, selected, deleteClick, redoClick, view, modifier)
-        NavMode.Disable -> { Log.d("NavBarLayout", "The navigation bar is disable") }
+        NavMode.Disable -> {
+            val nulLog = { Log.d("NavBarLayout", "The task history navigation bar is disable") }
+            Spacer(modifier = modifier).also { nulLog() }
+        }
     }
 }
 

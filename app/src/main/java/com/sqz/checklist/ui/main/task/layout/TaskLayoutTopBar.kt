@@ -1,5 +1,6 @@
 package com.sqz.checklist.ui.main.task.layout
 
+import android.annotation.SuppressLint
 import android.view.SoundEffectConstants
 import android.view.View
 import androidx.compose.animation.AnimatedVisibility
@@ -32,6 +33,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -47,6 +49,7 @@ import java.util.Calendar
 import java.util.Locale
 
 /** TaskLayout Top App Bar **/
+@SuppressLint("ComposableNaming")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskLayoutTopBar(
@@ -135,17 +138,24 @@ fun TaskLayoutTopBar(
         scrolledContainerColor = MaterialTheme.colorScheme.secondaryContainer,
     )
 
+    val shadow = modifier.shadow(
+        elevation = 1.dp,
+        ambientColor = MaterialTheme.colorScheme.primaryContainer
+    )
+
     if (topBarForLowScreen) TopAppBar(
         title = title,
         actions = { actionButton() },
         colors = colors,
-        scrollBehavior = scrollBehavior
+        scrollBehavior = scrollBehavior,
+        modifier = shadow
     ) else {
         MediumTopAppBar(
             colors = colors,
             title = title,
             actions = { actionButton() },
-            scrollBehavior = scrollBehavior
+            scrollBehavior = scrollBehavior,
+            modifier = if (topBarState.heightOffset == topBarState.heightOffsetLimit) shadow else modifier
         )
         val visible = topBarState.heightOffset >= topBarState.heightOffsetLimit * 0.58
         if (topBarState.heightOffset != topBarState.heightOffsetLimit) {
