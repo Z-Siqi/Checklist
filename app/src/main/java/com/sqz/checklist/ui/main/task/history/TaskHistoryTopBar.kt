@@ -9,8 +9,11 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.sqz.checklist.R
 import com.sqz.checklist.ui.material.TextTooltipBox
 
@@ -20,13 +23,18 @@ fun HistoryTopBar(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val localConfig = LocalConfiguration.current
+    val screenIsWidth = localConfig.screenWidthDp > localConfig.screenHeightDp * 1.2
     TopAppBar(
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            containerColor = if (screenIsWidth) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.primaryContainer,
             titleContentColor = MaterialTheme.colorScheme.primary,
         ),
         title = { Text(text = stringResource(R.string.task_history)) },
-        modifier = modifier,
+        modifier = modifier.shadow(
+            elevation = 1.dp,
+            ambientColor = MaterialTheme.colorScheme.primaryContainer
+        ),
         navigationIcon = {
             TextTooltipBox(
                 textRid = R.string.back,

@@ -1,6 +1,5 @@
 package com.sqz.checklist.ui.main.task.history
 
-import android.os.Build
 import android.view.SoundEffectConstants
 import android.view.View
 import androidx.compose.animation.animateContentSize
@@ -13,6 +12,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -35,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -68,9 +71,13 @@ fun TaskHistory(
     val view = LocalView.current
     val localConfig = LocalConfiguration.current
     val screenIsWidth = localConfig.screenWidthDp > localConfig.screenHeightDp * 1.2
+    val left = WindowInsets.displayCutout.asPaddingValues()
+        .calculateLeftPadding(LocalLayoutDirection.current)
     val safePaddingForFullscreen = if (
-        Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE && screenIsWidth
-    ) modifier.padding(start = 22.dp, end = 10.dp) else modifier
+        screenIsWidth
+    ) modifier.padding(
+        start = left, end = if (left / 3 > 15.dp) 15.dp else left / 3
+    ) else modifier
     Surface(
         modifier = modifier,
         color = MaterialTheme.colorScheme.surfaceContainer

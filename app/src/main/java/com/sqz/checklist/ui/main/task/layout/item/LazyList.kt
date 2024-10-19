@@ -49,7 +49,7 @@ fun LazyList(
     var inSearch by rememberSaveable { mutableStateOf(false) }
     val screenWidthPx = LocalConfiguration.current.screenWidthDp * LocalDensity.current.density
     LazyColumn(
-        modifier = modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         state = lazyState
     ) {
         if (!inSearch) {
@@ -59,7 +59,8 @@ fun LazyList(
                         isRemindedItem = listState.isRemindedItem,
                         screenWidthPx = screenWidthPx,
                         context = context,
-                        taskState = taskState
+                        taskState = taskState,
+                        modifier = modifier,
                     )
                 }
             }
@@ -69,7 +70,8 @@ fun LazyList(
                         pinnedItem = listState.pinnedItem,
                         screenWidthPx = screenWidthPx,
                         context = context,
-                        taskState = taskState
+                        taskState = taskState,
+                        modifier = modifier,
                     )
                 }
             }
@@ -80,7 +82,8 @@ fun LazyList(
                     screenWidthPx = screenWidthPx,
                     undoTask = undoTask,
                     context = context,
-                    taskState = taskState
+                    taskState = taskState,
+                    modifier = modifier,
                 )
             }
         } else {
@@ -91,7 +94,8 @@ fun LazyList(
                     screenWidthPx = screenWidthPx,
                     undoTask = undoTask,
                     context = context,
-                    taskState = taskState
+                    taskState = taskState,
+                    modifier = modifier,
                 )
             }
         }
@@ -109,7 +113,8 @@ private fun MainListItem(
     screenWidthPx: Float,
     undoTask: (state: SwipeToDismissBoxState) -> Unit,
     context: Context,
-    taskState: TaskLayoutViewModel
+    taskState: TaskLayoutViewModel,
+    modifier: Modifier = Modifier,
 ) {
     val state = rememberSwipeToDismissBoxState(
         positionalThreshold = { screenWidthPx * 0.35f },
@@ -120,7 +125,8 @@ private fun MainListItem(
         checked = { taskState.taskChecked(it, context) },
         getIsHistory = taskState.getIsHistory(task.id),
         context = context, itemState = state,
-        mode = ItemMode.NormalTask
+        mode = ItemMode.NormalTask,
+        modifier = modifier
     )
     undoTask(state)
 }
@@ -150,7 +156,7 @@ private fun RemindedItem(
             fontSize = 15.sp,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.tertiary,
-            modifier = modifier.padding(start = 9.dp, top = 5.dp, bottom = 5.dp)
+            modifier = Modifier.padding(start = 9.dp, top = 5.dp, bottom = 5.dp)
         )
         LazyColumn {
             items(isRemindedItem, key = { it.id }) { task ->
@@ -196,7 +202,7 @@ private fun PinnedItem(
             fontSize = 15.sp,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.outline,
-            modifier = modifier.padding(start = 9.dp, top = 5.dp, bottom = 5.dp)
+            modifier = Modifier.padding(start = 9.dp, top = 5.dp, bottom = 5.dp)
         )
         LazyColumn {
             items(pinnedItem, key = { it.id }) { task ->

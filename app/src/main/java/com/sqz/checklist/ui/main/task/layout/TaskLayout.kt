@@ -9,6 +9,9 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -46,6 +49,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -97,9 +101,13 @@ fun TaskLayout(
     ) {
         val localConfig = LocalConfiguration.current
         val screenIsWidth = localConfig.screenWidthDp > localConfig.screenHeightDp * 1.2
+        val left = WindowInsets.displayCutout.asPaddingValues()
+            .calculateLeftPadding(LocalLayoutDirection.current)
         val safePaddingForFullscreen = if (
             Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE && screenIsWidth
-        ) modifier.padding(start = 23.dp, end = 10.dp) else modifier
+        ) modifier.padding(
+            start = left, end = if (left / 3 > 15.dp) 15.dp else left / 3
+        ) else modifier
         LazyList( // LazyColumn lists
             listState = listState,
             lazyState = lazyState,
@@ -206,7 +214,7 @@ private fun taskSearchBar(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
-                    modifier = modifier.padding(start =  10.dp),
+                    modifier = modifier.padding(start = 10.dp),
                     imageVector = Icons.Filled.Search,
                     contentDescription = stringResource(id = R.string.search)
                 )

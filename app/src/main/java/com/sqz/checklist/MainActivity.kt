@@ -42,7 +42,7 @@ class MainActivity : ComponentActivity() {
             val navigationBars = WindowInsets.navigationBars.toString()
             try {
                 getNavHeight = navigationBars.replace("0", "").replace(Regex("\\D"), "").toInt()
-            } catch (e: Exception) {
+            } catch (e: NumberFormatException) {
                 val report =
                     "Report this error to developer, if this log happened frequently, especially when not rotate the screen."
                 Log.w("MainActivity", "Failed to get navigation bar height. $report")

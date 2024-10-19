@@ -5,12 +5,16 @@ import android.util.Log
 import androidx.compose.foundation.BasicTooltipBox
 import androidx.compose.foundation.BasicTooltipState
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
@@ -37,6 +41,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -168,54 +173,62 @@ private fun NavRailBar(
     onNavClick: (index: MainLayoutNav) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    NavigationRail(
-        modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.primaryContainer,
-        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-    ) {
-        Spacer(modifier = modifier.weight(0.5f))
-        items().forEachIndexed { index, item ->
-            NavigationRailItem(
-                modifier = modifier.weight(1f),
-                colors = NavigationRailItemDefaults.colors(
-                    indicatorColor = MaterialTheme.colorScheme.inversePrimary,
-                    selectedIconColor = MaterialTheme.colorScheme.inverseSurface,
-                    disabledIconColor = MaterialTheme.colorScheme.primary
-                ),
-                icon = {
-                    Icon(
-                        painter = painterResource(id = item.icon),
-                        contentDescription = item.text,
-                        modifier = modifier.size(24.dp, 24.dp)
-                    )
-                },
-                label = { Text(item.text) },
-                selected = selected(selectedInNav(index)),
-                onClick = { onNavClick(selectedInNav(index)) }
-            )
-        }
-        Spacer(modifier = modifier.weight(0.5f))
-        HorizontalDivider(
-            modifier = modifier.width(50.dp), color = if (isSystemInDarkTheme()) {
-                MaterialTheme.colorScheme.onSurface
-            } else DividerDefaults.color
-        )
-        Column(modifier = modifier.weight(1f), verticalArrangement = Arrangement.Center) {
-            BasicTooltipBox(
-                positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
-                tooltip = extendedButtonData.tooltipContent,
-                state = extendedButtonData.tooltipState
-            ) {
+    val right = WindowInsets.displayCutout.asPaddingValues()
+        .calculateRightPadding(LocalLayoutDirection.current)
+    val safeWidthForFullscreen =
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE) modifier.width(right) else modifier
+    val bgColor = MaterialTheme.colorScheme.primaryContainer
+    Row {
+        NavigationRail(
+            modifier = modifier,
+            containerColor = bgColor,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+        ) {
+            Spacer(modifier = modifier.weight(0.5f))
+            items().forEachIndexed { index, item ->
                 NavigationRailItem(
-                    modifier = modifier,
-                    colors = NavigationRailItemDefaults.colors(MaterialTheme.colorScheme.primary),
-                    icon = extendedButtonData.icon,
-                    label = extendedButtonData.label,
-                    selected = false,
-                    onClick = extendedButtonData.onClick
+                    modifier = modifier.weight(1f),
+                    colors = NavigationRailItemDefaults.colors(
+                        indicatorColor = MaterialTheme.colorScheme.inversePrimary,
+                        selectedIconColor = MaterialTheme.colorScheme.inverseSurface,
+                        disabledIconColor = MaterialTheme.colorScheme.primary
+                    ),
+                    icon = {
+                        Icon(
+                            painter = painterResource(id = item.icon),
+                            contentDescription = item.text,
+                            modifier = modifier.size(24.dp, 24.dp)
+                        )
+                    },
+                    label = { Text(item.text) },
+                    selected = selected(selectedInNav(index)),
+                    onClick = { onNavClick(selectedInNav(index)) }
                 )
             }
+            Spacer(modifier = modifier.weight(0.5f))
+            HorizontalDivider(
+                modifier = modifier.width(50.dp), color = if (isSystemInDarkTheme()) {
+                    MaterialTheme.colorScheme.onSurface
+                } else DividerDefaults.color
+            )
+            Column(modifier = modifier.weight(1f), verticalArrangement = Arrangement.Center) {
+                BasicTooltipBox(
+                    positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+                    tooltip = extendedButtonData.tooltipContent,
+                    state = extendedButtonData.tooltipState
+                ) {
+                    NavigationRailItem(
+                        modifier = modifier,
+                        colors = NavigationRailItemDefaults.colors(MaterialTheme.colorScheme.primary),
+                        icon = extendedButtonData.icon,
+                        label = extendedButtonData.label,
+                        selected = false,
+                        onClick = extendedButtonData.onClick
+                    )
+                }
+            }
         }
+        Spacer(modifier = safeWidthForFullscreen.fillMaxHeight() then modifier.background(bgColor))
     }
 }
 

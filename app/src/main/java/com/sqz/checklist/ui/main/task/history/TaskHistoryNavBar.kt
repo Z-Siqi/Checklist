@@ -1,9 +1,17 @@
 package com.sqz.checklist.ui.main.task.history
 
+import android.os.Build
 import android.util.Log
 import android.view.SoundEffectConstants
 import android.view.View
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Refresh
@@ -25,6 +33,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import com.sqz.checklist.R
 import com.sqz.checklist.ui.main.NavMode
@@ -101,7 +110,7 @@ private fun NavigationSelector(
     selected: Boolean, deleteClick: () -> Unit, redoClick: () -> Unit,
     view: View, modifier: Modifier = Modifier,
 ) {
-    val colors = TaskHistoryColors (
+    val colors = TaskHistoryColors(
         containerColor = MaterialTheme.colorScheme.primaryContainer,
         contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
         indicatorColor = MaterialTheme.colorScheme.inversePrimary,
@@ -172,39 +181,47 @@ private fun NavRailBar(
     view: View,
     modifier: Modifier = Modifier,
 ) {
+    val right = WindowInsets.displayCutout.asPaddingValues()
+        .calculateRightPadding(LocalLayoutDirection.current)
+    val safeWidthForFullscreen =
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE) modifier.width(right) else modifier
+    val bgColor = colors.containerColor
     val buttonColors = NavigationRailItemDefaults.colors(
         indicatorColor = colors.indicatorColor,
         selectedIconColor = colors.selectedIconColor,
         disabledIconColor = colors.disabledIconColor
     )
-    NavigationRail(
-        containerColor = colors.containerColor, contentColor = colors.contentColor,
-        modifier = modifier
-    ) {
-        Spacer(modifier = modifier.weight(0.58f))
-        val deleteText = stringResource(R.string.delete)
-        NavigationRailItem(
-            colors = buttonColors,
-            icon = { Icon(imageVector = Icons.Filled.Delete, contentDescription = deleteText) },
-            label = { Text(text = deleteText) },
-            selected = selected,
-            onClick = {
-                deleteClick()
-                view.playSoundEffect(SoundEffectConstants.CLICK)
-            }
-        )
-        Spacer(modifier = modifier.weight(0.5f))
-        val redoText = stringResource(R.string.redo)
-        NavigationRailItem(
-            colors = buttonColors,
-            icon = { Icon(imageVector = Icons.Filled.Refresh, contentDescription = redoText) },
-            label = { Text(text = redoText) },
-            selected = selected,
-            onClick = {
-                redoClick()
-                view.playSoundEffect(SoundEffectConstants.CLICK)
-            }
-        )
-        Spacer(modifier = modifier.weight(0.5f))
+    Row {
+        NavigationRail(
+            containerColor = colors.containerColor, contentColor = colors.contentColor,
+            modifier = modifier
+        ) {
+            Spacer(modifier = modifier.weight(0.58f))
+            val deleteText = stringResource(R.string.delete)
+            NavigationRailItem(
+                colors = buttonColors,
+                icon = { Icon(imageVector = Icons.Filled.Delete, contentDescription = deleteText) },
+                label = { Text(text = deleteText) },
+                selected = selected,
+                onClick = {
+                    deleteClick()
+                    view.playSoundEffect(SoundEffectConstants.CLICK)
+                }
+            )
+            Spacer(modifier = modifier.weight(0.5f))
+            val redoText = stringResource(R.string.redo)
+            NavigationRailItem(
+                colors = buttonColors,
+                icon = { Icon(imageVector = Icons.Filled.Refresh, contentDescription = redoText) },
+                label = { Text(text = redoText) },
+                selected = selected,
+                onClick = {
+                    redoClick()
+                    view.playSoundEffect(SoundEffectConstants.CLICK)
+                }
+            )
+            Spacer(modifier = modifier.weight(0.5f))
+        }
+        Spacer(modifier = safeWidthForFullscreen.fillMaxHeight() then modifier.background(bgColor))
     }
 }

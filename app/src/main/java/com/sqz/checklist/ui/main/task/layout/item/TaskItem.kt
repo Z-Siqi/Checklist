@@ -85,7 +85,7 @@ fun TaskItem(
         Locale.getDefault()
     )
     Column(
-        modifier = modifier
+        modifier = Modifier
             .animateContentSize(
                 animationSpec = spring(
                     dampingRatio = Spring.DampingRatioNoBouncy,
@@ -113,7 +113,7 @@ fun TaskItem(
                     shape = ShapeDefaults.ExtraLarge
                 ) {
                     Row(
-                        modifier = modifier.fillMaxSize(),
+                        modifier = Modifier.fillMaxSize(),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Spacer(modifier = modifier.weight(0.05f))
