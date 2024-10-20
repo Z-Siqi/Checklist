@@ -1,6 +1,7 @@
 package com.sqz.checklist.ui.main.task.layout
 
 import android.annotation.SuppressLint
+import android.os.Build
 import android.view.SoundEffectConstants
 import android.view.View
 import androidx.compose.animation.AnimatedVisibility
@@ -10,6 +11,9 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -35,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -62,10 +67,18 @@ fun TaskLayoutTopBar(
     var menu by remember { mutableStateOf(false) }
     onMenuClick(menu) { menu = it } // able to add the menu UI inside this
 
-    val screenHeight = LocalConfiguration.current.screenHeightDp
+    val localConfig = LocalConfiguration.current
+    val screenHeight = localConfig.screenHeightDp
     val topBarForLowScreen = screenHeight <= (CardHeight + 24) * 3.8
-    val screenWidth = LocalConfiguration.current.screenWidthDp
+    val screenWidth = localConfig.screenWidthDp
     val topBarForLowAndWidthScreen = screenWidth > 800 && topBarForLowScreen
+
+    val screenIsWidth = localConfig.screenWidthDp > localConfig.screenHeightDp * 1.2
+    val left = WindowInsets.displayCutout.asPaddingValues()
+        .calculateLeftPadding(LocalLayoutDirection.current)
+    val safePaddingForFullscreen = if (
+        Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE && screenIsWidth
+    ) modifier.padding(start = left - if (left > 8.dp) 5.dp else 0.dp) else modifier
 
     val topAppBarTitle = stringResource(R.string.time_format)
     val year = "YYYY"
@@ -74,6 +87,7 @@ fun TaskLayoutTopBar(
     val title = @Composable {
         if (topBarState.heightOffset <= topBarState.heightOffsetLimit * 0.7 && !topBarForLowScreen) {
             Row(
+                modifier = safePaddingForFullscreen,
                 verticalAlignment = Alignment.Bottom
             ) {
                 Text(
@@ -90,7 +104,10 @@ fun TaskLayoutTopBar(
                 )
             }
         } else {
-            Row(verticalAlignment = Alignment.Bottom) {
+            Row(
+                modifier = safePaddingForFullscreen,
+                verticalAlignment = Alignment.Bottom
+            ) {
                 val formatWithSize = if (topBarForLowScreen) {
                     if (topBarForLowAndWidthScreen) {
                         topBarContent(week + ", " + stringResource(R.string.top_bar_date))
@@ -169,7 +186,10 @@ fun TaskLayoutTopBar(
                 exit = slideOutHorizontally() + fadeOut()
             ) {
                 Row(
-                    modifier = modifier.padding(top = 22.dp, start = 4.dp),
+                    modifier = modifier.padding(
+                        top = 22.dp,
+                        start = 4.dp
+                    ) then safePaddingForFullscreen,
                     verticalAlignment = Alignment.Bottom
                 ) {
                     Spacer(modifier = modifier.width(10.dp))

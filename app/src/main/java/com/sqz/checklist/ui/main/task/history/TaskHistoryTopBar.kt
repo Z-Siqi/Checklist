@@ -1,5 +1,10 @@
 package com.sqz.checklist.ui.main.task.history
 
+import android.os.Build
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -11,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -25,6 +31,11 @@ fun HistoryTopBar(
 ) {
     val localConfig = LocalConfiguration.current
     val screenIsWidth = localConfig.screenWidthDp > localConfig.screenHeightDp * 1.2
+    val left = WindowInsets.displayCutout.asPaddingValues()
+        .calculateLeftPadding(LocalLayoutDirection.current)
+    val safePaddingForFullscreen = if (
+        Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE && screenIsWidth
+    ) modifier.padding(start = left - if (left > 20.dp) 10.dp else 0.dp) else modifier
     TopAppBar(
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = if (screenIsWidth) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.primaryContainer,
@@ -38,9 +49,9 @@ fun HistoryTopBar(
         navigationIcon = {
             TextTooltipBox(
                 textRid = R.string.back,
-                topLeftExtraPadding = true
+                topLeftExtraPadding = true,
             ) {
-                IconButton(onClick = { onClick() }) {
+                IconButton(onClick = { onClick() }, modifier = safePaddingForFullscreen) {
                     Icon(
                         painter = painterResource(R.drawable.back),
                         contentDescription = stringResource(R.string.back)
