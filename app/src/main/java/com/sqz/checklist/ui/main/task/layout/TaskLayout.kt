@@ -108,6 +108,7 @@ fun TaskLayout(
         ) modifier.padding(
             start = left, end = if (left / 3 > 15.dp) 15.dp else left / 3
         ) else modifier
+
         LazyList( // LazyColumn lists
             listState = listState,
             lazyState = lazyState,
@@ -118,7 +119,11 @@ fun TaskLayout(
                 }
             },
             isInSearch = { // Search function
-                taskSearchBar(searchState = listState.searchView, taskState = taskState)
+                taskSearchBar(
+                    searchState = listState.searchView,
+                    taskState = taskState,
+                    modifier = safePaddingForFullscreen
+                )
             },
             context = context,
             taskState = taskState,
@@ -206,7 +211,7 @@ private fun taskSearchBar(
     if (searchState) Column(modifier = modifier.fillMaxSize()) {
         val textFieldState = rememberTextFieldState()
         OutlinedCard(
-            modifier = modifier
+            modifier = Modifier
                 .fillMaxWidth()
                 .padding(start = 18.dp, end = 18.dp, top = 12.dp)
                 .height(50.dp),
@@ -214,12 +219,12 @@ private fun taskSearchBar(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
-                    modifier = modifier.padding(start = 10.dp),
+                    modifier = Modifier.padding(start = 10.dp),
                     imageVector = Icons.Filled.Search,
                     contentDescription = stringResource(id = R.string.search)
                 )
                 BasicTextField(
-                    modifier = modifier
+                    modifier = Modifier
                         .fillMaxSize()
                         .padding(start = 9.dp, end = 9.dp, top = 10.dp, bottom = 8.dp)
                         .horizontalScroll(rememberScrollState()),
