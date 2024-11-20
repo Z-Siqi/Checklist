@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.room.Room
 import com.sqz.checklist.database.TaskDatabase
+import com.sqz.checklist.database.taskDatabaseName
 import com.sqz.checklist.ui.MainLayout
 import com.sqz.checklist.ui.theme.ChecklistTheme
 
@@ -35,7 +36,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         taskDatabase = Room.databaseBuilder(
             applicationContext,
-            TaskDatabase::class.java, "task-database"
+            TaskDatabase::class.java, taskDatabaseName
         ).build()
         setContent {
             var getNavHeight by remember { mutableIntStateOf(0) }

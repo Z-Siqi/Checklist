@@ -55,6 +55,7 @@ class TaskLayoutViewModel : ViewModel() {
     fun onTopBarMenuClick(type: TopBarMenuClickType, context: Context) = when (type) {
         TopBarMenuClickType.History -> resetUndo(context)
         TopBarMenuClickType.Search -> searchView(!_listState.value.searchView)
+        TopBarMenuClickType.BackupRestore -> resetUndo(context)
     }
 
     private val _listState = MutableStateFlow(ListData())

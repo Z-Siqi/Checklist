@@ -29,6 +29,7 @@ import androidx.navigation.compose.rememberNavController
 import com.sqz.checklist.ui.main.NavBarLayout
 import com.sqz.checklist.ui.main.NavExtendedButtonData
 import com.sqz.checklist.ui.main.NavMode
+import com.sqz.checklist.ui.main.backup.BackupAndRestoreLayout
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
 import com.sqz.checklist.ui.main.task.history.HistoryTopBar
 import com.sqz.checklist.ui.main.task.history.TaskHistory
@@ -40,8 +41,8 @@ import com.sqz.checklist.ui.main.task.layout.taskExtendedNavButton
 import com.sqz.checklist.ui.main.task.layout.topBarExtendedMenu
 
 enum class MainLayoutNav {
-    TaskLayout,
-    TaskHistory,
+    TaskLayout, TaskHistory,
+    BackupRestore,
     Unknown,
 }
 
@@ -134,6 +135,7 @@ fun MainLayout(context: Context, view: View, modifier: Modifier = Modifier) {
         bottomBar = {
             when (currentRoute) {
                 MainLayoutNav.TaskHistory.name -> taskHistoryNavBar(navMode)
+                MainLayoutNav.BackupRestore.name -> nul()
                 MainLayoutNav.Unknown.name -> nul()
                 else -> mainNavigationBar(navMode)
             }
@@ -160,6 +162,9 @@ fun MainLayout(context: Context, view: View, modifier: Modifier = Modifier) {
             }
             composable(MainLayoutNav.TaskHistory.name) {
                 TaskHistory(historyState = taskHistoryViewModel)
+            }
+            composable(MainLayoutNav.BackupRestore.name) {
+                BackupAndRestoreLayout(view = view)
             }
         }
     }

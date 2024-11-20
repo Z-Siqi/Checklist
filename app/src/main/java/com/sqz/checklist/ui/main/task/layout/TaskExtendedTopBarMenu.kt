@@ -24,7 +24,7 @@ import androidx.navigation.NavHostController
 import com.sqz.checklist.R
 import com.sqz.checklist.ui.MainLayoutNav
 
-enum class TopBarMenuClickType { History, Search }
+enum class TopBarMenuClickType { History, Search, BackupRestore }
 
 /**
  * Top bar menu content.
@@ -45,9 +45,14 @@ fun topBarExtendedMenu(
         navController.navigate(MainLayoutNav.TaskHistory.name)
     }
     val searchClick = { onClickType(TopBarMenuClickType.Search, view.context) }
+    val backupRestoreClick = {
+        onClickType(TopBarMenuClickType.BackupRestore, view.context)
+        navController.navigate(MainLayoutNav.BackupRestore.name)
+    }
     val menuList = listOf(
         MenuItem(stringResource(R.string.task_history)) { taskHistoryClick() },
-        MenuItem(stringResource(R.string.search)) { searchClick() }
+        MenuItem(stringResource(R.string.search)) { searchClick() },
+        MenuItem("Backup & Restore") { backupRestoreClick() }
     )
     MenuLayout(
         expanded = state,
