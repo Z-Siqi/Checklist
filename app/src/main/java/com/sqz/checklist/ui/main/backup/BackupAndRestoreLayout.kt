@@ -3,6 +3,7 @@ package com.sqz.checklist.ui.main.backup
 import android.content.Context
 import android.media.AudioManager
 import android.net.Uri
+import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.util.Log
@@ -242,9 +243,11 @@ private fun TitleText(text: String, modifier: Modifier = Modifier) = Text(
 )
 
 private fun clickFeedback(view: View, audioManager: AudioManager) {
-    if (audioManager.ringerMode == AudioManager.RINGER_MODE_VIBRATE) {
-        val vibrate = view.context?.let { getSystemService(it, Vibrator::class.java) }
-        vibrate?.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK))
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        if (audioManager.ringerMode == AudioManager.RINGER_MODE_VIBRATE) {
+            val vibrate = view.context?.let { getSystemService(it, Vibrator::class.java) }
+            vibrate?.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK))
+        } else view.playSoundEffect(SoundEffectConstants.CLICK)
     } else {
         view.playSoundEffect(SoundEffectConstants.CLICK)
     }
