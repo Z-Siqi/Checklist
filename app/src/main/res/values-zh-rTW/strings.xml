@@ -58,4 +58,21 @@
     <string name="setting_remind_warning">不推薦設置時間太久的提醒, 而且你不應該放你計劃如此之久的鴿子。 還有就是這可能遇上潛在的問題（幹，要是真有問題還得我修） \n\n點擊確認以繼續摸魚</string>
     <string name="cannot_set_past">提醒讓過去的你避開麻煩是不可能的! lol</string>
 
+    <!-- Backup & Restore -->
+    <string name="backup_restore"><![CDATA[備份 & 恢復]]></string>
+    <string name="backup">備份</string>
+    <string name="restore">恢復</string>
+    <string name="export">匯出</string>
+    <string name="import_text">導入</string>
+    <string name="export_to_file">匯出到文件</string>
+    <string name="export_by_share">透過共享對話框導出</string>
+    <string name="select_backup_method">選擇備份方法</string>
+    <string name="select_backup_file_restore">選擇要還原的備份文件</string>
+    <string name="click_select_file_import">按下以選擇要匯入的文件</string>
+    <string name="selected">已選擇!</string>
+    <string name="back_disabled_notice">後退已禁用！請稍等片刻...</string>
+    <string name="select_file_to_import">請選擇要匯入的文件!</string>
+    <string name="error_try_undo_import">錯誤! 嘗試撤銷導入...</string>
+    <string name="finished">完成!</string>
+
 </resources>

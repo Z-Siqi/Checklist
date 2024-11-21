@@ -58,4 +58,21 @@
     <string name="setting_remind_warning">不建议设置时间太久的提醒, 而且你不应该将你的计划推迟那么久。 此外，这也可能会导致意外的错误。\n\n点击确认以继续设置.</string>
     <string name="cannot_set_past">为过去设置提醒是做不到的! lol</string>
 
+    <!-- Backup & Restore -->
+    <string name="backup_restore"><![CDATA[备份 & 恢复]]></string>
+    <string name="backup">备份</string>
+    <string name="restore">恢复</string>
+    <string name="export">导出</string>
+    <string name="import_text">导入</string>
+    <string name="export_to_file">导出至文件系统</string>
+    <string name="export_by_share">通过分享对话框导出</string>
+    <string name="select_backup_method">选择一个备份方式</string>
+    <string name="select_backup_file_restore">选择要恢复的备份文件</string>
+    <string name="click_select_file_import">单击以选择要导入的文件</string>
+    <string name="selected">已选择!</string>
+    <string name="back_disabled_notice">返回操作已禁用! 请等待程序处理完成...</string>
+    <string name="select_file_to_import">请选择要导入的文件!</string>
+    <string name="error_try_undo_import">错误! 尝试撤消导入...</string>
+    <string name="finished">完成!</string>
+
 </resources>

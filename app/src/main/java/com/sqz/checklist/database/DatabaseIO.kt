@@ -98,7 +98,6 @@ class DatabaseIO(
         _dbState = IOdbState.Processing
         // Import
         uri?.let { url ->
-            //importState(IOdbState.Default)
             try {
                 context.contentResolver.openInputStream(url)?.use { input ->
                     closeDatabase()
@@ -198,35 +197,37 @@ fun ImportTaskDatabaseAction(
     val dbPath = view.context.getDatabasePath(taskDatabaseName).absolutePath
     val databaseIO = DatabaseIO(dbPath, view.context)
     val coroutineScope = rememberCoroutineScope()
-    databaseIO.importDatabase(
-        uri = uri,
-        closeDatabase = {
-            taskDatabase.close()
-            coroutineScope.launch { // merge database checkpoint ("PRAGMA wal_checkpoint(FULL)")
-                mergeDatabaseCheckpoint(taskDatabase)
-            }
-        },
-        reOpenDatabase = {
-            taskDatabase = Room.databaseBuilder(
-                view.context, TaskDatabase::class.java, taskDatabaseName
-            ).build()
-            if (!isDatabaseValid(dbPath)) {
-                Log.e("ChecklistDatabase", "Failed to import database: Invalid file!")
-                dbState(IOdbState.Error)
-                Log.w("ChecklistDatabase", "Trying to restore to backup..")
-                DatabaseIO(dbPath, view.context, "").importDatabase(
-                    databaseIO.preBackupFileUri, { taskDatabase.close() }, {
-                        taskDatabase = Room.databaseBuilder(
-                            view.context, TaskDatabase::class.java, taskDatabaseName
-                        ).build()
-                        true
-                    }
-                ) {}
-            }
-            true
-        },
-        importState = { dbState(it) }
-    )
+    LaunchedEffect(true) {
+        databaseIO.importDatabase(
+            uri = uri,
+            closeDatabase = {
+                taskDatabase.close()
+                coroutineScope.launch { // merge database checkpoint ("PRAGMA wal_checkpoint(FULL)")
+                    mergeDatabaseCheckpoint(taskDatabase)
+                }
+            },
+            reOpenDatabase = {
+                taskDatabase = Room.databaseBuilder(
+                    view.context, TaskDatabase::class.java, taskDatabaseName
+                ).build()
+                if (!isDatabaseValid(dbPath)) {
+                    Log.e("ChecklistDatabase", "Failed to import database: Invalid file!")
+                    dbState(IOdbState.Error)
+                    Log.w("ChecklistDatabase", "Trying to restore to backup..")
+                    DatabaseIO(dbPath, view.context, "").importDatabase(
+                        databaseIO.preBackupFileUri, { taskDatabase.close() }, {
+                            taskDatabase = Room.databaseBuilder(
+                                view.context, TaskDatabase::class.java, taskDatabaseName
+                            ).build()
+                            true
+                        }
+                    )
+                }
+                true
+            },
+            importState = { dbState(it) }
+        )
+    }
 }
 
 private fun isDatabaseValid(databasePath: String): Boolean {

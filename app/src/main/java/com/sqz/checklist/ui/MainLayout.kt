@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import android.view.SoundEffectConstants
 import android.view.View
+import android.widget.Toast
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -26,10 +27,12 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.sqz.checklist.R
 import com.sqz.checklist.ui.main.NavBarLayout
 import com.sqz.checklist.ui.main.NavExtendedButtonData
 import com.sqz.checklist.ui.main.NavMode
 import com.sqz.checklist.ui.main.backup.BackupAndRestoreLayout
+import com.sqz.checklist.ui.main.backup.BackupRestoreTopBar
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
 import com.sqz.checklist.ui.main.task.history.HistoryTopBar
 import com.sqz.checklist.ui.main.task.history.TaskHistory
@@ -53,6 +56,7 @@ fun MainLayout(context: Context, view: View, modifier: Modifier = Modifier) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+    var disableBackButton by rememberSaveable { mutableStateOf(false) }
 
     // ViewModel
     val taskLayoutViewModel: TaskLayoutViewModel = viewModel()
@@ -81,6 +85,14 @@ fun MainLayout(context: Context, view: View, modifier: Modifier = Modifier) {
     val taskHistoryTopBar = @Composable {
         HistoryTopBar(onClick = {
             navController.popBackStack()
+            view.playSoundEffect(SoundEffectConstants.CLICK)
+        })
+    }
+    val backupRestoreTopBar = @Composable {
+        BackupRestoreTopBar(onClick = {
+            if (!disableBackButton) navController.popBackStack() else Toast.makeText(
+                context, context.getString(R.string.back_disabled_notice), Toast.LENGTH_SHORT
+            ).show()
             view.playSoundEffect(SoundEffectConstants.CLICK)
         })
     }
@@ -130,6 +142,7 @@ fun MainLayout(context: Context, view: View, modifier: Modifier = Modifier) {
         topBar = when (currentRoute) {
             MainLayoutNav.TaskLayout.name -> taskLayoutTopBar
             MainLayoutNav.TaskHistory.name -> taskHistoryTopBar
+            MainLayoutNav.BackupRestore.name -> backupRestoreTopBar
             else -> nul
         },
         bottomBar = {
@@ -164,7 +177,9 @@ fun MainLayout(context: Context, view: View, modifier: Modifier = Modifier) {
                 TaskHistory(historyState = taskHistoryViewModel)
             }
             composable(MainLayoutNav.BackupRestore.name) {
-                BackupAndRestoreLayout(view = view)
+                BackupAndRestoreLayout(view = view) {
+                    disableBackButton = it
+                }
             }
         }
     }

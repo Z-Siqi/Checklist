@@ -57,4 +57,21 @@
     <string name="setting_remind_warning">Setting reminders that are too long is not recommended, and you shouldn\'t put off your plans for that long. Additionally this may cause unintended problems. \n\nClick Confirm to continue set.</string>
     <string name="cannot_set_past">Cannot set reminder for the past! lol</string>
 
+    <!-- Backup & Restore -->
+    <string name="backup_restore"><![CDATA[Backup & Restore]]></string>
+    <string name="backup">Backup</string>
+    <string name="restore">Restore</string>
+    <string name="export">Export</string>
+    <string name="import_text">Import</string>
+    <string name="export_to_file">Export to file</string>
+    <string name="export_by_share">Export by share</string>
+    <string name="select_backup_method">Select a backup method</string>
+    <string name="select_backup_file_restore">Select a backup file to restore</string>
+    <string name="click_select_file_import">Click to select a file to import</string>
+    <string name="selected">Selected!</string>
+    <string name="back_disabled_notice">Back is disabled! Just a moment...</string>
+    <string name="select_file_to_import">Please select a file to import!</string>
+    <string name="error_try_undo_import">Error! Trying to undo the import...</string>
+    <string name="finished">Finished!</string>
+
 </resources>
