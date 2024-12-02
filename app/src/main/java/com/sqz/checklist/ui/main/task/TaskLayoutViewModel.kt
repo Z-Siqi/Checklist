@@ -1,6 +1,5 @@
 package com.sqz.checklist.ui.main.task
 
-import android.app.NotificationManager
 import android.content.Context
 import android.util.Log
 import androidx.compose.foundation.lazy.LazyListState
@@ -10,19 +9,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.work.WorkManager
 import com.sqz.checklist.MainActivity
 import com.sqz.checklist.R
 import com.sqz.checklist.database.Task
-import com.sqz.checklist.notification.NotificationCreator
+import com.sqz.checklist.notification.PermissionState
 import com.sqz.checklist.ui.main.task.history.arrangeHistoryId
-import com.sqz.checklist.ui.main.task.layout.item.ListData
 import com.sqz.checklist.ui.main.task.layout.NavConnectData
+import com.sqz.checklist.ui.main.task.layout.TopBarMenuClickType
+import com.sqz.checklist.ui.main.task.layout.check.CheckDataState
 import com.sqz.checklist.ui.main.task.layout.item.CardClickType
 import com.sqz.checklist.ui.main.task.layout.item.EditState
+import com.sqz.checklist.ui.main.task.layout.item.ListData
 import com.sqz.checklist.ui.main.task.layout.item.TaskData
-import com.sqz.checklist.ui.main.task.layout.check.CheckDataState
-import com.sqz.checklist.ui.main.task.layout.TopBarMenuClickType
 import com.sqz.checklist.ui.reminder.ReminderActionType
 import com.sqz.checklist.ui.reminder.ReminderData
 import kotlinx.coroutines.delay
@@ -33,7 +31,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.util.Calendar
-import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 class TaskLayoutViewModel : ViewModel() {
@@ -89,23 +86,37 @@ class TaskLayoutViewModel : ViewModel() {
     /**
      * ----- Reminder-related -----
      */
+    private val _notificationManager = MutableStateFlow(
+        com.sqz.checklist.notification.NotifyManager()
+    )
+
+    fun notificationInitState(context: Context): PermissionState {
+        return _notificationManager.value.requestPermission(context)
+    }
+
+    fun isAlarmPermission(): Boolean = _notificationManager.value.getAlarmPermission()
+
     /** Send a delayed notification to user **/
     suspend fun setReminder(
         delayDuration: Long, timeUnit: TimeUnit, id: Int, description: String, context: Context
     ) {
-        val notification = NotificationCreator().create(
+        val delayTime = if (!isAlarmPermission()) delayDuration else {
+            System.currentTimeMillis() + delayDuration
+        }
+        val notification = _notificationManager.value.createNotification(
             channelId = context.getString(R.string.tasks),
             channelName = context.getString(R.string.task_reminder),
             channelDescription = context.getString(R.string.description),
             description = description, notifyId = id,
-            delayDuration = delayDuration, timeUnit = timeUnit,
+            delayDuration = delayTime, timeUnit = timeUnit,
             context = context
         )
         viewModelScope.launch {
-            val uuid = notification.toString()
+            val queryCharacter = notification.also { Log.i("Notification", "Reminder is setting") }
             val now = Calendar.getInstance()
-            val remindTime = now.timeInMillis + delayDuration
-            val merge = "$uuid:$remindTime"
+            val remindTime = if (
+                isAlarmPermission()) delayTime else now.timeInMillis + delayDuration
+            val merge = "$queryCharacter:$remindTime"
             MainActivity.taskDatabase.taskDao().insertReminder(id = id, string = merge)
             updateListState()
         }
@@ -117,19 +128,17 @@ class TaskLayoutViewModel : ViewModel() {
     ) {
         if (!cancelHistory && id != -1) viewModelScope.launch {
             try { // Cancel sent notification
-                val workManager = WorkManager.getInstance(context)
                 val parts = reminder?.split(":")
-                val uuid = if (parts?.size!! >= 2) parts[0] else null
-                if (uuid != null) workManager.cancelWorkById(UUID.fromString(uuid))
+                val queryCharacter = if (parts?.size!! >= 2) parts[0] else null
+                if (queryCharacter != null) {
+                    _notificationManager.value.cancelNotification(queryCharacter, context, id)
+                }
             } catch (e: Exception) {
                 Log.e("UUID", "${e.message}")
             }
-            val notificationManager = context.getSystemService( // Delete notification if showed
-                Context.NOTIFICATION_SERVICE
-            ) as NotificationManager
-            notificationManager.cancel(id)
             // Delete reminder info
             MainActivity.taskDatabase.taskDao().deleteReminder(id)
+            updateListState()
         } else viewModelScope.launch {
             val allIsHistoryIdList = MainActivity.taskDatabase.taskDao().getAllOrderByIsHistoryId()
             for (data in allIsHistoryIdList) {
@@ -270,7 +279,7 @@ class TaskLayoutViewModel : ViewModel() {
     fun autoDeleteHistoryTask(start: Int) {
         viewModelScope.launch {
             val value = MainActivity.taskDatabase.taskDao().getIsHistorySum()
-            if (value > start) {
+            if (value > start) for (i in 1..(value - start)) {
                 val id = MainActivity.taskDatabase.taskDao().getIsHistoryBottomKeyId()
                 MainActivity.taskDatabase.taskDao().delete(
                     Task(id = id, description = "", createDate = LocalDate.MIN)

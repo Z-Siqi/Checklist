@@ -22,9 +22,8 @@ class DelayedNotificationWorker(
             content != null &&
             notifyId != -1
         ) {
-            val notification = NotificationCreator()
+            val notification = NotificationCreator(applicationContext)
             notification.creator(
-                applicationContext,
                 channelId = channelId,
                 channelName = channelName,
                 channelDescription = channelDescription,

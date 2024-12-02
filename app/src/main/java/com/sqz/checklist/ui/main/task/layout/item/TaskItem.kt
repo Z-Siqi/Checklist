@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
+import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
@@ -48,14 +49,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat.getSystemService
-import androidx.work.WorkManager
 import com.sqz.checklist.R
 import com.sqz.checklist.database.Task
+import com.sqz.checklist.ui.reminder.notificationState
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
-import java.util.UUID
 
 /**
  * Swipe-able task item for list (Expected @LazyList call this)
@@ -177,20 +177,32 @@ private fun swipeToDismissControl(
 /** check the reminder is set or not **/
 @Composable
 private fun reminderState(context: Context, reminder: String?): Boolean {
-    var rememberState by rememberSaveable { mutableStateOf(false) }
-    LaunchedEffect(reminder) { // the LaunchedEffect is to fix delay after set reminder
-        val parts = reminder?.split(":")
-        if (parts != null && parts.size >= 2) {
-            val uuid = parts[0]
-            val workManager = WorkManager.getInstance(context)
-            if (uuid != "undefined") {
-                workManager.getWorkInfoByIdLiveData(UUID.fromString(uuid)).observeForever { workInfo ->
-                    rememberState = !(workInfo != null && workInfo.state.isFinished)
-                }
+    var state by remember { mutableStateOf(false) }
+    val parts = reminder?.split(":")
+    if (parts != null && parts.size >= 2) {
+        val queryCharacter = parts[0]
+        if (notificationState(queryCharacter, context, true)) {
+            LaunchedEffect(reminder) {
+                Log.d("ReminderState", "ALARM: $queryCharacter")
+            }
+        } else if (notificationState(queryCharacter, context, false)) {
+            LaunchedEffect(reminder) {
+                Log.d("ReminderState", "WORKER: $queryCharacter")
             }
         }
     }
-    return rememberState
+    LaunchedEffect(reminder, System.currentTimeMillis()) {
+        //val parts = reminder?.split(":")
+        if (parts != null && parts.size >= 2) {
+            try {
+                val timeMillisData = parts[1].toLong()
+                state = timeMillisData >= System.currentTimeMillis()
+            } catch (e: Exception) {
+                Log.e("toLong", "$e")
+            }
+        } else state = false
+    }
+    return state
 }
 
 @RequiresApi(Build.VERSION_CODES.Q)

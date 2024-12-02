@@ -1,12 +1,14 @@
 package com.sqz.checklist.notification
 
 import android.Manifest
+import android.app.AlarmManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import android.util.Log
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
@@ -19,10 +21,12 @@ import com.sqz.checklist.MainActivity
 import com.sqz.checklist.R
 import java.util.UUID
 
-class NotificationCreator {
-    /** Config delayed notification worker. NOT using to create notification **/
+class NotificationCreator(private val context: Context) {
+
+    /**
+     * Config notification. NOT using to create a delayed notification
+     */
     fun creator(
-        context: Context,
         channelId: String,
         channelName: String,
         channelDescription: String,
@@ -54,8 +58,7 @@ class NotificationCreator {
             .setFullScreenIntent(fullScreenPendingIntent, true)
         with(NotificationManagerCompat.from(context)) {
             if (ActivityCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.POST_NOTIFICATIONS
+                    context, Manifest.permission.POST_NOTIFICATIONS
                 ) != PackageManager.PERMISSION_GRANTED
             ) {
                 val packageManager = context.packageManager
@@ -85,17 +88,12 @@ class NotificationCreator {
     }
 
     /** Create delayed notification **/
-    fun create(
-        channelId: String,
-        channelName: String,
-        channelDescription: String,
-        description: String,
-        content: String = "",
-        notifyId: Int,
-        delayDuration: Long,
-        timeUnit: java.util.concurrent.TimeUnit,
-        context: Context
-    ) : UUID {
+    fun createWorker(
+        channelId: String, channelName: String, channelDescription: String,
+        description: String, content: String = "",
+        notifyId: Int, delayDuration: Long,
+        timeUnit: java.util.concurrent.TimeUnit
+    ): UUID {
         val workRequest = OneTimeWorkRequestBuilder<DelayedNotificationWorker>()
             .setInputData(
                 Data.Builder()
@@ -111,5 +109,50 @@ class NotificationCreator {
             .build()
         WorkManager.getInstance(context).enqueue(workRequest)
         return workRequest.id
+    }
+
+    /** Create Alarmed notification **/
+    fun createAlarmed(
+        channelId: String, channelName: String, channelDescription: String,
+        description: String, content: String = "",
+        notifyId: Int, delayDuration: Long
+    ): Int {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val intent = Intent(context, NotificationReceiver::class.java).apply {
+            putExtra("channelId", channelId)
+            putExtra("channelName", channelName)
+            putExtra("channelDescription", channelDescription)
+            putExtra("title", description)
+            putExtra("content", content)
+            putExtra("notifyId", notifyId)
+        }
+        val pendingIntent = PendingIntent.getBroadcast(
+            context, notifyId, intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            try {
+                alarmManager.setExactAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP, delayDuration, pendingIntent
+                )
+                //alarmManager.setAlarmClock(AlarmManager.AlarmClockInfo(delayDuration, pendingIntent), pendingIntent)
+            } catch (e: SecurityException) {
+                Log.e("ERROR", "Failed: AlarmManager Permission denied! Notification cannot sent!")
+            }
+        } else {
+            alarmManager.set(AlarmManager.RTC_WAKEUP, delayDuration, pendingIntent)
+        }
+        return notifyId
+    }
+
+    fun getAlarmNotificationState(notifyId: Int): Boolean {
+        val intent = Intent(context, NotificationReceiver::class.java).apply {
+            putExtra("notifyId", notifyId)
+        }
+        val pendingIntent = PendingIntent.getBroadcast(
+            context, notifyId, intent,
+            PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+        )
+        return pendingIntent != null
     }
 }

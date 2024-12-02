@@ -143,6 +143,8 @@ fun GetUri(uri: (Uri?) -> Unit) {
     }
 }
 
+private const val timeFormat = "yyyyMMdd_HHmm" + "ss" // No Android Studio grammar checking this!
+
 @Composable
 fun ExportTaskDatabase(
     state: Boolean, useChooser: Boolean, view: View,
@@ -178,7 +180,7 @@ fun ExportTaskDatabase(
     if (state) { // Export actions
         if (useChooser) exportDatabase(true, null) else {
             val currentTime = remember {
-                val sdf = SimpleDateFormat("msys", Locale.getDefault())
+                val sdf = SimpleDateFormat(timeFormat, Locale.getDefault())
                 sdf.format(Date())
             }
             launcher.launch("${exportName}_$currentTime.db").also {

@@ -60,7 +60,7 @@ fun TaskChangeContentCard(
     confirmText: String,
     state: TextFieldState,
     modifier: Modifier = Modifier,
-    lineLimits: TextFieldLineLimits = TextFieldLineLimits.Default,
+    lineLimits: TextFieldLineLimits = TextFieldLineLimits.MultiLine(),
     doneImeAction: Boolean = false
 ) {
     val view = LocalView.current
