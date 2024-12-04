@@ -105,9 +105,9 @@ fun ReminderAction(
                         },
                         onConfirmClick = { timeInMilli ->
                             if (!taskState.isAlarmPermission()) Toast.makeText(
-                                context,
-                                "The reminder may arrive late due to no alarms & reminders permission",
-                                Toast.LENGTH_SHORT
+                                context, context.getString(
+                                    R.string.no_SCHEDULE_EXACT_ALARM_permission_explain
+                                ), Toast.LENGTH_SHORT
                             ).show()
                             coroutineScope.launch {
                                 taskState.setReminder(
@@ -165,9 +165,10 @@ private fun NoPermissionDialog(
 ) {
     var requestPermission by rememberSaveable { mutableStateOf(false) }
     WarningAlertDialog(
+        textString = stringResource(R.string.unable_sent_cause_no_permission) +
+                "\n" + stringResource(R.string.please_grant_permission),
         onDismissRequest = { onDismissRequest() },
         onConfirmButtonClick = { requestPermission = true },
-        textString = "Notification is unable to sent due to no permission! \nPlease grant permission."
     )
     if (requestPermission) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -203,7 +204,7 @@ private fun NeedAlarmPermissionDialog(
             context.startActivity(intents)
             onDismissRequest()
         },
-        textString = "To display notifications (reminders) on time please grant SCHEDULE_EXACT_ALARM permission.\nIf set notification (reminders) without this permission, it may arrived late."
+        textString = stringResource(R.string.request_SCHEDULE_EXACT_ALARM_content)
     )
 }
 
@@ -227,9 +228,8 @@ private fun requestNotificationPermission(
         if (!isGranted) {
             if (tryForce) openSetting() else {
                 Toast.makeText(
-                    context,
-                    context.getString(R.string.no_set_reminder_permission),
-                    Toast.LENGTH_SHORT
+                    context, context.getString(R.string.no_set_reminder_permission) + " " +
+                            context.getString(R.string.please_grant_permission), Toast.LENGTH_SHORT
                 ).show()
                 actionFinished = true
             }

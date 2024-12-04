@@ -46,7 +46,7 @@
     <string name="task_reminder">Task Reminder</string>
     <string name="cancel_the_reminder">Cancel the reminder?</string>
     <string name="description">For remind to do the task</string>
-    <string name="no_set_reminder_permission">Failed to set reminder due to no permission</string>
+    <string name="no_set_reminder_permission">Failed to set reminder due to no permission.</string>
     <string name="note_brevent">Note: notification may not work if Brevent work on Checklist</string>
     <string name="note_thanox">Note: notification may not work if Thanox work on Checklist</string>
     <string name="no_do_nothing">Don\'t plan to do nothing!!</string>
@@ -54,8 +54,12 @@
     <string name="remind_at_preview">%1$s hour %2$s minutes later</string>
     <string name="remind_at">Remind at %1$s</string>
     <string name="nothing_need_do">Nothing need to do! \nClick \'Add\' to create a task</string>
-    <string name="setting_remind_warning">Setting reminders that are too long is not recommended, and you shouldn\'t put off your plans for that long. Additionally this may cause unintended problems. \n\nClick Confirm to continue set.</string>
+    <string name="setting_remind_warning">Setting reminders that are too long is not recommended, and you should not put off your plans for that long. Additionally this may cause unintended problems. \n\nClick Confirm to continue set.</string>
     <string name="cannot_set_past">Cannot set reminder for the past! lol</string>
+    <string name="please_grant_permission">Please grant permission!</string>
+    <string name="request_SCHEDULE_EXACT_ALARM_content">To display notifications (reminders) on time please grant \"Alarm &amp; reminders\" permission.\nIf set notification (reminders) without this permission, it may arrived late.</string>
+    <string name="unable_sent_cause_no_permission">Notification is unable to send due to no permission!</string>
+    <string name="no_SCHEDULE_EXACT_ALARM_permission_explain"><![CDATA[The reminder may arrive late due to no alarms & reminders permission]]></string>
 
     <!-- Backup & Restore -->
     <string name="backup_restore"><![CDATA[Backup & Restore]]></string>
@@ -68,10 +72,10 @@
     <string name="select_backup_method">Select a backup method</string>
     <string name="select_backup_file_restore">Select a backup file to restore</string>
     <string name="click_select_file_import">Click to select a file to import</string>
-    <string name="selected">Selected!</string>
-    <string name="back_disabled_notice">Back is disabled! Just a moment...</string>
+    <string name="selected_file">Selected!</string>
+    <string name="back_disabled_notice">Back is disabled! Just a moment…</string>
     <string name="select_file_to_import">Please select a file to import!</string>
-    <string name="error_try_undo_import">Error! Trying to undo the import...</string>
+    <string name="error_try_undo_import">Error! Trying to undo the import…</string>
     <string name="finished">Finished!</string>
 
 </resources>

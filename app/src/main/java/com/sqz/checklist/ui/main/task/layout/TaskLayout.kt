@@ -39,6 +39,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -266,6 +267,11 @@ private fun NavBarConnectorAction(
     updateNavConnector: (data: NavConnectData, updateSet: NavConnectData) -> Unit,
 ) {
     val screenHeight = LocalConfiguration.current.screenHeightDp
+    val rememberTopBarHeight = rememberSaveable { mutableFloatStateOf(0f) }
+    LaunchedEffect(Unit) { // this LaunchedEffect is used to fix a crash when rotate screen in auto scroll
+        delay(200)
+        rememberTopBarHeight.floatValue = scrollBehavior.state.heightOffsetLimit
+    }
     LaunchedEffect(lazyState) {
         snapshotFlow { lazyState.layoutInfo.totalItemsCount * 120 > screenHeight }.collect {
             updateNavConnector(
@@ -289,7 +295,7 @@ private fun NavBarConnectorAction(
     }
     if (navConnector.scrollToBottom) LaunchedEffect(Unit) {
         lazyState.animateScrollToItem(lazyState.layoutInfo.totalItemsCount)
-        scrollBehavior.state.heightOffset = scrollBehavior.state.heightOffsetLimit
+        scrollBehavior.state.heightOffset = rememberTopBarHeight.floatValue
         updateNavConnector(
             NavConnectData(scrollToBottom = false), NavConnectData(scrollToBottom = true)
         )

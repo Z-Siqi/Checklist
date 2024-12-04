@@ -47,7 +47,7 @@
     <string name="task_reminder">提醒</string>
     <string name="cancel_the_reminder">取消提醒?</string>
     <string name="description">用於提醒</string>
-    <string name="no_set_reminder_permission">靠北的沒有權限要怎麽發通知提醒你？ lol</string>
+    <string name="no_set_reminder_permission">靠北的沒有權限要怎麽發通知提醒你？ （lol）。</string>
     <string name="note_brevent">注意: Brevent 可能讓你收不到提醒</string>
     <string name="note_thanox">注意: Thanox 可能讓你收不到提醒</string>
     <string name="no_do_nothing">不要計劃做空氣!!</string>
@@ -57,6 +57,10 @@
     <string name="nothing_need_do">你現在無事可做! \n點擊 \'添加\' 為你的生活添加壓力 lol</string>
     <string name="setting_remind_warning">不推薦設置時間太久的提醒, 而且你不應該放你計劃如此之久的鴿子。 還有就是這可能遇上潛在的問題（幹，要是真有問題還得我修） \n\n點擊確認以繼續摸魚</string>
     <string name="cannot_set_past">提醒讓過去的你避開麻煩是不可能的! lol</string>
+    <string name="please_grant_permission">請授予許可!</string>
+    <string name="request_SCHEDULE_EXACT_ALARM_content">若要準時顯示通知（提醒），請授予 鬧鐘和提醒 權限。</string>
+    <string name="unable_sent_cause_no_permission">由於沒有權限，無法發送通知!</string>
+    <string name="no_SCHEDULE_EXACT_ALARM_permission_explain"><![CDATA[由於沒有 鬧鐘和提醒 權限，提醒可能會延遲到達]]></string>
 
     <!-- Backup & Restore -->
     <string name="backup_restore"><![CDATA[備份 & 恢復]]></string>
@@ -69,10 +73,10 @@
     <string name="select_backup_method">選擇備份方法</string>
     <string name="select_backup_file_restore">選擇要還原的備份文件</string>
     <string name="click_select_file_import">按下以選擇要匯入的文件</string>
-    <string name="selected">已選擇!</string>
-    <string name="back_disabled_notice">後退已禁用！請稍等片刻...</string>
+    <string name="selected_file">已選擇!</string>
+    <string name="back_disabled_notice">後退已禁用！請稍等片刻…</string>
     <string name="select_file_to_import">請選擇要匯入的文件!</string>
-    <string name="error_try_undo_import">錯誤! 嘗試撤銷導入...</string>
+    <string name="error_try_undo_import">錯誤! 嘗試撤銷導入…</string>
     <string name="finished">完成!</string>
 
 </resources>

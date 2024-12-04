@@ -1,10 +1,13 @@
 package com.sqz.checklist.ui.main.task.layout.item
 
 import android.content.Context
+import android.os.Build
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -48,6 +51,12 @@ fun LazyList(
 ) {
     var inSearch by rememberSaveable { mutableStateOf(false) }
     val screenWidthPx = LocalConfiguration.current.screenWidthDp * LocalDensity.current.density
+
+    val localConfig = LocalConfiguration.current
+    val screenIsWidth = localConfig.screenWidthDp > localConfig.screenHeightDp * 1.2
+    val safeBottomForFullscreen =
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE && screenIsWidth
+        ) (WindowInsets.navigationBars.getBottom(LocalDensity.current) / LocalDensity.current.density).dp else 10.dp
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         state = lazyState
@@ -99,7 +108,7 @@ fun LazyList(
                 )
             }
         }
-        item { Spacer(modifier = modifier.height(10.dp)) }
+        item { Spacer(modifier = modifier.height(2.dp + safeBottomForFullscreen)) }
     }
     inSearch = isInSearch() // Searching UI & search state
 }
