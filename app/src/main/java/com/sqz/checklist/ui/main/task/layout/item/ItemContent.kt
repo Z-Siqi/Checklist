@@ -54,7 +54,7 @@ import com.sqz.checklist.R
 import com.sqz.checklist.ui.material.InfoAlertDialog
 
 enum class CardClickType { Reminder, Edit, Pin, Close }
-data class EditState(val id: Int = -1, val description: String = "", val state: Boolean = false)
+data class EditState(val id: Long = -1L, val description: String = "", val state: Boolean = false)
 enum class ItemMode {
     NormalTask, PinnedTask, RemindedTask
 }

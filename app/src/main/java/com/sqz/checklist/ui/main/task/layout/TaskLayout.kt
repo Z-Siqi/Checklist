@@ -61,6 +61,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sqz.checklist.R
+import com.sqz.checklist.database.DatabaseRepository
 import com.sqz.checklist.database.Task
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
 import com.sqz.checklist.ui.main.task.layout.check.CheckTaskAction
@@ -175,7 +176,7 @@ fun TaskLayout(
 @Composable
 private fun EditTask(
     editState: EditState,
-    editTask: (id: Int, edit: String) -> Unit,
+    editTask: (id: Long, edit: String) -> Unit,
     resetState: () -> Unit,
     context: Context
 ) {
@@ -316,6 +317,7 @@ private fun Preview() {
     val item = listOf(Task(0, "The quick brown fox jumps over the lazy dog.", LocalDate.now()))
     TaskLayout(
         TopAppBarDefaults.exitUntilCollapsedScrollBehavior(),
-        LocalContext.current, LocalView.current, listState = ListData(item, item, item)
+        LocalContext.current, LocalView.current, listState = ListData(item, item, item),
+        taskState = TaskLayoutViewModel(DatabaseRepository(null))
     )
 }

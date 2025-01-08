@@ -40,7 +40,7 @@ class TaskHistoryViewModel : ViewModel() {
     /** Control the History Selection State **/
     private val _selectState = MutableStateFlow(SelectData())
     val selectState: StateFlow<SelectData> = _selectState.asStateFlow()
-    fun setSelectTask(id: Int) {
+    fun setSelectTask(id: Long) {
         _selectState.update {
             if (!it.onSelect) {
                 it.copy(
@@ -64,7 +64,7 @@ class TaskHistoryViewModel : ViewModel() {
     }
 
     /** Delete or Undo to history as id **/
-    fun removeFromHistory(action: DoTaskAction, id: Int) = viewModelScope.launch {
+    fun removeFromHistory(action: DoTaskAction, id: Long) = viewModelScope.launch {
         _selectState.update { // Hide before remove is for animation
             it.copy(hideSelected = true)
         }
@@ -78,7 +78,7 @@ class TaskHistoryViewModel : ViewModel() {
     }
 
     /** Delete action **/
-    private fun deleteTask(id: Int) = viewModelScope.launch {
+    private fun deleteTask(id: Long) = viewModelScope.launch {
         // Actions
         MainActivity.taskDatabase.taskDao().delete(
             Task(id = id, description = "", createDate = LocalDate.MIN)
@@ -89,9 +89,8 @@ class TaskHistoryViewModel : ViewModel() {
     }
 
     /** Undo to history **/
-    private fun changeTaskVisibilityAsUndo(id: Int) = viewModelScope.launch {
+    private fun changeTaskVisibilityAsUndo(id: Long) = viewModelScope.launch {
         // Actions
-        MainActivity.taskDatabase.taskDao().setHistory(0, id)
         MainActivity.taskDatabase.taskDao().setHistoryId(0, id)
         arrangeHistoryId()
         // Update to LazyColumn

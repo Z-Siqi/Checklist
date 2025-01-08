@@ -3,8 +3,14 @@ package com.sqz.checklist.notification
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import com.sqz.checklist.database.DatabaseRepository
+import com.sqz.checklist.database.buildDatabase
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 
 class NotificationReceiver : BroadcastReceiver() {
+    @OptIn(DelicateCoroutinesApi::class)
     override fun onReceive(context: Context, intent: Intent) {
         val channelId = intent.getStringExtra("channelId")
         val channelName = intent.getStringExtra("channelName")
@@ -25,6 +31,12 @@ class NotificationReceiver : BroadcastReceiver() {
                 content = content,
                 notifyId = notifyId
             )
+            GlobalScope.launch {
+                val db = buildDatabase(context)
+                val databaseRepository = DatabaseRepository(db)
+                databaseRepository.setIsReminded(notifyId, true)
+                db.close()
+            }
         } else throw Exception("Notification data error!")
     }
 }

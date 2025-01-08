@@ -8,72 +8,105 @@ import androidx.room.Query
 
 @Dao
 interface TaskDao {
-    /* Get Table Actions */
-    @Query("SELECT * FROM task WHERE isHistory != :withoutHistory AND isPin != :isPinNot")
-    suspend fun getAll(withoutHistory: Int = -1, isPinNot: Int = -1): List<Task>
+    /* Get Actions */
+    @Query("SELECT * FROM task WHERE isHistoryId < :allowedMaxHistoryIdNum + 1 AND isPin != :isPinNot")
+    suspend fun getAll(isPinNot: Int = -1, allowedMaxHistoryIdNum: Int = 0): List<Task>
 
-    @Query("SELECT * FROM task WHERE isHistory = 1 ORDER BY isHistoryId")
+    @Query("SELECT * FROM task WHERE id = :id")
+    suspend fun getAll(id: Long): Task
+
+    @Query("SELECT * FROM task WHERE isHistoryId >= 1 ORDER BY isHistoryId")
     suspend fun getAllOrderByIsHistoryId(): List<Task>
 
-    @Query("SELECT * FROM task WHERE isHistory = 0 AND reminder != ''")
+    @Query("SELECT * FROM task WHERE isHistoryId = 0 AND reminder != ''")
     suspend fun getIsRemindedList(): List<Task>
 
-    @Query("SELECT * FROM task WHERE isHistory = 0 AND description LIKE '%' || :search || '%'")
+    @Query("SELECT * FROM task WHERE isHistoryId = 0 AND description LIKE '%' || :search || '%'")
     suspend fun searchedList(search: String): List<Task>
+
+    @Query("SELECT COUNT() FROM task WHERE reminder = :reminderId")
+    suspend fun matchReminder(reminderId: Int): Int
+
+    //@Query("SELECT * FROM taskDetail")
+    //suspend fun getTaskDetail(): List<TaskDetail>
 
 
     /* Insert & Edit Actions */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(vararg task: Task)
+    suspend fun insertAll(task: Task): Long
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(vararg detail: TaskDetail)
 
     @Query("UPDATE task SET description = :edit WHERE id = :id")
-    suspend fun editTask(id: Int, edit: String)
+    suspend fun editTask(id: Long, edit: String)
 
     @Query("UPDATE task SET isPin = :edit WHERE id = :id")
-    suspend fun editTaskPin(id: Int, edit: Int)
+    suspend fun editTaskPin(id: Long, edit: Int)
 
-    @Query("UPDATE task SET reminder = :string WHERE id = :id")
-    suspend fun insertReminder(id: Int, string: String)
+    @Query("UPDATE task SET reminder = :notifyId WHERE id = :id")
+    suspend fun insertReminder(id: Long, notifyId: Int)
 
 
     /* History-related Get Actions */
-    @Query("SELECT COUNT(isHistory) FROM task WHERE isHistory = 1")
+    @Query("SELECT COUNT(isHistoryId != 0) FROM task WHERE isHistoryId != 0")
     suspend fun getIsHistorySum(): Int
 
-    @Query("SELECT isHistoryId FROM task WHERE isHistory = 1 ORDER BY isHistoryId DESC")
+    @Query("SELECT isHistoryId FROM task WHERE isHistoryId != 0 ORDER BY isHistoryId DESC")
     suspend fun getIsHistoryIdTop(): Int
 
-    @Query("SELECT id, isHistoryId FROM task WHERE isHistory = 1 ORDER BY isHistoryId")
+    @Query("SELECT id, isHistoryId FROM task WHERE isHistoryId != 0 ORDER BY isHistoryId")
     suspend fun getAllIsHistoryId(): List<HistoryIdList>
 
-    @Query("SELECT id FROM task WHERE isHistory = 1 ORDER BY isHistoryId")
-    suspend fun getIsHistoryBottomKeyId(): Int
+    @Query("SELECT id FROM task WHERE isHistoryId != 0 ORDER BY isHistoryId")
+    suspend fun getIsHistoryBottomKeyId(): Long
 
-    @Query("SELECT isHistory FROM task WHERE id = :id")
-    suspend fun getIsHistory(id: Int): Int // 0 = false, 1 = ture
+    @Query("SELECT isHistoryId FROM task WHERE id = :id AND isHistoryId != 0")
+    suspend fun getIsHistory(id: Long): Int
 
 
     /* History-related Set Actions */
     @Query("UPDATE task SET isHistoryId = :isHistoryId WHERE id = :id")
-    suspend fun setHistoryId(isHistoryId: Int, id: Int)
+    suspend fun setHistoryId(isHistoryId: Int, id: Long)
 
-    @Query("UPDATE task SET isHistory = 0, isHistoryId = 0")
+    @Query("UPDATE task SET isHistoryId = 0")
     suspend fun setAllNotHistory()
 
-    @Query("UPDATE task SET isHistory = :isHistory WHERE id = :id")
-    suspend fun setHistory(isHistory: Int, id: Int)
-
     @Query("UPDATE task SET isHistoryId = :isHistoryId WHERE id = :id")
-    suspend fun setIsHistoryId(isHistoryId: Int, id: Int)
+    suspend fun setIsHistoryId(isHistoryId: Int, id: Long)
 
 
     /* Delete Actions */
     @Delete
     suspend fun delete(task: Task)
 
-    @Query("DELETE FROM task WHERE isHistory = 1")
+    @Delete
+    suspend fun delete(detail: TaskDetail)
+
+    @Query("DELETE FROM task WHERE isHistoryId != 0")
     suspend fun deleteAllHistory()
 
     @Query("UPDATE task SET reminder = '' WHERE id = :id")
-    suspend fun deleteReminder(id: Int)
+    suspend fun deleteReminder(id: Long)
+}
+
+@Dao
+interface TaskReminderDao {
+    @Query("SELECT * FROM reminder")
+    suspend fun getAll(): List<TaskReminder>
+
+    @Query("SELECT * FROM reminder WHERE id = :id")
+    suspend fun getAll(id: Int): TaskReminder
+
+    @Query("SELECT COUNT() FROM reminder WHERE mode = :modeType")
+    suspend fun getModeNum(modeType: ReminderModeType): Int
+
+    @Query("UPDATE reminder SET isReminded = :setter WHERE id = :id")
+    suspend fun setIsReminded(id: Int, setter: Int)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(vararg reminder: TaskReminder)
+
+    @Delete
+    suspend fun delete(reminder: TaskReminder)
 }

@@ -7,13 +7,39 @@ import java.time.LocalDate
 
 @Entity(tableName = "task")
 data class Task(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
     @ColumnInfo val description: String,
     @ColumnInfo val createDate: LocalDate,
-    @ColumnInfo val detail: String? = null, // not implemented
-    @ColumnInfo val reminder: String? = null,
+    @ColumnInfo val reminder: Int? = null,
+    @ColumnInfo val doingState: String? = null, // not implemented
     @ColumnInfo val isPin: Boolean = false,
-    @ColumnInfo val pinToTop: Boolean = false, // not implemented
-    @ColumnInfo val isHistory: Boolean = false,
+    @ColumnInfo val detail: Boolean = false, // not implemented
     @ColumnInfo val isHistoryId: Int = 0,
 )
+
+@Entity(tableName = "reminder")
+data class TaskReminder(
+    @PrimaryKey(autoGenerate = false) val id: Int, // notifyId
+    @ColumnInfo val description: String,
+    @ColumnInfo val reminderTime: Long,
+    @ColumnInfo val mode: ReminderModeType,
+    @ColumnInfo val isReminded: Boolean = false,
+    @ColumnInfo val extraText: String? = null, // not implemented
+    @ColumnInfo val extraData: String? = null,
+    @ColumnInfo val longAsDelay: Boolean = false, // Used to set a delay, not dept on TimeLong if its true (not implemented)
+)
+
+enum class ReminderModeType {
+    Worker, AlarmManager
+}
+
+@Entity(tableName = "taskDetail") // not implemented
+data class TaskDetail(
+    @PrimaryKey val id: Long, // same as task id
+    @ColumnInfo val type: TaskDetailType,
+    @ColumnInfo val dataString: String,
+)
+
+enum class TaskDetailType { // not implemented
+    Text, Picture, Video, URL, ChildList
+}

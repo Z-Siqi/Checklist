@@ -21,9 +21,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
-import androidx.room.Room
 import com.sqz.checklist.database.TaskDatabase
-import com.sqz.checklist.database.taskDatabaseName
+import com.sqz.checklist.database.buildDatabase
 import com.sqz.checklist.ui.MainLayout
 import com.sqz.checklist.ui.theme.ChecklistTheme
 
@@ -34,10 +33,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        taskDatabase = Room.databaseBuilder(
-            applicationContext,
-            TaskDatabase::class.java, taskDatabaseName
-        ).build()
+        taskDatabase = buildDatabase(applicationContext)
         setContent {
             var getNavHeight by remember { mutableIntStateOf(0) }
             val navigationBars = WindowInsets.navigationBars.toString()

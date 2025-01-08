@@ -17,6 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -37,8 +38,8 @@ import java.util.concurrent.TimeUnit
 enum class ReminderActionType { Set, Cancel, None }
 
 data class ReminderData(
-    val id: Int = 0,
-    val reminderInfo: String? = null,
+    val id: Long = 0,
+    val reminderInfo: Int? = null,
     val set: ReminderActionType = ReminderActionType.None,
     val description: String = "",
 )
@@ -135,8 +136,12 @@ fun ReminderAction(
             },
             onDismissButtonClick = { resetState() },
             text = {
-                val parts = reminder.reminderInfo?.split(":")
-                val getTimeInLong = if (parts != null && parts.size >= 2) parts[1].toLong() else 0L
+                var data by rememberSaveable { mutableLongStateOf(-1L) }
+                LaunchedEffect(Unit) {
+                    if (reminder.reminderInfo != null) {
+                        data = taskState.getReminderData(reminder.reminderInfo).reminderTime
+                    }
+                }
                 Text(
                     text = stringResource(R.string.cancel_the_reminder),
                     fontSize = (15 - 1).sp
@@ -144,10 +149,10 @@ fun ReminderAction(
                 val fullDateShort = stringResource(R.string.full_date_short)
                 val formatter = remember { SimpleDateFormat(fullDateShort, Locale.getDefault()) }
                 Text(
-                    text = stringResource(
+                    text = if (data != -1L) stringResource(
                         R.string.remind_at,
-                        formatter.format(getTimeInLong)
-                    ),
+                        formatter.format(data)
+                    ) else "ERROR",
                     fontSize = 15.sp
                 )
             }

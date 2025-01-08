@@ -54,7 +54,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 data class SelectData(
-    val selectedId: Int = -0,
+    val selectedId: Long = -0,
     val onSelect: Boolean = false,
     val hideSelected: Boolean = false // Hide in a short time before remove (for animation)
 )

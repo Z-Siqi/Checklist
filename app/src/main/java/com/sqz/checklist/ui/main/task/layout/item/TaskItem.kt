@@ -35,6 +35,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -49,9 +50,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat.getSystemService
+import com.sqz.checklist.MainActivity
 import com.sqz.checklist.R
+import com.sqz.checklist.database.DatabaseRepository
 import com.sqz.checklist.database.Task
-import com.sqz.checklist.ui.reminder.notificationState
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -64,7 +66,7 @@ import java.util.Locale
 fun TaskItem(
     task: Task,
     onTaskItemClick: (task: Task, type: CardClickType, reminderState: Boolean) -> Unit,
-    checked: (id: Int) -> Unit,
+    checked: (id: Long) -> Unit,
     getIsHistory: Boolean,
     context: Context,
     itemState: SwipeToDismissBoxState,
@@ -72,8 +74,8 @@ fun TaskItem(
     modifier: Modifier = Modifier
 ) { // Process card action
     val remindTime = @Composable { // The text of reminder time
-        val parts = task.reminder?.split(":")
-        val getTimeInLong = if (parts != null && parts.size >= 2) parts[1].toLong() else 0L
+        val getTimeInLong =
+            if (task.reminder != null) getReminderTime(task.reminder) else 0L
         val fullDateShort = stringResource(R.string.full_date_short)
         if (getTimeInLong <= 1000L) null else SimpleDateFormat(
             fullDateShort,
@@ -125,7 +127,7 @@ fun TaskItem(
                 }
             }
         ) { // front of card
-            val reminderState = reminderState(context, task.reminder)
+            val reminderState = reminderState(task.reminder)
             ItemContent(
                 description = task.description,
                 dateText = if (mode == ItemMode.RemindedTask) {
@@ -176,29 +178,19 @@ private fun swipeToDismissControl(
 
 /** check the reminder is set or not **/
 @Composable
-private fun reminderState(context: Context, reminder: String?): Boolean {
+private fun reminderState(reminder: Int?): Boolean {
     var state by remember { mutableStateOf(false) }
-    val parts = reminder?.split(":")
-    if (parts != null && parts.size >= 2) {
-        val queryCharacter = parts[0]
-        if (notificationState(queryCharacter, context, true)) {
-            LaunchedEffect(reminder) {
-                Log.d("ReminderState", "ALARM: $queryCharacter")
-            }
-        } else if (notificationState(queryCharacter, context, false)) {
-            LaunchedEffect(reminder) {
-                Log.d("ReminderState", "WORKER: $queryCharacter")
-            }
-        }
-    }
-    LaunchedEffect(reminder, System.currentTimeMillis()) {
-        //val parts = reminder?.split(":")
-        if (parts != null && parts.size >= 2) {
+    var timeMillis by remember { mutableLongStateOf(0L) }
+    LaunchedEffect(reminder, (timeMillis >= System.currentTimeMillis())) {
+        if (reminder != 0 && reminder != null) {
             try {
-                val timeMillisData = parts[1].toLong()
+                val databaseRepository = DatabaseRepository(MainActivity.taskDatabase)
+                val timeMillisData =
+                    databaseRepository.getReminderData(reminder).reminderTime
+                timeMillis = timeMillisData
                 state = timeMillisData >= System.currentTimeMillis()
             } catch (e: Exception) {
-                Log.e("toLong", "$e")
+                Log.e("Exception: TaskItem", "$reminder")
             }
         } else state = false
     }
@@ -240,6 +232,16 @@ private fun AnimateInFinishedTask(visible: Boolean = false, alignment: Alignment
     ) {
         Icon(imageVector = Icons.Filled.Check, contentDescription = stringResource(R.string.check))
     }
+}
+
+@Composable
+private fun getReminderTime(id: Int): Long {
+    var data by rememberSaveable { mutableLongStateOf(0L) }
+    LaunchedEffect(Unit) {
+        val databaseRepository = DatabaseRepository(MainActivity.taskDatabase)
+        data = databaseRepository.getReminderData(id).reminderTime
+    }
+    return data
 }
 
 @Preview

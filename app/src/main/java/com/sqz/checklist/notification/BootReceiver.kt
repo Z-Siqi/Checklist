@@ -4,10 +4,10 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
-import androidx.room.Room
 import com.sqz.checklist.R
-import com.sqz.checklist.database.TaskDatabase
-import com.sqz.checklist.database.taskDatabaseName
+import com.sqz.checklist.database.DatabaseRepository
+import com.sqz.checklist.database.ReminderModeType
+import com.sqz.checklist.database.buildDatabase
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,29 +25,32 @@ class BootReceiver : BroadcastReceiver() {
             GlobalScope.launch {
                 notificationManager.value.requestPermission(context)
                 if (notificationManager.value.getAlarmPermission()) {
-                    val db = Room.databaseBuilder(
-                        context, TaskDatabase::class.java, taskDatabaseName
-                    ).build()
-                    val taskDao = db.taskDao()
-                    val list = taskDao.getIsRemindedList()
+                    val db = buildDatabase(context)
+                    val dao = db.taskReminderDao()
+                    val list = dao.getAll()
+                    val databaseRepository = DatabaseRepository(db)
                     val notification = NotificationCreator(context)
                     for (data in list) {
-                        val parts = data.reminder?.split(":")
-                        val queryCharacter = if (parts?.size!! >= 2) parts[0] else null
-                        if (queryCharacter != null) try {
-                            if (!notification.getAlarmNotificationState(queryCharacter.toInt()) &&
-                                parts[1].toLong() >= System.currentTimeMillis()
+                        try {
+                            if (!notification.getAlarmNotificationState(data.id) &&
+                                data.mode == ReminderModeType.AlarmManager && !data.isReminded
                             ) {
                                 notificationManager.value.createNotification(
                                     channelId = context.getString(R.string.tasks),
                                     channelName = context.getString(R.string.task_reminder),
                                     channelDescription = context.getString(R.string.description),
                                     description = data.description, notifyId = data.id,
-                                    delayDuration = parts[1].toLong(),
+                                    delayDuration = data.reminderTime,
                                     timeUnit = TimeUnit.MILLISECONDS, context = context
                                 ).also {
-                                    Log.d("RestoreReminder", "Restore NotifyId: $queryCharacter")
+                                    Log.d("RestoreReminder", "Restore NotifyId: ${data.id}")
                                 }
+                                if (data.reminderTime < System.currentTimeMillis()) {
+                                    databaseRepository.setIsReminded(data.id, true)
+                                }
+                            }
+                            if (data.mode == ReminderModeType.Worker) {
+                                Log.d("RestoreReminder", "Ignored: work manager no need this!")
                             }
                         } catch (e: NumberFormatException) {
                             Log.d("RestoreReminder", "Ignored: work manager no need this!")

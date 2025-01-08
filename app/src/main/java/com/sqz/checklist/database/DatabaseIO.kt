@@ -160,10 +160,7 @@ fun ExportTaskDatabase(
             coroutineScope.launch {
                 mergeDatabaseCheckpoint(taskDatabase)
             }
-            taskDatabase = Room.databaseBuilder(
-                view.context,
-                TaskDatabase::class.java, taskDatabaseName
-            ).build()
+            taskDatabase = buildDatabase(context = view.context)
         }.let {
             if (it != null) {
                 Toast.makeText(view.context, "Export failed: $it", Toast.LENGTH_SHORT).show()
@@ -209,9 +206,7 @@ fun ImportTaskDatabaseAction(
                 }
             },
             reOpenDatabase = {
-                taskDatabase = Room.databaseBuilder(
-                    view.context, TaskDatabase::class.java, taskDatabaseName
-                ).build()
+                taskDatabase = buildDatabase(context = view.context)
                 if (!isDatabaseValid(dbPath)) {
                     Log.e("ChecklistDatabase", "Failed to import database: Invalid file!")
                     dbState(IOdbState.Error)
