@@ -131,8 +131,11 @@ class TaskLayoutViewModel(
             context = context
         )
         try { // remove old data first
+            cancelReminder(id, _databaseRepository.getReminderData(id)!!.id, context)
             _databaseRepository.deleteReminderData(id)
         } catch (e: NoSuchFieldException) {
+            Log.d("SetReminder", "New reminder is setting")
+        } catch (e: NullPointerException) {
             Log.d("SetReminder", "New reminder is setting")
         }
         viewModelScope.launch {
@@ -289,9 +292,16 @@ class TaskLayoutViewModel(
     }
 
     /** Edit task **/
-    fun editTask(id: Long, edit: String) {
+    fun editTask(id: Long, edit: String, context: Context) {
         viewModelScope.launch {
             MainActivity.taskDatabase.taskDao().editTask(id, edit)
+            if (_databaseRepository.getReminderData(id) != null) setReminder(
+                _databaseRepository.getReminderData(id)!!.reminderTime - System.currentTimeMillis(),
+                TimeUnit.MILLISECONDS,
+                id,
+                MainActivity.taskDatabase.taskDao().getAll(id).description,
+                context
+            )
             updateListState()
         }
     }

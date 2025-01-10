@@ -58,12 +58,12 @@ class DatabaseRepository(
         }
     }
 
-    /*suspend fun getReminderData(taskId: Long): TaskReminder? {
+    suspend fun getReminderData(taskId: Long): TaskReminder? {
         val reminderId = this.databaseInstance!!.taskDao().getAll(taskId).reminder
         return if (reminderId == 0 || reminderId == null) null else {
             this.databaseInstance.taskReminderDao().getAll(reminderId)
         }
-    }*/
+    }
 
     suspend fun getReminderData(reminderId: Int): TaskReminder {
         return this.databaseInstance!!.taskReminderDao().getAll(reminderId)

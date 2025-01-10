@@ -63,11 +63,14 @@ class MainActivity : ComponentActivity() {
                         view = window.decorView,
                     )
                 }
-                window.statusBarColor = stateBarColor.toArgb()
-                window.navigationBarColor = if (isSystemInDarkTheme()) {
-                    MaterialTheme.colorScheme.onSecondary.toArgb()
-                } else {
-                    MaterialTheme.colorScheme.secondary.toArgb()
+                @Suppress("DEPRECATION")
+                if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                    window.statusBarColor = stateBarColor.toArgb()
+                    window.navigationBarColor = if (isSystemInDarkTheme()) {
+                        MaterialTheme.colorScheme.onSecondary.toArgb()
+                    } else {
+                        MaterialTheme.colorScheme.secondary.toArgb()
+                    }
                 }
             }
         }

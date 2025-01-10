@@ -176,7 +176,7 @@ fun TaskLayout(
 @Composable
 private fun EditTask(
     editState: EditState,
-    editTask: (id: Long, edit: String) -> Unit,
+    editTask: (id: Long, edit: String, context: Context) -> Unit,
     resetState: () -> Unit,
     context: Context
 ) {
@@ -191,7 +191,7 @@ private fun EditTask(
             onDismissRequest = { resetState() },
             confirm = {
                 if (textState.text.toString() != "") {
-                    editTask(editState.id, textState.text.toString())
+                    editTask(editState.id, textState.text.toString(), context)
                     resetState()
                 } else Toast.makeText(context, noChangeDoNothing, Toast.LENGTH_SHORT).show()
             },
