@@ -1,19 +1,15 @@
 package com.sqz.checklist.notification
 
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import androidx.work.Worker
 import androidx.work.WorkerParameters
-import com.sqz.checklist.database.DatabaseRepository
-import com.sqz.checklist.database.buildDatabase
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 
 class DelayedNotificationWorker(
     appContext: Context,
     workerParams: WorkerParameters,
 ) : Worker(appContext, workerParams) {
-    @OptIn(DelicateCoroutinesApi::class)
     override fun doWork(): Result {
         val channelId = inputData.getString("channelId")
         val channelName = inputData.getString("channelName")
@@ -28,21 +24,18 @@ class DelayedNotificationWorker(
             content != null &&
             notifyId != -1
         ) {
-            val notification = NotificationCreator(applicationContext)
-            notification.creator(
-                channelId = channelId,
-                channelName = channelName,
-                channelDescription = channelDescription,
-                title = title,
-                content = content,
-                notifyId = notifyId
-            )
-            GlobalScope.launch {
-                val db = buildDatabase(applicationContext)
-                val databaseRepository = DatabaseRepository(db)
-                databaseRepository.setIsReminded(notifyId, true)
-                db.close()
+            val intent = Intent(applicationContext, NotificationReceiver::class.java).apply {
+                putExtra("channelId", channelId)
+                putExtra("channelName", channelName)
+                putExtra("channelDescription", channelDescription)
+                putExtra("title", title)
+                putExtra("content", content)
+                putExtra("notifyId", notifyId)
             }
+            PendingIntent.getBroadcast( // Use NotificationReceiver to send notification
+                applicationContext, notifyId, intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            ).send()
         } else {
             return Result.failure()
         }
