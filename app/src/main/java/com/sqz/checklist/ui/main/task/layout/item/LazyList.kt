@@ -20,7 +20,10 @@ import androidx.compose.material3.SwipeToDismissBoxState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -111,6 +114,15 @@ fun LazyList(
         item { Spacer(modifier = modifier.height(2.dp + safeBottomForFullscreen)) }
     }
     inSearch = isInSearch() // Searching UI & search state
+    // Auto update list when reminded
+    val value by taskState.getIsRemindedNum().collectAsState(initial = 0)
+    var rememberValue by rememberSaveable { mutableIntStateOf(0) }
+    LaunchedEffect(value, rememberValue) {
+        if (value != rememberValue) {
+            if (value >= 1) taskState.requestUpdateList()
+            rememberValue = value
+        }
+    }
 }
 
 /**

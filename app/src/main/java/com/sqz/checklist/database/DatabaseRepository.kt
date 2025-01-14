@@ -1,5 +1,6 @@
 package com.sqz.checklist.database
 
+import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
 
 class DatabaseRepository(
@@ -67,6 +68,11 @@ class DatabaseRepository(
 
     suspend fun getReminderData(reminderId: Int): TaskReminder {
         return this.databaseInstance!!.taskReminderDao().getAll(reminderId)
+    }
+
+    fun getIsRemindedNum(isReminded: Boolean): Flow<Int> {
+        return if (isReminded) this.databaseInstance!!.taskReminderDao().getIsRemindedNum(1)
+        else this.databaseInstance!!.taskReminderDao().getIsRemindedNum(0)
     }
 
     suspend fun setIsReminded(reminderId: Int, state: Boolean) {

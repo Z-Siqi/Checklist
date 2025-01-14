@@ -5,6 +5,7 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface TaskDao {
@@ -98,8 +99,8 @@ interface TaskReminderDao {
     @Query("SELECT * FROM reminder WHERE id = :id")
     suspend fun getAll(id: Int): TaskReminder
 
-    @Query("SELECT COUNT() FROM reminder WHERE mode = :modeType")
-    suspend fun getModeNum(modeType: ReminderModeType): Int
+    @Query("SELECT COUNT() FROM reminder WHERE isReminded = :isReminded")
+    fun getIsRemindedNum(isReminded: Int): Flow<Int>
 
     @Query("UPDATE reminder SET isReminded = :setter WHERE id = :id")
     suspend fun setIsReminded(id: Int, setter: Int)

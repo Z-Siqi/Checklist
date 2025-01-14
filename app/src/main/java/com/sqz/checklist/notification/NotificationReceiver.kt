@@ -3,6 +3,7 @@ package com.sqz.checklist.notification
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import com.sqz.checklist.MainActivity
 import com.sqz.checklist.database.DatabaseRepository
 import com.sqz.checklist.database.buildDatabase
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -32,10 +33,15 @@ class NotificationReceiver : BroadcastReceiver() {
                 notifyId = notifyId
             )
             GlobalScope.launch {
-                val db = buildDatabase(context)
-                val databaseRepository = DatabaseRepository(db)
-                databaseRepository.setIsReminded(notifyId, true)
-                db.close()
+                try {
+                    val databaseRepository = DatabaseRepository(MainActivity.taskDatabase)
+                    databaseRepository.setIsReminded(notifyId, true)
+                } catch (e: Exception) {
+                    val db = buildDatabase(context)
+                    val databaseRepository = DatabaseRepository(db)
+                    databaseRepository.setIsReminded(notifyId, true)
+                    db.close()
+                }
             }
         } else throw Exception("Notification data error!")
     }

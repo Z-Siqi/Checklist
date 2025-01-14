@@ -27,6 +27,7 @@ import com.sqz.checklist.ui.main.task.layout.item.TaskData
 import com.sqz.checklist.ui.reminder.ReminderActionType
 import com.sqz.checklist.ui.reminder.ReminderData
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -67,17 +68,16 @@ class TaskLayoutViewModel(
     private fun updateListState(init: Boolean = false) = viewModelScope.launch {
         _listState.update { lists ->
             val remindedList = MainActivity.taskDatabase.taskDao().getIsRemindedList().filter {
-                if (it.reminder != null) try {
-                    _databaseRepository.getReminderData(it.reminder).reminderTime < System.currentTimeMillis()
-                } catch (e: NullPointerException) {
-                    false
-                } else false
+                if (it.reminder != null) _databaseRepository.getReminderData(it.reminder).isReminded
+                else false
             }
             lists.copy(
                 item = MainActivity.taskDatabase.taskDao().getAll(),
                 pinnedItem = MainActivity.taskDatabase.taskDao().getAll(0),
                 isRemindedItem = remindedList,
             )
+        }.also {
+            Log.d("ViewModel", "List is Update")
         }
         if (!init) updateInSearch(searchingText)
     }
@@ -194,6 +194,8 @@ class TaskLayoutViewModel(
         return _databaseRepository.getReminderData(taskId)
     }
 
+    fun getIsRemindedNum(): Flow<Int> = _databaseRepository.getIsRemindedNum(true)
+
     /**
      * ----- Task-related -----
      */
@@ -203,6 +205,8 @@ class TaskLayoutViewModel(
         cancelReminder(reminder = null, context = context, cancelHistory = true)
         _undo.value = CheckDataState()
     }
+
+    fun requestUpdateList() = this.updateListState()
 
     fun taskChecked(id: Long, context: Context) = _undo.update { // when task is checked
         changeTaskVisibility(id, toHistory = true, context = context)
