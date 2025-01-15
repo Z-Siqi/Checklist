@@ -70,9 +70,17 @@ class DatabaseRepository(
         return this.databaseInstance!!.taskReminderDao().getAll(reminderId)
     }
 
+    suspend fun getReminderData(): List<TaskReminder> {
+        return this.databaseInstance!!.taskReminderDao().getAll()
+    }
+
     fun getIsRemindedNum(isReminded: Boolean): Flow<Int> {
         return if (isReminded) this.databaseInstance!!.taskReminderDao().getIsRemindedNum(1)
         else this.databaseInstance!!.taskReminderDao().getIsRemindedNum(0)
+    }
+
+    suspend fun getModeNumWithNoReminded(modeType: ReminderModeType): Int {
+        return this.databaseInstance!!.taskReminderDao().getModeNum(modeType, 1)
     }
 
     suspend fun setIsReminded(reminderId: Int, state: Boolean) {

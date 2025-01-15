@@ -2,6 +2,7 @@ package com.sqz.checklist.ui.main.task
 
 import android.content.Context
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -63,6 +64,7 @@ class TaskLayoutViewModel(
         TopBarMenuClickType.BackupRestore -> resetUndo(context)
     }
 
+    private var _init by mutableStateOf(false)
     private val _listState = MutableStateFlow(ListData())
     val listState: StateFlow<ListData> = _listState.asStateFlow()
     private fun updateListState(init: Boolean = false) = viewModelScope.launch {
@@ -76,10 +78,10 @@ class TaskLayoutViewModel(
                 pinnedItem = MainActivity.taskDatabase.taskDao().getAll(0),
                 isRemindedItem = remindedList,
             )
-        }.also {
-            Log.d("ViewModel", "List is Update")
+        }.also { Log.d("ViewModel", "List is Update") }
+        if (!init) updateInSearch(searchingText) else {
+            _init = true
         }
-        if (!init) updateInSearch(searchingText)
     }
 
     private fun searchView(setter: Boolean) { //Connect top bar & nav bar search actions
@@ -98,8 +100,21 @@ class TaskLayoutViewModel(
         com.sqz.checklist.notification.NotifyManager()
     )
 
-    fun notificationInitState(context: Context): PermissionState {
-        return _notificationManager.value.requestPermission(context)
+    fun notificationInitState(context: Context, init: Boolean = false): PermissionState {
+        val requestPermission = _notificationManager.value.requestPermission(context)
+        fun makeToast() = Toast.makeText(
+            context, context.getString(R.string.permission_lost_toast), Toast.LENGTH_LONG
+        ).show()
+        if (init && _init && requestPermission != PermissionState.Both) viewModelScope.launch {
+            _databaseRepository.getIsRemindedNum(false).collect {
+                if (it >= 1) { // If no permission to send notification for reminder
+                    if (requestPermission == PermissionState.Null || requestPermission == PermissionState.Alarm) makeToast()
+                    else if (_databaseRepository.getModeNumWithNoReminded(ReminderModeType.AlarmManager) >= 1) makeToast()
+                }
+            }
+        }
+        if (_init) _init = false
+        return requestPermission
     }
 
     fun isAlarmPermission(): Boolean = _notificationManager.value.getAlarmPermission()
@@ -111,7 +126,7 @@ class TaskLayoutViewModel(
     ) {
         _notifyId = Random.nextInt(Int.MIN_VALUE, Int.MAX_VALUE) // Make a random notify id
         suspend fun checkRandomId() { // If notify id is already exist
-            for (data in MainActivity.taskDatabase.taskReminderDao().getAll()) {
+            for (data in _databaseRepository.getReminderData()) {
                 if (data.id == _notifyId) {
                     _notifyId = Random.nextInt(Int.MIN_VALUE, Int.MAX_VALUE)
                     checkRandomId()
@@ -133,10 +148,10 @@ class TaskLayoutViewModel(
         try { // remove old data first
             cancelReminder(id, _databaseRepository.getReminderData(id)!!.id, context)
             _databaseRepository.deleteReminderData(id)
-        } catch (e: NoSuchFieldException) {
-            Log.d("SetReminder", "New reminder is setting")
-        } catch (e: NullPointerException) {
-            Log.d("SetReminder", "New reminder is setting")
+        } catch (e: Exception) {
+            if (e is NoSuchFieldException || e is NullPointerException) {
+                Log.d("SetReminder", "New reminder is setting")
+            } else throw e
         }
         viewModelScope.launch {
             val notify = notification.also { Log.i("Notification", "Reminder is setting") }
@@ -273,9 +288,7 @@ class TaskLayoutViewModel(
     /** Remind task. autoDel and id (del reminder info) **/
     fun remindedState(id: Long = -1L, autoDel: Boolean = false) {
         viewModelScope.launch {
-            if (id != -1L) {
-                _databaseRepository.deleteReminderData(id)
-            }
+            if (id != -1L) _databaseRepository.deleteReminderData(id)
             if (autoDel) for (data in _listState.value.isRemindedItem) {
                 val timeMillisData =
                     if (data.reminder != null) _databaseRepository.getReminderData(data.reminder).reminderTime

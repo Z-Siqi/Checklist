@@ -158,7 +158,10 @@ fun ReminderAction(
             }
         )
 
-        ReminderActionType.None -> {}
+        ReminderActionType.None -> if (!requestPermission) {
+            val state = taskState.notificationInitState(context, true)
+            if (state != PermissionState.Null) requestPermission = false
+        }
     }
 }
 

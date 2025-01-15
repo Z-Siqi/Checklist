@@ -179,7 +179,7 @@ private fun RemindedItem(
             color = MaterialTheme.colorScheme.tertiary,
             modifier = Modifier.padding(start = 9.dp, top = 5.dp, bottom = 5.dp)
         )
-        LazyColumn {
+        LazyColumn(userScrollEnabled = false) {
             items(isRemindedItem, key = { it.id }) { task ->
                 val state = rememberSwipeToDismissBoxState(
                     positionalThreshold = { screenWidthPx * 0.35f },
@@ -225,7 +225,7 @@ private fun PinnedItem(
             color = MaterialTheme.colorScheme.outline,
             modifier = Modifier.padding(start = 9.dp, top = 5.dp, bottom = 5.dp)
         )
-        LazyColumn {
+        LazyColumn(userScrollEnabled = false) {
             items(pinnedItem, key = { it.id }) { task ->
                 val state = rememberSwipeToDismissBoxState(
                     positionalThreshold = { screenWidthPx * 0.35f },

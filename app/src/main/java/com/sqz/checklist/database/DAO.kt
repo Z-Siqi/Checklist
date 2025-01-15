@@ -102,6 +102,9 @@ interface TaskReminderDao {
     @Query("SELECT COUNT() FROM reminder WHERE isReminded = :isReminded")
     fun getIsRemindedNum(isReminded: Int): Flow<Int>
 
+    @Query("SELECT COUNT() FROM reminder WHERE mode = :modeType AND isReminded != :withoutReminded")
+    suspend fun getModeNum(modeType: ReminderModeType, withoutReminded: Int = -1): Int
+
     @Query("UPDATE reminder SET isReminded = :setter WHERE id = :id")
     suspend fun setIsReminded(id: Int, setter: Int)
 

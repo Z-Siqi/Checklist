@@ -61,6 +61,7 @@
     <string name="request_SCHEDULE_EXACT_ALARM_content">为了准时显示通知（提醒），请授予 闹钟和提醒 权限。\n如果没有此权限设置通知（提醒），则可能不会准时提醒。</string>
     <string name="unable_sent_cause_no_permission">由于没有权限，无法发送通知!</string>
     <string name="no_SCHEDULE_EXACT_ALARM_permission_explain"><![CDATA[由于没有 闹钟和提醒 权限，提醒可能会延迟送达]]></string>
+    <string name="permission_lost_toast"><![CDATA[闹钟和提醒或通知权限丢失! 一些提醒将无法发送!]]></string>
 
     <!-- Backup & Restore -->
     <string name="backup_restore"><![CDATA[备份 & 恢复]]></string>

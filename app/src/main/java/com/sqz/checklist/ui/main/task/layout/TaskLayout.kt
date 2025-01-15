@@ -86,17 +86,13 @@ fun TaskLayout(
     taskState: TaskLayoutViewModel = viewModel(),
     listState: ListData = taskState.listState.collectAsState().value,
 ) {
-    val lazyState = rememberLazyListState()
-    val coroutineScope = rememberCoroutineScope()
-
-    var undoTask by rememberSaveable { mutableStateOf(false) }
-    val navConnector = taskState.navExtendedConnector.collectAsState().value
-    NavBarConnectorAction(
-        navConnector = navConnector,
-        lazyState = lazyState,
+    val lazyState = rememberLazyListState(
+        navConnector = taskState.navExtendedConnector.collectAsState().value,
         scrollBehavior = scrollBehavior,
         updateNavConnector = taskState::updateNavConnector
     )
+    val coroutineScope = rememberCoroutineScope()
+    var undoTask by rememberSaveable { mutableStateOf(false) }
     Surface(
         modifier = modifier,
         color = MaterialTheme.colorScheme.surfaceContainerLow
@@ -261,12 +257,12 @@ private fun taskSearchBar(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun NavBarConnectorAction(
+private fun rememberLazyListState(
     navConnector: NavConnectData,
-    lazyState: LazyListState,
     scrollBehavior: TopAppBarScrollBehavior,
     updateNavConnector: (data: NavConnectData, updateSet: NavConnectData) -> Unit,
-) {
+): LazyListState {
+    val lazyState = rememberLazyListState()
     val screenHeight = LocalConfiguration.current.screenHeightDp
     val rememberTopBarHeight = rememberSaveable { mutableFloatStateOf(0f) }
     LaunchedEffect(Unit) { // this LaunchedEffect is used to fix a crash when rotate screen in auto scroll
@@ -308,6 +304,7 @@ private fun NavBarConnectorAction(
             NavConnectData(scrollToFirst = true, scrollToBottom = true)
         )
     }
+    return lazyState
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

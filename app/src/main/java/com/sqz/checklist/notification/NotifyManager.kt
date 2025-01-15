@@ -41,9 +41,9 @@ class NotifyManager : Exception() {
         } else if (this.notificationPermission) this.alarmPermission = true
         this.permissionChecker = true
         return when {
-            this.notificationPermission -> PermissionState.Notification
-            this.alarmPermission -> PermissionState.Alarm
             this.notificationPermission && this.alarmPermission -> PermissionState.Both
+            this.alarmPermission -> PermissionState.Alarm
+            this.notificationPermission -> PermissionState.Notification
             else -> PermissionState.Null
         }
     }
