@@ -4,6 +4,8 @@ import android.annotation.SuppressLint
 import android.view.SoundEffectConstants
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -34,12 +36,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
@@ -59,6 +63,8 @@ fun TaskChangeContentCard(
     title: String,
     confirmText: String,
     state: TextFieldState,
+    extraButtonTop: @Composable () -> Unit = {},
+    extraButtonBottom: @Composable () -> Unit = {},
     modifier: Modifier = Modifier,
     lineLimits: TextFieldLineLimits = TextFieldLineLimits.MultiLine(),
     doneImeAction: Boolean = false
@@ -79,38 +85,42 @@ fun TaskChangeContentCard(
             .width((LocalConfiguration.current.screenWidthDp / 1.2).dp),
         onDismissRequest = { releaseFocusAndDismiss() },
         confirmButton = {
-            TextButton(onClick = {
-                coroutineScope.launch {
-                    clearFocus = true
-                    delay(80)
-                    confirm()
+            Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                extraButtonBottom()
+                Spacer(modifier = modifier.weight(1f))
+                TextButton(onClick = {
+                    releaseFocusAndDismiss()
+                    view.playSoundEffect(SoundEffectConstants.CLICK)
+                }) {
+                    Text(text = stringResource(R.string.cancel))
                 }
-                view.playSoundEffect(SoundEffectConstants.CLICK)
-            }) {
-                Text(text = confirmText)
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = {
-                releaseFocusAndDismiss()
-                view.playSoundEffect(SoundEffectConstants.CLICK)
-            }) {
-                Text(text = stringResource(R.string.cancel))
+                Spacer(modifier = modifier.width(8.dp))
+                TextButton(onClick = {
+                    coroutineScope.launch {
+                        clearFocus = true
+                        delay(80)
+                        confirm()
+                    }
+                    view.playSoundEffect(SoundEffectConstants.CLICK)
+                }) {
+                    Text(text = confirmText)
+                }
             }
         },
         title = {
-            Text(
-                text = title,
-                fontSize = 22.sp
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(text = title, fontSize = 22.sp)
+                Spacer(modifier = modifier.weight(1f))
+                extraButtonTop()
+            }
         },
         text = {
             val screenHeightDp = LocalConfiguration.current.screenHeightDp
-            val height = if (screenHeightDp >= 700) {
-                (screenHeightDp / 5.8).toInt()
-            } else if (screenHeightDp < (LocalConfiguration.current.screenWidthDp / 1.2)) {
-                (screenHeightDp / 3.2).toInt()
-            } else (screenHeightDp / 5.1).toInt()
+            val height = when {
+                screenHeightDp >= 700 -> (screenHeightDp / 5.8).toInt()
+                screenHeightDp < (LocalConfiguration.current.screenWidthDp / 1.2) -> (screenHeightDp / 3.2).toInt()
+                else -> (screenHeightDp / 5.1).toInt()
+            }
             OutlinedCard(
                 modifier = modifier.fillMaxWidth() then modifier.height(height.dp),
                 colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainer)
@@ -149,8 +159,10 @@ fun TaskChangeContentCard(
 @Preview
 @Composable
 private fun TaskChangeContentCardPreview() {
+    @Composable
+    fun icon() = Icon(painter = painterResource(id = R.drawable.close), contentDescription = null)
     val state = rememberTextFieldState()
-    TaskChangeContentCard({}, {}, "TEST", "TEST", state)
+    TaskChangeContentCard({}, {}, "TEST", "TEST", state, { icon() }, { icon() })
 }
 
 
@@ -236,9 +248,11 @@ fun InfoAlertDialog(
         text = {
             val focus = LocalFocusManager.current
             OutlinedCard(
-                modifier = modifier.fillMaxWidth() then modifier.height(height.dp).pointerInput(Unit) {
-                    detectTapGestures { focus.clearFocus() }
-                },
+                modifier = modifier.fillMaxWidth() then modifier
+                    .height(height.dp)
+                    .pointerInput(Unit) {
+                        detectTapGestures { focus.clearFocus() }
+                    },
                 colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh)
             ) {
                 Column(modifier.padding(8.dp)) {

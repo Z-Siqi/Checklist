@@ -42,6 +42,7 @@
     <string name="task_reminded_time">任務已提醒於: %1$s</string>
     <string name="cancel_highlight">取消突出顯示</string>
     <string name="search">搜索</string>
+    <string name="create_as_pin">建立為固定的任務</string>
 
     <!-- Notification -->
     <string name="task_reminder">提醒</string>

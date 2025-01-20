@@ -41,6 +41,7 @@
     <string name="task_reminded_time">Task has reminded \nat: %1$s</string>
     <string name="cancel_highlight">Cancel highlight at here</string>
     <string name="search">Search</string>
+    <string name="create_as_pin">Create as a pinned task</string>
 
     <!-- Notification -->
     <string name="task_reminder">Task Reminder</string>

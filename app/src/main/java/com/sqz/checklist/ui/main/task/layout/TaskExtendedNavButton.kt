@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TooltipBox
@@ -29,11 +30,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -44,6 +48,7 @@ import com.sqz.checklist.ui.main.NavTooltipContent
 import com.sqz.checklist.ui.main.OnClickType
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
 import com.sqz.checklist.ui.material.TaskChangeContentCard
+import com.sqz.checklist.ui.material.TextTooltipBox
 import kotlinx.coroutines.launch
 
 /** Nav Extended Button Connect Data **/
@@ -115,21 +120,40 @@ fun taskExtendedNavButton(
 
     val state = rememberTextFieldState() // to add task
     val noDoNothing = stringResource(R.string.no_do_nothing)
-    if (taskAddCard) TaskChangeContentCard(
-        onDismissRequest = { taskAddCard = false },
-        confirm = {
-            if (state.text.toString() != "") {
-                viewModel.insertTask(state.text.toString())
-                taskAddCard = false
-            } else {
-                Toast.makeText(view.context, noDoNothing, Toast.LENGTH_SHORT).show()
-            }
-        },
-        state = state,
-        title = stringResource(R.string.create_task),
-        confirmText = stringResource(R.string.add),
-        doneImeAction = true
-    ) else LaunchedEffect(true) {
+    if (taskAddCard) {
+        var confirm by remember { mutableStateOf(false) }
+        var pin by rememberSaveable { mutableStateOf(false) }
+        TaskChangeContentCard(
+            onDismissRequest = { taskAddCard = false },
+            confirm = {
+                if (state.text.toString() != "") confirm = true else {
+                    Toast.makeText(view.context, noDoNothing, Toast.LENGTH_SHORT).show()
+                }
+            },
+            state = state,
+            extraButtonTop = {
+                val onPinClick = {
+                    pin = !pin
+                    view.playSoundEffect(SoundEffectConstants.CLICK)
+                }
+                TextTooltipBox(textRid = R.string.create_as_pin) {
+                    IconButton(onClick = onPinClick, modifier = Modifier.rotate(40f)) {
+                        Icon(
+                            painter = painterResource(if (pin) R.drawable.pinned else R.drawable.pin),
+                            contentDescription = stringResource(R.string.create_as_pin)
+                        )
+                    }
+                }
+            },
+            title = stringResource(R.string.create_task),
+            confirmText = stringResource(R.string.add),
+            doneImeAction = true
+        )
+        if (confirm) {
+            viewModel.insertTask(state.text.toString(), pin)
+            taskAddCard = false
+        }
+    } else LaunchedEffect(Unit) {
         state.clearText()
     }
 

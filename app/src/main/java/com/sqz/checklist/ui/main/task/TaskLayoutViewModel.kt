@@ -303,8 +303,8 @@ class TaskLayoutViewModel(
     }
 
     /** Insert task to database **/
-    fun insertTask(description: String) = viewModelScope.launch {
-        _databaseRepository.insertTaskData(description)
+    fun insertTask(description: String, pin: Boolean = false) = viewModelScope.launch {
+        _databaseRepository.insertTaskData(description, isPin = pin)
         updateListState()
     }
 
