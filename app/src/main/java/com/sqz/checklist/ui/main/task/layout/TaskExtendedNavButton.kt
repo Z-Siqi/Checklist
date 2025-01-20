@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberBasicTooltipState
-import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
@@ -30,7 +29,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -118,44 +116,15 @@ fun taskExtendedNavButton(
         view.playSoundEffect(SoundEffectConstants.CLICK)
     }
 
-    val state = rememberTextFieldState() // to add task
-    val noDoNothing = stringResource(R.string.no_do_nothing)
-    if (taskAddCard) {
-        var confirm by remember { mutableStateOf(false) }
-        var pin by rememberSaveable { mutableStateOf(false) }
-        TaskChangeContentCard(
-            onDismissRequest = { taskAddCard = false },
-            confirm = {
-                if (state.text.toString() != "") confirm = true else {
-                    Toast.makeText(view.context, noDoNothing, Toast.LENGTH_SHORT).show()
-                }
-            },
-            state = state,
-            extraButtonTop = {
-                val onPinClick = {
-                    pin = !pin
-                    view.playSoundEffect(SoundEffectConstants.CLICK)
-                }
-                TextTooltipBox(textRid = R.string.create_as_pin) {
-                    IconButton(onClick = onPinClick, modifier = Modifier.rotate(40f)) {
-                        Icon(
-                            painter = painterResource(if (pin) R.drawable.pinned else R.drawable.pin),
-                            contentDescription = stringResource(R.string.create_as_pin)
-                        )
-                    }
-                }
-            },
-            title = stringResource(R.string.create_task),
-            confirmText = stringResource(R.string.add),
-            doneImeAction = true
-        )
-        if (confirm) {
-            viewModel.insertTask(state.text.toString(), pin)
+    // to add task
+    if (taskAddCard) TaskAddCard(
+        onDismissRequest = { taskAddCard = false },
+        confirm = { text, pin ->
+            viewModel.insertTask(text, pin)
             taskAddCard = false
-        }
-    } else LaunchedEffect(Unit) {
-        state.clearText()
-    }
+        },
+        view = view
+    )
 
     return NavExtendedButtonData(
         icon = icon,
@@ -163,6 +132,45 @@ fun taskExtendedNavButton(
         tooltipContent = tooltipContent,
         tooltipState = tooltipState,
         onClick = onClick
+    )
+}
+
+@Composable
+private fun TaskAddCard(
+    onDismissRequest: () -> Unit,
+    confirm: (text: String, pin: Boolean) -> Unit,
+    view: View
+) {
+    val state = rememberTextFieldState()
+    val noDoNothing = stringResource(R.string.no_do_nothing)
+    var pin by rememberSaveable { mutableStateOf(false) }
+    TaskChangeContentCard(
+        onDismissRequest = onDismissRequest,
+        confirm = {
+            if (state.text.toString() != "") confirm(
+                state.text.toString(), pin
+            ) else {
+                Toast.makeText(view.context, noDoNothing, Toast.LENGTH_SHORT).show()
+            }
+        },
+        state = state,
+        extraButtonTop = {
+            val onPinClick = {
+                pin = !pin
+                view.playSoundEffect(SoundEffectConstants.CLICK)
+            }
+            TextTooltipBox(textRid = R.string.create_as_pin) {
+                IconButton(onClick = onPinClick, modifier = Modifier.rotate(40f)) {
+                    Icon(
+                        painter = painterResource(if (pin) R.drawable.pinned else R.drawable.pin),
+                        contentDescription = stringResource(R.string.create_as_pin)
+                    )
+                }
+            }
+        },
+        title = stringResource(R.string.create_task),
+        confirmText = stringResource(R.string.add),
+        doneImeAction = true
     )
 }
 

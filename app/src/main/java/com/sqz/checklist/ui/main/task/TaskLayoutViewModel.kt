@@ -108,8 +108,11 @@ class TaskLayoutViewModel(
         if (init && _init && requestPermission != PermissionState.Both) viewModelScope.launch {
             _databaseRepository.getIsRemindedNum(false).collect {
                 if (it >= 1) { // If no permission to send notification for reminder
-                    if (requestPermission == PermissionState.Null || requestPermission == PermissionState.Alarm) makeToast()
-                    else if (_databaseRepository.getModeNumWithNoReminded(ReminderModeType.AlarmManager) >= 1) makeToast()
+                    val reCheck = _notificationManager.value.requestPermission(context)
+                    if (reCheck == PermissionState.Null || reCheck == PermissionState.Alarm) makeToast()
+                    else if (reCheck != PermissionState.Both &&
+                        _databaseRepository.getModeNumWithNoReminded(ReminderModeType.AlarmManager) >= 1
+                    ) makeToast()
                 }
             }
         }
@@ -312,13 +315,15 @@ class TaskLayoutViewModel(
     fun editTask(id: Long, edit: String, context: Context) {
         viewModelScope.launch {
             MainActivity.taskDatabase.taskDao().editTask(id, edit)
-            if (_databaseRepository.getReminderData(id) != null) setReminder(
-                _databaseRepository.getReminderData(id)!!.reminderTime - System.currentTimeMillis(),
-                TimeUnit.MILLISECONDS,
-                id,
-                MainActivity.taskDatabase.taskDao().getAll(id).description,
-                context
-            )
+            if (_databaseRepository.getReminderData(id) != null) {
+                val notify = _notificationManager.value.requestPermission(context)
+                if (notify == PermissionState.Notification || notify == PermissionState.Both) setReminder(
+                    _databaseRepository.getReminderData(id)!!.reminderTime - System.currentTimeMillis(),
+                    TimeUnit.MILLISECONDS, id,
+                    MainActivity.taskDatabase.taskDao().getAll(id).description,
+                    context
+                ) else cancelReminder(id, _databaseRepository.getReminderData(id)!!.id, context)
+            }
             updateListState()
         }
     }
