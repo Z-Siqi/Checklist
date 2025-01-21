@@ -214,6 +214,13 @@ class TaskLayoutViewModel(
 
     fun getIsRemindedNum(): Flow<Int> = _databaseRepository.getIsRemindedNum(true)
 
+    fun reminderActionCaller(
+        id: Long, info: Int?, set: Boolean, description: String
+    ) = _taskData.update {
+        val booleanToType = if (set) ReminderActionType.Set else ReminderActionType.Cancel
+        it.copy(reminder = ReminderData(id, info, booleanToType, description))
+    }
+
     /**
      * ----- Task-related -----
      */
@@ -261,21 +268,17 @@ class TaskLayoutViewModel(
 
     /** Task click action **/
     fun onTaskItemClick(task: Task, type: CardClickType, reminderState: Boolean) {
-        fun reminderAction(id: Long, info: Int?, set: Boolean) = _taskData.update {
-            val booleanToType = if (set) ReminderActionType.Set else ReminderActionType.Cancel
-            it.copy(reminder = ReminderData(id, info, booleanToType, task.description))
-        }
         when (type) {
-            CardClickType.Reminder -> reminderAction(task.id, task.reminder, !reminderState)
             CardClickType.Pin -> pinState(task.id, !task.isPin)
             CardClickType.Close -> remindedState(id = task.id)
+
+            CardClickType.Reminder -> reminderActionCaller(
+                task.id, task.reminder, !reminderState, task.description
+            )
+
             CardClickType.Edit -> {
                 _taskData.update {
-                    it.copy(
-                        editState = EditState(
-                            task.id, task.description, true
-                        )
-                    )
+                    it.copy(editState = EditState(task.id, task.description, true))
                 }
             }
         }
@@ -306,9 +309,10 @@ class TaskLayoutViewModel(
     }
 
     /** Insert task to database **/
-    fun insertTask(description: String, pin: Boolean = false) = viewModelScope.launch {
-        _databaseRepository.insertTaskData(description, isPin = pin)
-        updateListState()
+    suspend fun insertTask(description: String, pin: Boolean = false): Long {
+        return _databaseRepository.insertTaskData(description, isPin = pin).also {
+            updateListState()
+        }
     }
 
     /** Edit task **/

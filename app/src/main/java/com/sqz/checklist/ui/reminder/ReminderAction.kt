@@ -51,10 +51,11 @@ fun ReminderAction(
     context: Context,
     view: View,
     taskState: TaskLayoutViewModel,
-    coroutineScope: CoroutineScope
+    coroutineScope: CoroutineScope,
+    ignoreSetAndGetTimeData: (timeInMilli: Long) -> Boolean = { false }
 ) {
     val resetState = {
-        taskState.resetTaskData()
+        if (!ignoreSetAndGetTimeData(0L)) taskState.resetTaskData()
         view.playSoundEffect(SoundEffectConstants.CLICK)
     }
     var requestPermission by rememberSaveable { mutableStateOf(false) }
@@ -110,7 +111,7 @@ fun ReminderAction(
                                     R.string.no_SCHEDULE_EXACT_ALARM_permission_explain
                                 ), Toast.LENGTH_SHORT
                             ).show()
-                            coroutineScope.launch {
+                            if (ignoreSetAndGetTimeData(timeInMilli)) resetState() else coroutineScope.launch {
                                 taskState.setReminder(
                                     timeInMilli,
                                     TimeUnit.MILLISECONDS,

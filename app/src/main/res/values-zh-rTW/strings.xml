@@ -4,6 +4,7 @@
     <string name="app_name">Checklist</string>
     <string name="edit">提醒</string>
     <string name="add">添加</string>
+    <string name="next">下一步</string>
     <string name="back">返回</string>
     <string name="dismiss">禁用</string>
     <string name="confirm">確認</string>
@@ -43,6 +44,8 @@
     <string name="cancel_highlight">取消突出顯示</string>
     <string name="search">搜索</string>
     <string name="create_as_pin">建立為固定的任務</string>
+    <string name="create_with_reminder">建立任務後新增提醒</string>
+    <string name="task_is_created">任務已創建，點擊禁用不會影響剛創建的任務</string>
 
     <!-- Notification -->
     <string name="task_reminder">提醒</string>

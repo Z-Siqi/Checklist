@@ -40,6 +40,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.sqz.checklist.R
+import com.sqz.checklist.notification.PermissionState
 import com.sqz.checklist.ui.main.NavExtendedButtonData
 import com.sqz.checklist.ui.main.NavMode
 import com.sqz.checklist.ui.main.NavTooltipContent
@@ -66,6 +67,7 @@ fun taskExtendedNavButton(
     viewModel: TaskLayoutViewModel
 ): NavExtendedButtonData {
     val connector = viewModel.navExtendedConnector.collectAsState().value
+    val coroutineScope = rememberCoroutineScope()
     var taskAddCard by rememberSaveable { mutableStateOf(false) }
     val buttonInfo = stringResource(if (!connector.searchState) R.string.add else R.string.cancel)
     val icon = @Composable {
@@ -76,7 +78,6 @@ fun taskExtendedNavButton(
     val extendedTooltipState = connector.canScroll && !connector.searchState
     val tooltipState = rememberBasicTooltipState(isPersistent = extendedTooltipState)
     val tooltipContent = @Composable {
-        val coroutineScope = rememberCoroutineScope()
         if (extendedTooltipState) NavTooltipContent(
             mode = mode,
             onClickType = { onClickType ->
@@ -119,11 +120,25 @@ fun taskExtendedNavButton(
     // to add task
     if (taskAddCard) TaskAddCard(
         onDismissRequest = { taskAddCard = false },
-        confirm = { text, pin ->
-            viewModel.insertTask(text, pin)
-            taskAddCard = false
+        confirm = { text, pin, reminder ->
+            coroutineScope.launch {
+                viewModel.insertTask(text, pin).let { taskId ->
+                    if (reminder) viewModel.reminderActionCaller(
+                        taskId, null, true, text
+                    ).also {
+                        Toast.makeText(
+                            view.context, view.context.getString(R.string.task_is_created),
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                }
+                taskAddCard = false
+            }
         },
-        view = view
+        reminderButton = viewModel.notificationInitState(view.context).let {
+            it == PermissionState.Notification || it == PermissionState.Both
+        },
+        view = view,
     )
 
     return NavExtendedButtonData(
@@ -138,17 +153,19 @@ fun taskExtendedNavButton(
 @Composable
 private fun TaskAddCard(
     onDismissRequest: () -> Unit,
-    confirm: (text: String, pin: Boolean) -> Unit,
-    view: View
+    confirm: (text: String, pin: Boolean, reminder: Boolean) -> Unit,
+    reminderButton: Boolean,
+    view: View,
 ) {
     val state = rememberTextFieldState()
     val noDoNothing = stringResource(R.string.no_do_nothing)
     var pin by rememberSaveable { mutableStateOf(false) }
+    var reminder by rememberSaveable { mutableStateOf(false) }
     TaskChangeContentCard(
         onDismissRequest = onDismissRequest,
         confirm = {
             if (state.text.toString() != "") confirm(
-                state.text.toString(), pin
+                state.text.toString(), pin, reminder
             ) else {
                 Toast.makeText(view.context, noDoNothing, Toast.LENGTH_SHORT).show()
             }
@@ -168,8 +185,24 @@ private fun TaskAddCard(
                 }
             }
         },
+        extraButtonBottom = {
+            if (reminderButton) {
+                val onReminderClick = {
+                    reminder = !reminder
+                    view.playSoundEffect(SoundEffectConstants.CLICK)
+                }
+                TextTooltipBox(textRid = R.string.create_with_reminder) {
+                    IconButton(onClick = onReminderClick) {
+                        Icon(
+                            painter = painterResource(if (reminder) R.drawable.timer_on else R.drawable.timer),
+                            contentDescription = stringResource(R.string.create_with_reminder)
+                        )
+                    }
+                }
+            }
+        },
         title = stringResource(R.string.create_task),
-        confirmText = stringResource(R.string.add),
+        confirmText = stringResource(if (!reminder) R.string.add else R.string.next),
         doneImeAction = true
     )
 }

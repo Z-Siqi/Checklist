@@ -3,6 +3,7 @@
     <string name="app_name">Checklist</string>
     <string name="edit">Edit</string>
     <string name="add">Add</string>
+    <string name="next">Next</string>
     <string name="back">Back</string>
     <string name="dismiss">Dismiss</string>
     <string name="confirm">Confirm</string>
@@ -42,6 +43,8 @@
     <string name="cancel_highlight">Cancel highlight at here</string>
     <string name="search">Search</string>
     <string name="create_as_pin">Create as a pinned task</string>
+    <string name="create_with_reminder">Add a reminder after create a task</string>
+    <string name="task_is_created">Task is created, clicking dismiss won\'t affect the task you just created.</string>
 
     <!-- Notification -->
     <string name="task_reminder">Task Reminder</string>

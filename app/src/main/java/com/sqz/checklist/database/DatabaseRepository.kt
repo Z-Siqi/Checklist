@@ -9,7 +9,7 @@ class DatabaseRepository(
     suspend fun insertTaskData(
         description: String, doingState: String? = null, isPin: Boolean = false,
         detailType: TaskDetailType? = null, detailDataString: String? = null,
-    ) {
+    ): Long {
         val task = Task(
             description = description,
             createDate = LocalDate.now(),
@@ -17,15 +17,17 @@ class DatabaseRepository(
             isPin = isPin,
             detail = detailType != null && detailDataString != null,
         )
-        if (detailType == null || detailDataString == null) {
+        return if (detailType == null || detailDataString == null) {
             this.databaseInstance!!.taskDao().insertAll(task)
         } else {
+            val insertTask = this.databaseInstance!!.taskDao().insertAll(task)
             val taskDetail = TaskDetail(
-                id = this.databaseInstance!!.taskDao().insertAll(task),
+                id = insertTask,
                 type = detailType,
                 dataString = detailDataString
             )
             this.databaseInstance.taskDao().insertAll(taskDetail)
+            insertTask
         }
     }
 
