@@ -28,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.ShapeDefaults
@@ -52,6 +53,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -63,12 +65,18 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sqz.checklist.R
 import com.sqz.checklist.database.DatabaseRepository
 import com.sqz.checklist.database.Task
+import com.sqz.checklist.database.TaskDetail
+import com.sqz.checklist.database.TaskDetailType
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
-import com.sqz.checklist.ui.main.task.layout.check.CheckTaskAction
+import com.sqz.checklist.ui.main.task.layout.action.CheckTaskAction
+import com.sqz.checklist.ui.main.task.layout.action.TaskDetailDialog
 import com.sqz.checklist.ui.main.task.layout.item.EditState
 import com.sqz.checklist.ui.main.task.layout.item.LazyList
 import com.sqz.checklist.ui.main.task.layout.item.ListData
+import com.sqz.checklist.ui.material.InfoAlertDialog
+import com.sqz.checklist.ui.material.InfoDialogWithURL
 import com.sqz.checklist.ui.material.TaskChangeContentCard
+import com.sqz.checklist.ui.material.TextTooltipBox
 import com.sqz.checklist.ui.reminder.ReminderAction
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -158,7 +166,7 @@ fun TaskLayout(
         editState = taskState.taskData.collectAsState().value.editState,
         editTask = taskState::editTask,
         resetState = { taskState.resetTaskData() },
-        context = context
+        view = view
     )
     ReminderAction(
         reminder = taskState.taskData.collectAsState().value.reminder,
@@ -167,34 +175,91 @@ fun TaskLayout(
         taskState = taskState,
         coroutineScope = coroutineScope
     )
+    TaskDetailInfoDialog(
+        onDismissRequest = { taskState.taskDetailData(0L) },
+        detail = taskState.taskDetailData().collectAsState().value
+    )
+}
+
+@Composable
+private fun TaskDetailInfoDialog(onDismissRequest: () -> Unit, detail: TaskDetail) {
+    if (detail.id != 0L) when (detail.type) {
+        TaskDetailType.Text -> InfoAlertDialog(
+            onDismissRequest = onDismissRequest,
+            text = detail.dataString, title = stringResource(R.string.detail)
+        )
+
+        TaskDetailType.URL -> InfoDialogWithURL(
+            onDismissRequest = onDismissRequest,
+            url = detail.dataString, title = stringResource(R.string.url)
+        )
+    }
 }
 
 @Composable
 private fun EditTask(
     editState: EditState,
-    editTask: (id: Long, edit: String, context: Context) -> Unit,
+    editTask: (
+        id: Long, edit: String, detailType: TaskDetailType?, detailDataString: String?, context: Context
+    ) -> Unit,
     resetState: () -> Unit,
-    context: Context
+    view: View
 ) {
     if (editState.state) {
         val textState = rememberTextFieldState()
+        var detail by rememberSaveable { mutableStateOf(false) }
+        var detailType by rememberSaveable { mutableStateOf<TaskDetailType?>(null) }
+        var detailString by rememberSaveable { mutableStateOf<String?>(null) }
         LaunchedEffect(true) {
             textState.clearText()
-            textState.edit { insert(0, editState.description) }
+            textState.edit { insert(0, editState.task.description) }
+            detailType = editState.detail?.type
+            detailString = editState.detail?.dataString
         }
         val noChangeDoNothing = stringResource(R.string.no_change_do_nothing)
         TaskChangeContentCard(
             onDismissRequest = { resetState() },
             confirm = {
                 if (textState.text.toString() != "") {
-                    editTask(editState.id, textState.text.toString(), context)
+                    editTask(
+                        editState.task.id, textState.text.toString(), detailType, detailString,
+                        view.context
+                    )
                     resetState()
-                } else Toast.makeText(context, noChangeDoNothing, Toast.LENGTH_SHORT).show()
+                } else Toast.makeText(view.context, noChangeDoNothing, Toast.LENGTH_SHORT).show()
             },
             state = textState,
             title = stringResource(R.string.edit_task),
             confirmText = stringResource(R.string.edit),
+            extraButtonBottom = {
+                TextTooltipBox(textRid = R.string.create_task_detail) {
+                    IconButton(onClick = { detail = !detail }) {
+                        Icon(
+                            painter = painterResource(R.drawable.attach),
+                            contentDescription = stringResource(R.string.create_task_detail)
+                        )
+                    }
+                }
+            },
             doneImeAction = true
+        )
+        if (detail) TaskDetailDialog(
+            onDismissRequest = { onDismissClick ->
+                if (onDismissClick != null && onDismissClick) {
+                    detailType = null
+                    detailString = null
+                }
+                detail = false
+            },
+            confirm = { type, string ->
+                detailType = type
+                detailString = string
+                detail = false
+            },
+            title = stringResource(R.string.create_task_detail),
+            getType = detailType,
+            getString = detailString,
+            view = view
         )
     }
 }

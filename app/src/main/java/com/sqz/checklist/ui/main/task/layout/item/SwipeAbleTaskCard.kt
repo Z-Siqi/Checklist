@@ -63,7 +63,7 @@ import java.util.Locale
  * Swipe-able task item for list (Expected @LazyList call this)
  */
 @Composable
-fun TaskItem(
+fun SwipeAbleTaskCard(
     task: Task,
     onTaskItemClick: (task: Task, type: CardClickType, reminderState: Boolean) -> Unit,
     checked: (id: Long) -> Unit,
@@ -128,7 +128,7 @@ fun TaskItem(
             }
         ) { // front of card
             val reminderState = reminderState(task.reminder)
-            ItemContent(
+            TaskCardContent(
                 description = task.description,
                 dateText = if (mode == ItemMode.RemindedTask) {
                     stringResource(R.string.task_reminded_time, remindTime().toString())
@@ -143,6 +143,7 @@ fun TaskItem(
                 pinIconState = task.isPin,
                 tooltipRemindText = if (reminderState) remindTime() else null,
                 mode = mode,
+                isDetail = task.detail,
                 modifier = modifier.padding(
                     start = startEnd,
                     end = startEnd,
@@ -251,7 +252,7 @@ private fun Preview() {
     val state = rememberSwipeToDismissBoxState(
         positionalThreshold = { screenWidthPx * 0.38f },
     )
-    TaskItem(
+    SwipeAbleTaskCard(
         Task(0, "The quick brown fox jumps over the lazy dog.", LocalDate.now()),
         { _, _, _ -> }, {}, false, LocalContext.current, state, ItemMode.NormalTask
     )

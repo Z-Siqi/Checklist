@@ -1,4 +1,4 @@
-package com.sqz.checklist.ui.main.task.layout.check
+package com.sqz.checklist.ui.main.task.layout.action
 
 import android.content.Context
 import android.os.Build

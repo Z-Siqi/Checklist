@@ -36,6 +36,23 @@ class DatabaseRepository(
         this.databaseInstance.taskDao().insertReminder(taskId, taskReminder.id)
     }
 
+    suspend fun editTask(
+        taskId: Long, edit: String,
+        detailType: TaskDetailType?, detailDataString: String?
+    ) {
+        val taskDao = this.databaseInstance!!.taskDao()
+        suspend fun deleteTaskDetail() {
+            if (taskDao.matchTaskDetail(taskId) >= 1) taskDao.delete(
+                TaskDetail(taskId, TaskDetailType.Text, "")
+            )
+        }
+        if (detailType != null && detailDataString != null) {
+            deleteTaskDetail()
+            taskDao.insertAll(TaskDetail(taskId, detailType, detailDataString))
+        } else deleteTaskDetail()
+        taskDao.editTask(taskId, edit, detailType != null && detailDataString != null)
+    }
+
     suspend fun deleteReminderData(taskId: Long) {
         val reminderId = this.databaseInstance!!.taskDao().getAll(taskId).reminder
         val reminderDao = this.databaseInstance.taskReminderDao()
@@ -51,14 +68,45 @@ class DatabaseRepository(
     }
 
     suspend fun deleteByHistoryId(maxRetainIdNum: Int) {
-        val value = this.databaseInstance!!.taskDao().getIsHistorySum()
+        val taskDao = this.databaseInstance!!.taskDao()
+        val value = taskDao.getIsHistorySum()
         if (value > maxRetainIdNum) for (i in 1..(value - maxRetainIdNum)) {
-            val id = this.databaseInstance.taskDao().getIsHistoryBottomKeyId()
-            this.databaseInstance.taskDao().delete(
-                Task(id = id, description = "", createDate = LocalDate.MIN)
+            val id = taskDao.getIsHistoryBottomKeyId()
+            if (taskDao.getAll(id).detail) taskDao.delete(
+                TaskDetail(id, TaskDetailType.Text, "")
             )
+            for (data in taskDao.getTaskDetail()) { // remove error item
+                if (taskDao.matchTask(data.id) < 1) {
+                    taskDao.delete(TaskDetail(data.id, TaskDetailType.Text, ""))
+                }
+            }
+            taskDao.delete(Task(id = id, description = "", createDate = LocalDate.MIN))
             arrangeHistoryId()
         }
+    }
+
+    suspend fun deleteTask(taskId: Long) {
+        val taskDao = this.databaseInstance!!.taskDao()
+
+        if (taskDao.getAll(taskId).detail) taskDao.delete(
+            TaskDetail(taskId, TaskDetailType.Text, "")
+        )
+        taskDao.delete(Task(id = taskId, description = "", createDate = LocalDate.MIN))
+    }
+
+    suspend fun deleteAllHistory() {
+        val taskDao = this.databaseInstance!!.taskDao()
+        for (data in taskDao.getAllOrderByIsHistoryId()) {
+            if (data.detail) {
+                taskDao.delete(TaskDetail(data.id, TaskDetailType.Text, ""))
+            }
+        }
+        taskDao.deleteAllHistory()
+    }
+
+    suspend fun getDetailData(detailId: Long): TaskDetail? {
+        val taskDao = this.databaseInstance!!.taskDao()
+        return if (taskDao.matchTaskDetail(detailId) >= 1) taskDao.getTaskDetail(detailId) else null
     }
 
     suspend fun getReminderData(taskId: Long): TaskReminder? {

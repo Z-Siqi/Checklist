@@ -7,6 +7,7 @@ import android.view.SoundEffectConstants
 import android.view.View
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -51,10 +52,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.sqz.checklist.R
+import com.sqz.checklist.database.Task
+import com.sqz.checklist.database.TaskDetail
+import com.sqz.checklist.database.TaskDetailType
 import com.sqz.checklist.ui.material.InfoAlertDialog
+import java.time.LocalDate
 
-enum class CardClickType { Reminder, Edit, Pin, Close }
-data class EditState(val id: Long = -1L, val description: String = "", val state: Boolean = false)
+enum class CardClickType { Reminder, Edit, Pin, Close, Detail }
+data class EditState(
+    val task: Task = Task(0, "", LocalDate.MIN),
+    val detail: TaskDetail? = null,
+    val state: Boolean = false
+)
+
 enum class ItemMode {
     NormalTask, PinnedTask, RemindedTask
 }
@@ -63,7 +73,7 @@ enum class ItemMode {
  * The content of the task UI
  */
 @Composable
-fun ItemContent(
+fun TaskCardContent(
     description: String,
     dateText: String,
     onClick: (CardClickType) -> Unit,
@@ -71,6 +81,7 @@ fun ItemContent(
     pinIconState: Boolean,
     tooltipRemindText: String?,
     mode: ItemMode,
+    isDetail: Boolean,
     modifier: Modifier = Modifier,
 ) { // card UI
     val view = LocalView.current
@@ -97,7 +108,9 @@ fun ItemContent(
                 createDate = dateText,
                 onClick = onClick,
                 timerIcon = if (timerIconState) R.drawable.timer_on else R.drawable.timer,
+                attachIcon = R.drawable.attach,
                 tooltipText = tooltipRemindText ?: stringResource(R.string.reminder),
+                isDetail = isDetail,
                 view = view
             )
         }
@@ -173,7 +186,9 @@ private fun ContentBottom(
     createDate: String,
     onClick: (CardClickType) -> Unit,
     timerIcon: Int,
+    attachIcon: Int,
     tooltipText: String,
+    isDetail: Boolean,
     view: View,
     modifier: Modifier = Modifier
 ) = Row(verticalAlignment = Alignment.Bottom) {
@@ -184,7 +199,27 @@ private fun ContentBottom(
         lineHeight = 14.sp, modifier = modifier.padding(start = 2.dp)
     )
     Spacer(modifier = modifier.weight(1f) then minWidth)
-    Row(modifier = modifier.widthIn(min = 40.dp, max = 100.dp)) {
+    Row(
+        modifier = modifier.widthIn(max = if (isDetail) 150.dp else 100.dp),
+        horizontalArrangement = Arrangement.End
+    ) {
+        if (isDetail) {
+            Tooltip(
+                tooltipText = stringResource(id = R.string.detail), view = view
+            ) {
+                IconButton(modifier = modifier.size(30.dp), onClick = {
+                    onClick(CardClickType.Detail)
+                    view.playSoundEffect(SoundEffectConstants.CLICK)
+                }) {
+                    Icon(
+                        modifier = modifier.rotate(-5f),
+                        painter = painterResource(id = attachIcon),
+                        contentDescription = stringResource(R.string.detail)
+                    )
+                }
+            }
+            Spacer(modifier = modifier.weight(0.18f))
+        }
         Tooltip(
             tooltipText = tooltipText, view = view
         ) {
@@ -249,10 +284,10 @@ private fun Tooltip(
 @Composable
 private fun Preview() {
     Box(modifier = Modifier.size(500.dp, 120.dp)) {
-        ItemContent(
+        TaskCardContent(
             description = "description", dateText = "createDate", onClick = {},
             timerIconState = false, pinIconState = false,
-            tooltipRemindText = null, mode = ItemMode.NormalTask
+            tooltipRemindText = null, mode = ItemMode.NormalTask, isDetail = true
         )
     }
 }

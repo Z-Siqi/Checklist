@@ -28,8 +28,17 @@ interface TaskDao {
     @Query("SELECT COUNT() FROM task WHERE reminder = :reminderId")
     suspend fun matchReminder(reminderId: Int): Int
 
-    //@Query("SELECT * FROM taskDetail")
-    //suspend fun getTaskDetail(): List<TaskDetail>
+    @Query("SELECT COUNT() FROM task WHERE id = :taskId")
+    suspend fun matchTask(taskId: Long): Long
+
+    @Query("SELECT COUNT() FROM taskDetail WHERE id = :taskId")
+    suspend fun matchTaskDetail(taskId: Long): Long
+
+    @Query("SELECT * FROM taskDetail")
+    suspend fun getTaskDetail(): List<TaskDetail>
+
+    @Query("SELECT * FROM taskDetail WHERE id = :id")
+    suspend fun getTaskDetail(id: Long): TaskDetail
 
 
     /* Insert & Edit Actions */
@@ -39,8 +48,8 @@ interface TaskDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(vararg detail: TaskDetail)
 
-    @Query("UPDATE task SET description = :edit WHERE id = :id")
-    suspend fun editTask(id: Long, edit: String)
+    @Query("UPDATE task SET description = :edit, detail = :detail WHERE id = :id")
+    suspend fun editTask(id: Long, edit: String, detail: Boolean)
 
     @Query("UPDATE task SET isPin = :edit WHERE id = :id")
     suspend fun editTaskPin(id: Long, edit: Int)

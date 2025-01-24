@@ -140,7 +140,7 @@ private fun MainListItem(
     val state = rememberSwipeToDismissBoxState(
         positionalThreshold = { screenWidthPx * 0.35f },
     )
-    TaskItem(
+    SwipeAbleTaskCard(
         task = task,
         onTaskItemClick = taskState::onTaskItemClick,
         checked = { taskState.taskChecked(it, context) },
@@ -184,7 +184,7 @@ private fun RemindedItem(
                 val state = rememberSwipeToDismissBoxState(
                     positionalThreshold = { screenWidthPx * 0.35f },
                 )
-                TaskItem(
+                SwipeAbleTaskCard(
                     task = task,
                     onTaskItemClick = taskState::onTaskItemClick,
                     checked = { taskState.taskChecked(it, context) },
@@ -230,7 +230,7 @@ private fun PinnedItem(
                 val state = rememberSwipeToDismissBoxState(
                     positionalThreshold = { screenWidthPx * 0.35f },
                 )
-                TaskItem(
+                SwipeAbleTaskCard(
                     task = task,
                     onTaskItemClick = taskState::onTaskItemClick,
                     checked = { taskState.taskChecked(it, context) },

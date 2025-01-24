@@ -40,6 +40,6 @@ data class TaskDetail(
     @ColumnInfo val dataString: String,
 )
 
-enum class TaskDetailType { // not implemented
-    Text, Picture, Video, URL, ChildList
+enum class TaskDetailType {
+    Text, URL//, Picture, Video, ChildList
 }

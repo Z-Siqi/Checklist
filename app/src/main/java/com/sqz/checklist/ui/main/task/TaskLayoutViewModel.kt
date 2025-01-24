@@ -15,12 +15,14 @@ import com.sqz.checklist.R
 import com.sqz.checklist.database.DatabaseRepository
 import com.sqz.checklist.database.ReminderModeType
 import com.sqz.checklist.database.Task
+import com.sqz.checklist.database.TaskDetail
+import com.sqz.checklist.database.TaskDetailType
 import com.sqz.checklist.database.TaskReminder
 import com.sqz.checklist.notification.PermissionState
 import com.sqz.checklist.ui.main.task.history.arrangeHistoryId
 import com.sqz.checklist.ui.main.task.layout.NavConnectData
 import com.sqz.checklist.ui.main.task.layout.TopBarMenuClickType
-import com.sqz.checklist.ui.main.task.layout.check.CheckDataState
+import com.sqz.checklist.ui.main.task.layout.action.CheckDataState
 import com.sqz.checklist.ui.main.task.layout.item.CardClickType
 import com.sqz.checklist.ui.main.task.layout.item.EditState
 import com.sqz.checklist.ui.main.task.layout.item.ListData
@@ -36,6 +38,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.random.Random
 
 class TaskLayoutViewModel(
@@ -65,22 +68,28 @@ class TaskLayoutViewModel(
     }
 
     private var _init by mutableStateOf(false)
+    private val _isUpdateRunning = AtomicBoolean(false)
     private val _listState = MutableStateFlow(ListData())
     val listState: StateFlow<ListData> = _listState.asStateFlow()
-    private fun updateListState(init: Boolean = false) = viewModelScope.launch {
-        _listState.update { lists ->
-            val remindedList = MainActivity.taskDatabase.taskDao().getIsRemindedList().filter {
-                if (it.reminder != null) _databaseRepository.getReminderData(it.reminder).isReminded
-                else false
+    private fun updateListState(init: Boolean = false) {
+        if (_isUpdateRunning.get()) return else _isUpdateRunning.set(true)
+        viewModelScope.launch {
+            _listState.update { lists ->
+                val remindedList = MainActivity.taskDatabase.taskDao().getIsRemindedList().filter {
+                    if (it.reminder != null) _databaseRepository.getReminderData(it.reminder).isReminded
+                    else false
+                }
+                lists.copy(
+                    item = MainActivity.taskDatabase.taskDao().getAll(),
+                    pinnedItem = MainActivity.taskDatabase.taskDao().getAll(0),
+                    isRemindedItem = remindedList,
+                )
+            }.also { Log.d("ViewModel", "List is Update") }
+            if (!init) updateInSearch(searchingText) else {
+                _init = true
             }
-            lists.copy(
-                item = MainActivity.taskDatabase.taskDao().getAll(),
-                pinnedItem = MainActivity.taskDatabase.taskDao().getAll(0),
-                isRemindedItem = remindedList,
-            )
-        }.also { Log.d("ViewModel", "List is Update") }
-        if (!init) updateInSearch(searchingText) else {
-            _init = true
+            delay(220)
+            _isUpdateRunning.set(false)
         }
     }
 
@@ -130,7 +139,7 @@ class TaskLayoutViewModel(
         _notifyId = Random.nextInt(Int.MIN_VALUE, Int.MAX_VALUE) // Make a random notify id
         suspend fun checkRandomId() { // If notify id is already exist
             for (data in _databaseRepository.getReminderData()) {
-                if (data.id == _notifyId) {
+                if (data.id == _notifyId || _notifyId == 0) {
                     _notifyId = Random.nextInt(Int.MIN_VALUE, Int.MAX_VALUE)
                     checkRandomId()
                 }
@@ -178,7 +187,7 @@ class TaskLayoutViewModel(
     ) {
         if (!cancelHistory && id != -1L) viewModelScope.launch {
             try { // Cancel sent notification
-                if (reminder != null) {
+                if (reminder != 0 && reminder != null) {
                     val data = MainActivity.taskDatabase.taskReminderDao().getAll(reminder)
                     when (data.mode) {
                         ReminderModeType.AlarmManager -> _notificationManager.value.cancelNotification(
@@ -194,16 +203,20 @@ class TaskLayoutViewModel(
                 }
                 // Delete reminder info
                 _databaseRepository.deleteReminderData(id)
+                updateListState()
             } catch (e: NoSuchFieldException) {
                 Log.d("DeleteReminderData", "Noting need to delete")
+            } catch (e: IllegalStateException) {
+                Log.w("TaskLayoutViewModel", "$e")
             } catch (e: Exception) {
-                Log.e("ERROR", "${e.message}")
+                Log.e("ERROR", "$e")
             }
-            updateListState()
         } else viewModelScope.launch {
             val allIsHistoryIdList = MainActivity.taskDatabase.taskDao().getAllOrderByIsHistoryId()
             for (data in allIsHistoryIdList) {
-                cancelReminder(data.id, data.reminder, context)
+                if (data.reminder != 0 && data.reminder != null) cancelReminder(
+                    data.id, data.reminder, context
+                )
             }
         }
     }
@@ -271,17 +284,33 @@ class TaskLayoutViewModel(
         when (type) {
             CardClickType.Pin -> pinState(task.id, !task.isPin)
             CardClickType.Close -> remindedState(id = task.id)
+            CardClickType.Detail -> taskDetailData(task.id)
 
             CardClickType.Reminder -> reminderActionCaller(
                 task.id, task.reminder, !reminderState, task.description
             )
 
-            CardClickType.Edit -> {
+            CardClickType.Edit -> viewModelScope.launch {
                 _taskData.update {
-                    it.copy(editState = EditState(task.id, task.description, true))
+                    it.copy(
+                        editState = EditState(
+                            task, _databaseRepository.getDetailData(task.id), true
+                        )
+                    )
                 }
             }
         }
+    }
+
+    private var _taskDetailId = MutableStateFlow(TaskDetail(0, TaskDetailType.Text, ""))
+    fun taskDetailData(setter: Long? = null): MutableStateFlow<TaskDetail> {
+        if (setter != null) viewModelScope.launch {
+            if (setter != 0L) _taskDetailId.update {
+                val data = _databaseRepository.getDetailData(setter)!!
+                it.copy(id = data.id, type = data.type, dataString = data.dataString)
+            } else _taskDetailId.update { it.copy(id = 0) }
+        }
+        return _taskDetailId
     }
 
     /** Set task pin **/
@@ -309,16 +338,22 @@ class TaskLayoutViewModel(
     }
 
     /** Insert task to database **/
-    suspend fun insertTask(description: String, pin: Boolean = false): Long {
-        return _databaseRepository.insertTaskData(description, isPin = pin).also {
-            updateListState()
-        }
+    suspend fun insertTask(
+        description: String, pin: Boolean = false,
+        detailType: TaskDetailType?, detailDataString: String?
+    ): Long {
+        return _databaseRepository.insertTaskData(
+            description, isPin = pin, detailType = detailType, detailDataString = detailDataString
+        ).also { updateListState() }
     }
 
     /** Edit task **/
-    fun editTask(id: Long, edit: String, context: Context) {
+    fun editTask(
+        id: Long, edit: String, detailType: TaskDetailType?, detailDataString: String?,
+        context: Context
+    ) {
         viewModelScope.launch {
-            MainActivity.taskDatabase.taskDao().editTask(id, edit)
+            _databaseRepository.editTask(id, edit, detailType, detailDataString)
             if (_databaseRepository.getReminderData(id) != null) {
                 val notify = _notificationManager.value.requestPermission(context)
                 if (notify == PermissionState.Notification || notify == PermissionState.Both) setReminder(

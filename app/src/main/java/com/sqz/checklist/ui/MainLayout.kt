@@ -131,7 +131,7 @@ fun MainLayout(context: Context, view: View, modifier: Modifier = Modifier) {
 
     // Set Navigation bar mode (Navigation Bar or Navigation Rail)
     val localConfig = LocalConfiguration.current
-    val screenIsWidth = localConfig.screenWidthDp > localConfig.screenHeightDp * 1.2
+    val screenIsWidth = localConfig.screenWidthDp > localConfig.screenHeightDp * 1.1
     val navMode = if (!screenIsWidth) NavMode.NavBar else NavMode.Disable
     val navRailMode = if (screenIsWidth) NavMode.NavRail else NavMode.Disable
 

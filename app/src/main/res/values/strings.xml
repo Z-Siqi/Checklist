@@ -10,6 +10,8 @@
     <string name="warning">Warning</string>
     <string name="cancel">Cancel</string>
     <string name="delete">Delete</string>
+    <string name="text">Text</string>
+    <string name="url">URL</string>
     <string name="full_date_short">yyyy dd MMM hh:mm a</string>
 
     <!-- MainLayout -->
@@ -45,6 +47,11 @@
     <string name="create_as_pin">Create as a pinned task</string>
     <string name="create_with_reminder">Add a reminder after create a task</string>
     <string name="task_is_created">Task is created, clicking dismiss won\'t affect the task you just created.</string>
+    <string name="detail">Detail Content</string>
+    <string name="add_detail">Add a Detail Content</string>
+    <string name="create_task_detail">Create Task Detail</string>
+    <string name="click_select_detail_type">Click to select a detail type</string>
+    <string name="invalid_url">Invalid URL!</string>
 
     <!-- Notification -->
     <string name="task_reminder">Task Reminder</string>

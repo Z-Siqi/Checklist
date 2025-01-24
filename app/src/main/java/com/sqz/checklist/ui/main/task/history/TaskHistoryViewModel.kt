@@ -3,6 +3,7 @@ package com.sqz.checklist.ui.main.task.history
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sqz.checklist.MainActivity
+import com.sqz.checklist.database.DatabaseRepository
 import com.sqz.checklist.database.Task
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -10,9 +11,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.time.LocalDate
 
-class TaskHistoryViewModel : ViewModel() {
+class TaskHistoryViewModel(
+    private val _databaseRepository: DatabaseRepository = DatabaseRepository(
+        MainActivity.taskDatabase
+    )
+) : ViewModel() {
 
     /** Load history task **/
     private val _taskHistoryData = MutableStateFlow(listOf<Task>())
@@ -29,7 +33,7 @@ class TaskHistoryViewModel : ViewModel() {
     fun doAllTask(doAllTaskAction: DoTaskAction) = viewModelScope.launch {
         when (doAllTaskAction) {
             DoTaskAction.Redo -> MainActivity.taskDatabase.taskDao().setAllNotHistory()
-            DoTaskAction.Delete -> MainActivity.taskDatabase.taskDao().deleteAllHistory()
+            DoTaskAction.Delete -> _databaseRepository.deleteAllHistory()
         }
         // Update to LazyColumn
         updateTaskHistoryData()
@@ -80,9 +84,7 @@ class TaskHistoryViewModel : ViewModel() {
     /** Delete action **/
     private fun deleteTask(id: Long) = viewModelScope.launch {
         // Actions
-        MainActivity.taskDatabase.taskDao().delete(
-            Task(id = id, description = "", createDate = LocalDate.MIN)
-        )
+        _databaseRepository.deleteTask(id)
         arrangeHistoryId()
         // Update to LazyColumn
         updateTaskHistoryData()

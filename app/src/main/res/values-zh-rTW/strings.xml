@@ -11,6 +11,8 @@
     <string name="warning">注意</string>
     <string name="cancel">取消</string>
     <string name="delete">刪除</string>
+    <string name="text">文本</string>
+    <string name="url">網址</string>
     <string name="full_date_short">yyyy 年 MMM dd 日 hh:mm a</string>
 
     <!-- MainLayout -->
@@ -46,6 +48,11 @@
     <string name="create_as_pin">建立為固定的任務</string>
     <string name="create_with_reminder">建立任務後新增提醒</string>
     <string name="task_is_created">任務已創建，點擊禁用不會影響剛創建的任務</string>
+    <string name="detail">詳細內容</string>
+    <string name="add_detail">添加詳細內容</string>
+    <string name="create_task_detail">創建任務詳情</string>
+    <string name="click_select_detail_type">按下選擇詳細內容類型</string>
+    <string name="invalid_url">網址無效!</string>
 
     <!-- Notification -->
     <string name="task_reminder">提醒</string>

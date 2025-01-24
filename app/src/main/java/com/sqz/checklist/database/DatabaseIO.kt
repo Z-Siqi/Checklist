@@ -17,7 +17,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.core.content.FileProvider
-import androidx.room.Room
 import com.sqz.checklist.MainActivity.Companion.taskDatabase
 import kotlinx.coroutines.launch
 import java.io.File
@@ -206,16 +205,14 @@ fun ImportTaskDatabaseAction(
                 }
             },
             reOpenDatabase = {
-                taskDatabase = buildDatabase(context = view.context)
+                taskDatabase = buildDatabase(context = view.context.applicationContext)
                 if (!isDatabaseValid(dbPath)) {
                     Log.e("ChecklistDatabase", "Failed to import database: Invalid file!")
                     dbState(IOdbState.Error)
                     Log.w("ChecklistDatabase", "Trying to restore to backup..")
                     DatabaseIO(dbPath, view.context, "").importDatabase(
                         databaseIO.preBackupFileUri, { taskDatabase.close() }, {
-                            taskDatabase = Room.databaseBuilder(
-                                view.context, TaskDatabase::class.java, taskDatabaseName
-                            ).build()
+                            taskDatabase = buildDatabase(context = view.context.applicationContext)
                             true
                         }
                     )
