@@ -83,6 +83,7 @@ class TaskLayoutViewModel(
                     item = MainActivity.taskDatabase.taskDao().getAll(),
                     pinnedItem = MainActivity.taskDatabase.taskDao().getAll(0),
                     isRemindedItem = remindedList,
+                    unLoading = false
                 )
             }.also { Log.d("ViewModel", "List is Update") }
             if (!init) updateInSearch(searchingText) else {

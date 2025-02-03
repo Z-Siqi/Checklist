@@ -135,25 +135,17 @@ fun TaskLayout(
             taskState = taskState,
             modifier = safePaddingForFullscreen
         )
-        if (listState.item.isEmpty()) { // Show text if not any task
-            var delayed by rememberSaveable { mutableStateOf(false) }
-            if (delayed) {
-                Column(
-                    modifier = modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = stringResource(R.string.nothing_need_do),
-                        fontWeight = FontWeight.Medium, fontSize = 24.sp,
-                        color = MaterialTheme.colorScheme.outline,
-                        lineHeight = 30.sp, textAlign = TextAlign.Center
-                    )
-                }
-            } else LaunchedEffect(true) {
-                delay(800)
-                delayed = true
-            }
+        if (!listState.unLoading && listState.item.isEmpty()) Column( // Show text if not any task
+            modifier = modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = stringResource(R.string.nothing_need_do),
+                fontWeight = FontWeight.Medium, fontSize = 24.sp,
+                color = MaterialTheme.colorScheme.outline,
+                lineHeight = 30.sp, textAlign = TextAlign.Center
+            )
         }
         CheckTaskAction( // processing check & undo
             whenUndo = { undoTask = true },
@@ -379,7 +371,7 @@ private fun Preview() {
     val item = listOf(Task(0, "The quick brown fox jumps over the lazy dog.", LocalDate.now()))
     TaskLayout(
         TopAppBarDefaults.exitUntilCollapsedScrollBehavior(),
-        LocalContext.current, LocalView.current, listState = ListData(item, item, item),
+        LocalContext.current, LocalView.current, listState = ListData(false, item, item, item),
         taskState = TaskLayoutViewModel(DatabaseRepository(null))
     )
 }
