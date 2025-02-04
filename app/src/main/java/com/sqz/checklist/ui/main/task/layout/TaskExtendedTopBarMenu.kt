@@ -52,7 +52,7 @@ fun topBarExtendedMenu(
     val menuList = listOf(
         MenuItem(stringResource(R.string.task_history)) { taskHistoryClick() },
         MenuItem(stringResource(R.string.search)) { searchClick() },
-        MenuItem("Backup & Restore") { backupRestoreClick() }
+        MenuItem(stringResource(R.string.backup_restore)) { backupRestoreClick() }
     )
     MenuLayout(
         expanded = state,

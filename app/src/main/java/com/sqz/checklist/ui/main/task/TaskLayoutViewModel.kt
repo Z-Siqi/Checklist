@@ -41,11 +41,10 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.random.Random
 
-class TaskLayoutViewModel(
-    private val _databaseRepository: DatabaseRepository = DatabaseRepository(
+class TaskLayoutViewModel : ViewModel() {
+    private fun database(): DatabaseRepository = DatabaseRepository(
         MainActivity.taskDatabase
     )
-) : ViewModel() {
 
     private val _navExtendedConnectData = MutableStateFlow(NavConnectData())
     val navExtendedConnector: MutableStateFlow<NavConnectData> = _navExtendedConnectData
@@ -76,7 +75,7 @@ class TaskLayoutViewModel(
         viewModelScope.launch {
             _listState.update { lists ->
                 val remindedList = MainActivity.taskDatabase.taskDao().getIsRemindedList().filter {
-                    if (it.reminder != null) _databaseRepository.getReminderData(it.reminder).isReminded
+                    if (it.reminder != null) database().getReminderData(it.reminder).isReminded
                     else false
                 }
                 lists.copy(
@@ -116,12 +115,12 @@ class TaskLayoutViewModel(
             context, context.getString(R.string.permission_lost_toast), Toast.LENGTH_LONG
         ).show()
         if (init && _init && requestPermission != PermissionState.Both) viewModelScope.launch {
-            _databaseRepository.getIsRemindedNum(false).collect {
+            database().getIsRemindedNum(false).collect {
                 if (it >= 1) { // If no permission to send notification for reminder
                     val reCheck = _notificationManager.value.requestPermission(context)
                     if (reCheck == PermissionState.Null || reCheck == PermissionState.Alarm) makeToast()
                     else if (reCheck != PermissionState.Both &&
-                        _databaseRepository.getModeNumWithNoReminded(ReminderModeType.AlarmManager) >= 1
+                        database().getModeNumWithNoReminded(ReminderModeType.AlarmManager) >= 1
                     ) makeToast()
                 }
             }
@@ -139,7 +138,7 @@ class TaskLayoutViewModel(
     ) {
         _notifyId = Random.nextInt(Int.MIN_VALUE, Int.MAX_VALUE) // Make a random notify id
         suspend fun checkRandomId() { // If notify id is already exist
-            for (data in _databaseRepository.getReminderData()) {
+            for (data in database().getReminderData()) {
                 if (data.id == _notifyId || _notifyId == 0) {
                     _notifyId = Random.nextInt(Int.MIN_VALUE, Int.MAX_VALUE)
                     checkRandomId()
@@ -159,8 +158,8 @@ class TaskLayoutViewModel(
             context = context
         )
         try { // remove old data first
-            cancelReminder(id, _databaseRepository.getReminderData(id)!!.id, context)
-            _databaseRepository.deleteReminderData(id)
+            cancelReminder(id, database().getReminderData(id)!!.id, context)
+            database().deleteReminderData(id)
         } catch (e: Exception) {
             if (e is NoSuchFieldException || e is NullPointerException) {
                 Log.d("SetReminder", "New reminder is setting")
@@ -177,7 +176,7 @@ class TaskLayoutViewModel(
             val taskReminder = TaskReminder(
                 _notifyId, description, remindTime, mode, extraData = notify
             )
-            _databaseRepository.insertReminderData(id, taskReminder)
+            database().insertReminderData(id, taskReminder)
             updateListState()
         }
     }
@@ -203,7 +202,7 @@ class TaskLayoutViewModel(
                     Log.d("CancelFailed", "No reminder data need to cancel")
                 }
                 // Delete reminder info
-                _databaseRepository.deleteReminderData(id)
+                database().deleteReminderData(id)
                 updateListState()
             } catch (e: NoSuchFieldException) {
                 Log.d("DeleteReminderData", "Noting need to delete")
@@ -223,10 +222,10 @@ class TaskLayoutViewModel(
     }
 
     suspend fun getReminderData(taskId: Int): TaskReminder {
-        return _databaseRepository.getReminderData(taskId)
+        return database().getReminderData(taskId)
     }
 
-    fun getIsRemindedNum(): Flow<Int> = _databaseRepository.getIsRemindedNum(true)
+    fun getIsRemindedNum(): Flow<Int> = database().getIsRemindedNum(true)
 
     fun reminderActionCaller(
         id: Long, info: Int?, set: Boolean, description: String
@@ -295,7 +294,7 @@ class TaskLayoutViewModel(
                 _taskData.update {
                     it.copy(
                         editState = EditState(
-                            task, _databaseRepository.getDetailData(task.id), true
+                            task, database().getDetailData(task.id), true
                         )
                     )
                 }
@@ -307,7 +306,7 @@ class TaskLayoutViewModel(
     fun taskDetailData(setter: Long? = null): MutableStateFlow<TaskDetail> {
         if (setter != null) viewModelScope.launch {
             if (setter != 0L) _taskDetailId.update {
-                val data = _databaseRepository.getDetailData(setter)!!
+                val data = database().getDetailData(setter)!!
                 it.copy(id = data.id, type = data.type, dataString = data.dataString)
             } else _taskDetailId.update { it.copy(id = 0) }
         }
@@ -324,14 +323,14 @@ class TaskLayoutViewModel(
     /** Remind task. autoDel and id (del reminder info) **/
     fun remindedState(id: Long = -1L, autoDel: Boolean = false) {
         viewModelScope.launch {
-            if (id != -1L) _databaseRepository.deleteReminderData(id)
+            if (id != -1L) database().deleteReminderData(id)
             if (autoDel) for (data in _listState.value.isRemindedItem) {
                 val timeMillisData =
-                    if (data.reminder != null) _databaseRepository.getReminderData(data.reminder).reminderTime
+                    if (data.reminder != null) database().getReminderData(data.reminder).reminderTime
                     else -1L
                 val delReminderTime = timeMillisData < System.currentTimeMillis() - 43200000
                 if (timeMillisData != -1L && delReminderTime) {
-                    _databaseRepository.deleteReminderData(data.id)
+                    database().deleteReminderData(data.id)
                 }
             }
             updateListState()
@@ -343,7 +342,7 @@ class TaskLayoutViewModel(
         description: String, pin: Boolean = false,
         detailType: TaskDetailType?, detailDataString: String?
     ): Long {
-        return _databaseRepository.insertTaskData(
+        return database().insertTaskData(
             description, isPin = pin, detailType = detailType, detailDataString = detailDataString
         ).also { updateListState() }
     }
@@ -354,15 +353,15 @@ class TaskLayoutViewModel(
         context: Context
     ) {
         viewModelScope.launch {
-            _databaseRepository.editTask(id, edit, detailType, detailDataString)
-            if (_databaseRepository.getReminderData(id) != null) {
+            database().editTask(id, edit, detailType, detailDataString)
+            if (database().getReminderData(id) != null) {
                 val notify = _notificationManager.value.requestPermission(context)
                 if (notify == PermissionState.Notification || notify == PermissionState.Both) setReminder(
-                    _databaseRepository.getReminderData(id)!!.reminderTime - System.currentTimeMillis(),
+                    database().getReminderData(id)!!.reminderTime - System.currentTimeMillis(),
                     TimeUnit.MILLISECONDS, id,
                     MainActivity.taskDatabase.taskDao().getAll(id).description,
                     context
-                ) else cancelReminder(id, _databaseRepository.getReminderData(id)!!.id, context)
+                ) else cancelReminder(id, database().getReminderData(id)!!.id, context)
             }
             updateListState()
         }
@@ -400,7 +399,7 @@ class TaskLayoutViewModel(
     /** Auto Delete History Task **/
     fun autoDeleteHistoryTask(start: Int) {
         viewModelScope.launch {
-            _databaseRepository.deleteByHistoryId(maxRetainIdNum = start)
+            database().deleteByHistoryId(maxRetainIdNum = start)
         }
     }
 

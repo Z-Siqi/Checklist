@@ -12,7 +12,6 @@ import android.view.View
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -168,15 +167,13 @@ fun TimeSelectDialog(
                         )
                         var oldH by remember { mutableIntStateOf(timePickerState.hour) }
                         var oldM by remember { mutableIntStateOf(timePickerState.minute) }
-                        @RequiresApi(Build.VERSION_CODES.Q)
-                        if (oldH != timePickerState.hour) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && oldH != timePickerState.hour) {
                             oldH = timePickerState.hour
                             ContextCompat.getSystemService(context, Vibrator::class.java)?.vibrate(
                                 VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK)
                             )
                         }
-                        @RequiresApi(Build.VERSION_CODES.Q)
-                        if (oldM != timePickerState.minute) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && oldM != timePickerState.minute) {
                             oldM = timePickerState.minute
                             ContextCompat.getSystemService(context, Vibrator::class.java)?.vibrate(
                                 VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK)

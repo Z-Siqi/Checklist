@@ -1,7 +1,8 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-    id("com.google.devtools.ksp") version "1.9.0-1.0.12"
+    id("org.jetbrains.kotlin.plugin.compose")
+    id("com.google.devtools.ksp") version "2.0.0-1.0.24"
 }
 
 android {
@@ -72,8 +73,8 @@ dependencies {
     // Navigation
     implementation("androidx.navigation:navigation-compose:2.8.6")
     // Room
-    ksp("androidx.room:room-compiler:2.7.0-alpha12")
-    implementation("androidx.room:room-runtime:2.7.0-alpha12")
-    implementation("androidx.room:room-ktx:2.7.0-alpha12")
-    implementation("androidx.room:room-testing:2.7.0-alpha12")
+    ksp("androidx.room:room-compiler:2.7.0-alpha13")
+    implementation("androidx.room:room-runtime:2.7.0-alpha13")
+    implementation("androidx.room:room-ktx:2.7.0-alpha13")
+    implementation("androidx.room:room-testing:2.7.0-alpha13")
 }

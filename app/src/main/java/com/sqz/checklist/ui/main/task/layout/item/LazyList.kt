@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
@@ -25,19 +26,23 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sqz.checklist.R
 import com.sqz.checklist.database.Task
 import com.sqz.checklist.ui.main.task.CardHeight
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
+import java.time.LocalDate
 
 /**
  * List of TaskLayout (Expected @TaskLayout call this)
@@ -50,7 +55,8 @@ fun LazyList(
     isInSearch: @Composable () -> Boolean,
     context: Context,
     modifier: Modifier = Modifier,
-    taskState: TaskLayoutViewModel
+    taskState: TaskLayoutViewModel,
+    isPreview: Boolean = false
 ) {
     var inSearch by rememberSaveable { mutableStateOf(false) }
     val screenWidthPx = LocalConfiguration.current.screenWidthDp * LocalDensity.current.density
@@ -115,8 +121,10 @@ fun LazyList(
     }
     inSearch = isInSearch() // Searching UI & search state
     // Auto update list when reminded
-    val value by taskState.getIsRemindedNum().collectAsState(initial = 0)
     var rememberValue by rememberSaveable { mutableIntStateOf(0) }
+    val value by if (isPreview) remember { mutableIntStateOf(0) } else {
+        taskState.getIsRemindedNum().collectAsState(initial = 0)
+    }
     LaunchedEffect(value, rememberValue) {
         if (value != rememberValue) {
             if (value >= 1) taskState.requestUpdateList()
@@ -242,4 +250,15 @@ private fun PinnedItem(
             }
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun Preview() {
+    val item = listOf(Task(0, "The quick brown fox jumps over the lazy dog.", LocalDate.now()))
+    val context = LocalContext.current
+    LazyList(
+        ListData(false, item, item, item), rememberLazyListState(), {}, { false },
+        context, Modifier, TaskLayoutViewModel(), isPreview = true
+    )
 }

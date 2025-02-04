@@ -22,7 +22,7 @@ suspend fun mergeDatabaseCheckpoint(database: RoomDatabase) {
 @Database(
     entities = [
         Task::class, TaskDetail::class, TaskReminder::class
-    ], version = 2
+    ], version = 2, exportSchema = false
 )
 @TypeConverters(LocalDateConverter::class)
 abstract class TaskDatabase : RoomDatabase() {

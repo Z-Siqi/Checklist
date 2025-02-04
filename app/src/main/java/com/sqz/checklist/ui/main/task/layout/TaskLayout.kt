@@ -63,7 +63,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sqz.checklist.R
-import com.sqz.checklist.database.DatabaseRepository
 import com.sqz.checklist.database.Task
 import com.sqz.checklist.database.TaskDetail
 import com.sqz.checklist.database.TaskDetailType
@@ -93,6 +92,7 @@ fun TaskLayout(
     modifier: Modifier = Modifier,
     taskState: TaskLayoutViewModel = viewModel(),
     listState: ListData = taskState.listState.collectAsState().value,
+    isPreview: Boolean = false
 ) {
     val lazyState = rememberLazyListState(
         navConnector = taskState.navExtendedConnector.collectAsState().value,
@@ -133,7 +133,8 @@ fun TaskLayout(
             },
             context = context,
             taskState = taskState,
-            modifier = safePaddingForFullscreen
+            modifier = safePaddingForFullscreen,
+            isPreview = isPreview
         )
         if (!listState.unLoading && listState.item.isEmpty()) Column( // Show text if not any task
             modifier = modifier.fillMaxSize(),
@@ -160,7 +161,7 @@ fun TaskLayout(
         resetState = { taskState.resetTaskData() },
         view = view
     )
-    ReminderAction(
+    if (!isPreview) ReminderAction(
         reminder = taskState.taskData.collectAsState().value.reminder,
         context = context,
         view = view,
@@ -372,6 +373,6 @@ private fun Preview() {
     TaskLayout(
         TopAppBarDefaults.exitUntilCollapsedScrollBehavior(),
         LocalContext.current, LocalView.current, listState = ListData(false, item, item, item),
-        taskState = TaskLayoutViewModel(DatabaseRepository(null))
+        taskState = TaskLayoutViewModel(), isPreview = true
     )
 }

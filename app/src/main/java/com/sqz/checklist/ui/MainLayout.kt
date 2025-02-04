@@ -5,10 +5,12 @@ import android.util.Log
 import android.view.SoundEffectConstants
 import android.view.View
 import android.widget.Toast
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberBasicTooltipState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -50,7 +52,7 @@ enum class MainLayoutNav {
 }
 
 /** Top level of MainLayout **/
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun MainLayout(context: Context, view: View, modifier: Modifier = Modifier) {
     val navController = rememberNavController()
@@ -99,15 +101,14 @@ fun MainLayout(context: Context, view: View, modifier: Modifier = Modifier) {
 
     // Navigation bar
     val mainNavigationBar: @Composable (mode: NavMode) -> Unit = { mode ->
-        @Suppress("OPT_IN_USAGE_FUTURE_ERROR") val extendedButtonData =
-            when (currentRoute) {
-                // TaskLayout Extended Nav Button function
-                MainLayoutNav.TaskLayout.name -> taskExtendedNavButton(
-                    mode = mode, view = view, viewModel = taskLayoutViewModel
-                )
-                // The else should never happen, never be called
-                else -> NavExtendedButtonData()
-            }
+        val extendedButtonData = when (currentRoute) {
+            // TaskLayout Extended Nav Button function
+            MainLayoutNav.TaskLayout.name -> taskExtendedNavButton(
+                mode = mode, view = view, viewModel = taskLayoutViewModel
+            )
+            // The else should never happen, never be called
+            else -> NavExtendedButtonData({}, {}, {}, rememberBasicTooltipState())
+        }
         NavBarLayout(
             mode = mode,
             extendedButtonData = extendedButtonData,
