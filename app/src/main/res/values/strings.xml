@@ -52,6 +52,12 @@
     <string name="create_task_detail">Create Task Detail</string>
     <string name="click_select_detail_type">Click to select a detail type</string>
     <string name="invalid_url">Invalid URL!</string>
+    <string name="select_detail_type">Please select a detail type first!</string>
+    <string name="package_not_found">Application Not Found!\nPackage name: %1$s</string>
+    <string name="app_icon">App Icon</string>
+    <string name="loading">Loading…</string>
+    <string name="application">Application</string>
+    <string name="failed_found_package">Failed to found saved package name!</string>
 
     <!-- Notification -->
     <string name="task_reminder">Task Reminder</string>

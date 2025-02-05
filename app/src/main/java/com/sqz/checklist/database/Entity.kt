@@ -13,7 +13,7 @@ data class Task(
     @ColumnInfo val reminder: Int? = null,
     @ColumnInfo val doingState: String? = null, // not implemented
     @ColumnInfo val isPin: Boolean = false,
-    @ColumnInfo val detail: Boolean = false, // not implemented
+    @ColumnInfo val detail: Boolean = false,
     @ColumnInfo val isHistoryId: Int = 0,
 )
 
@@ -33,7 +33,7 @@ enum class ReminderModeType {
     Worker, AlarmManager
 }
 
-@Entity(tableName = "taskDetail") // not implemented
+@Entity(tableName = "taskDetail") // some part not implemented
 data class TaskDetail(
     @PrimaryKey val id: Long, // same as task id
     @ColumnInfo val type: TaskDetailType,
@@ -41,5 +41,5 @@ data class TaskDetail(
 )
 
 enum class TaskDetailType {
-    Text, URL//, Picture, Video, ChildList
+    Text, URL, Application //, Picture, Video, ChildList
 }

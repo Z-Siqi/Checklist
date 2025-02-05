@@ -74,6 +74,7 @@ import com.sqz.checklist.ui.main.task.layout.item.LazyList
 import com.sqz.checklist.ui.main.task.layout.item.ListData
 import com.sqz.checklist.ui.material.InfoAlertDialog
 import com.sqz.checklist.ui.material.InfoDialogWithURL
+import com.sqz.checklist.ui.material.OpenExternalAppDialog
 import com.sqz.checklist.ui.material.TaskChangeContentCard
 import com.sqz.checklist.ui.material.TextTooltipBox
 import com.sqz.checklist.ui.reminder.ReminderAction
@@ -185,6 +186,11 @@ private fun TaskDetailInfoDialog(onDismissRequest: () -> Unit, detail: TaskDetai
         TaskDetailType.URL -> InfoDialogWithURL(
             onDismissRequest = onDismissRequest,
             url = detail.dataString, title = stringResource(R.string.url)
+        )
+
+        TaskDetailType.Application -> OpenExternalAppDialog(
+            onDismissRequest = onDismissRequest,
+            packageName = detail.dataString, title = stringResource(R.string.application)
         )
     }
 }

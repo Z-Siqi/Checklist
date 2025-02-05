@@ -53,6 +53,12 @@
     <string name="create_task_detail">创建任务详情</string>
     <string name="click_select_detail_type">单击选择详细信息类型</string>
     <string name="invalid_url">网址无效!</string>
+    <string name="select_detail_type">请先选择详细信息类型!</string>
+    <string name="package_not_found">未找到应用程序!\n应用包名: %1$s</string>
+    <string name="app_icon">应用图标</string>
+    <string name="loading">加载中…</string>
+    <string name="application">应用</string>
+    <string name="failed_found_package">找不到保存的应用包名!</string>
 
     <!-- Notification -->
     <string name="task_reminder">任务提醒</string>
