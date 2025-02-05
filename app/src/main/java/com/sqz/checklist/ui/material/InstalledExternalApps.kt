@@ -30,7 +30,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -88,8 +87,8 @@ fun ApplicationList(
     context: Context
 ) {
     val pm: PackageManager = context.packageManager
-    var selectedAppInfo by rememberSaveable { mutableStateOf<AppInfo?>(null) }
-    var appList by rememberSaveable { mutableStateOf<List<AppInfo>>(emptyList()) }
+    var selectedAppInfo by remember { mutableStateOf<AppInfo?>(null) }
+    var appList by remember { mutableStateOf<List<AppInfo>>(emptyList()) }
     if (appList.isEmpty()) LaunchedEffect(Unit) {
         appList = getInstalledApps(context)
     }
