@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.ShapeDefaults
@@ -232,7 +233,12 @@ private fun EditTask(
             confirmText = stringResource(R.string.edit),
             extraButtonBottom = {
                 TextTooltipBox(textRid = R.string.create_task_detail) {
-                    IconButton(onClick = { detail = !detail }) {
+                    IconButton(
+                        onClick = { detail = !detail },
+                        colors = if (detailType != null) {
+                            IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+                        } else IconButtonDefaults.iconButtonColors()
+                    ) {
                         Icon(
                             painter = painterResource(R.drawable.attach),
                             contentDescription = stringResource(R.string.create_task_detail)
