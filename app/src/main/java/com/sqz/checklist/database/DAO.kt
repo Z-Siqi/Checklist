@@ -117,6 +117,9 @@ interface TaskReminderDao {
     @Query("UPDATE reminder SET isReminded = :setter WHERE id = :id")
     suspend fun setIsReminded(id: Int, setter: Int)
 
+    @Query("UPDATE reminder SET mode = :mode, extraData = :extraData WHERE id = :id")
+    suspend fun updateMode(id: Int, mode: ReminderModeType, extraData: String)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(vararg reminder: TaskReminder)
 

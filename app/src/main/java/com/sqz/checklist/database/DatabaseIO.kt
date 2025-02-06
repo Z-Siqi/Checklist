@@ -18,6 +18,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.core.content.FileProvider
 import com.sqz.checklist.MainActivity.Companion.taskDatabase
+import com.sqz.checklist.R
+import com.sqz.checklist.notification.NotifyManager
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileInputStream
@@ -25,6 +28,7 @@ import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 class DatabaseIO(
     private val dbPath: String,
@@ -196,6 +200,7 @@ fun ImportTaskDatabaseAction(
     val databaseIO = DatabaseIO(dbPath, view.context)
     val coroutineScope = rememberCoroutineScope()
     LaunchedEffect(true) {
+        cancelAllNotification(taskDatabase, view)
         databaseIO.importDatabase(
             uri = uri,
             closeDatabase = {
@@ -219,8 +224,61 @@ fun ImportTaskDatabaseAction(
                 }
                 true
             },
-            importState = { dbState(it) }
+            importState = {
+                if (it == IOdbState.Finished) coroutineScope.launch {
+                    restoreNotification(taskDatabase, view)
+                    dbState(it)
+                }
+            }
         )
+    }
+}
+
+private suspend fun restoreNotification(dbInstance: TaskDatabase, view: View) {
+    val notificationManager = MutableStateFlow(NotifyManager())
+    notificationManager.value.requestPermission(view.context)
+    val databaseRepository = DatabaseRepository(dbInstance)
+    for (data in dbInstance.taskReminderDao().getAll()) {
+        if (!data.isReminded) try {
+            val restore = notificationManager.value.createNotification(
+                channelId = view.context.getString(R.string.tasks),
+                channelName = view.context.getString(R.string.task_reminder),
+                channelDescription = view.context.getString(R.string.description),
+                description = data.description, notifyId = data.id,
+                delayDuration = data.reminderTime,
+                timeUnit = TimeUnit.MILLISECONDS, context = view.context
+            ).also { Log.d("RestoreReminder", "Restore NotifyId: ${data.id}") }
+            val mode =
+                if (notificationManager.value.getAlarmPermission()) ReminderModeType.AlarmManager else {
+                    ReminderModeType.Worker
+                }
+            dbInstance.taskReminderDao().updateMode(data.id, mode, restore)
+            if (data.reminderTime < System.currentTimeMillis()) {
+                databaseRepository.setIsReminded(data.id, true)
+            }
+        } catch (e: Exception) {
+            Log.w("RestoreReminder", "Exception: $e")
+        }
+    }
+}
+
+private suspend fun cancelAllNotification(dbInstance: TaskDatabase, view: View) {
+    try {
+        val notificationManager = MutableStateFlow(NotifyManager())
+        notificationManager.value.requestPermission(view.context)
+        for (data in dbInstance.taskReminderDao().getAll()) {
+            when (data.mode) {
+                ReminderModeType.AlarmManager -> notificationManager.value.cancelNotification(
+                    data.id.toString(), view.context, data.id
+                )
+
+                ReminderModeType.Worker -> notificationManager.value.cancelNotification(
+                    data.extraData!!, view.context, data.id, true
+                )
+            }
+        }
+    } catch (e: Exception) {
+        Log.w("CancelReminder", "Exception: $e")
     }
 }
 
