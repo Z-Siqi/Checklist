@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.sp
 import com.sqz.checklist.R
 import com.sqz.checklist.database.TaskDetailType
 import com.sqz.checklist.ui.material.ApplicationList
-import com.sqz.checklist.ui.material.DialogWithMenu
+import com.sqz.checklist.ui.material.dialog.DialogWithMenu
 
 @Composable
 fun TaskDetailDialog(
@@ -103,6 +103,12 @@ fun TaskDetailDialog(
             }
         },
         defaultType = detailType,
+        currentMenuSelection = {
+            if (it != null && detailType != it) {
+                packageName = ""
+                detailTextState.clearText()
+            }
+        },
         capitalize = { it == TaskDetailType.Text },
         doneImeAction = { it == TaskDetailType.URL },
         keyboardType = {

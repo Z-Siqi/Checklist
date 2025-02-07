@@ -27,8 +27,8 @@ import com.sqz.checklist.ui.main.task.layout.item.CardClickType
 import com.sqz.checklist.ui.main.task.layout.item.EditState
 import com.sqz.checklist.ui.main.task.layout.item.ListData
 import com.sqz.checklist.ui.main.task.layout.item.TaskData
-import com.sqz.checklist.ui.reminder.ReminderActionType
-import com.sqz.checklist.ui.reminder.ReminderData
+import com.sqz.checklist.ui.main.task.layout.action.ReminderActionType
+import com.sqz.checklist.ui.main.task.layout.action.ReminderData
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow

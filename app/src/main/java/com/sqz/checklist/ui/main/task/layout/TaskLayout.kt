@@ -73,12 +73,12 @@ import com.sqz.checklist.ui.main.task.layout.action.TaskDetailDialog
 import com.sqz.checklist.ui.main.task.layout.item.EditState
 import com.sqz.checklist.ui.main.task.layout.item.LazyList
 import com.sqz.checklist.ui.main.task.layout.item.ListData
-import com.sqz.checklist.ui.material.InfoAlertDialog
-import com.sqz.checklist.ui.material.InfoDialogWithURL
-import com.sqz.checklist.ui.material.OpenExternalAppDialog
-import com.sqz.checklist.ui.material.TaskChangeContentCard
+import com.sqz.checklist.ui.material.dialog.InfoAlertDialog
+import com.sqz.checklist.ui.material.dialog.InfoDialogWithURL
+import com.sqz.checklist.ui.material.dialog.OpenExternalAppDialog
+import com.sqz.checklist.ui.material.dialog.TaskChangeContentDialog
 import com.sqz.checklist.ui.material.TextTooltipBox
-import com.sqz.checklist.ui.reminder.ReminderAction
+import com.sqz.checklist.ui.main.task.layout.action.ReminderAction
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -217,7 +217,7 @@ private fun EditTask(
             detailString = editState.detail?.dataString
         }
         val noChangeDoNothing = stringResource(R.string.no_change_do_nothing)
-        TaskChangeContentCard(
+        TaskChangeContentDialog(
             onDismissRequest = { resetState() },
             confirm = {
                 if (textState.text.toString() != "") {

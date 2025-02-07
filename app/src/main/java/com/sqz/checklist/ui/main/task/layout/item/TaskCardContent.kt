@@ -54,8 +54,7 @@ import androidx.core.content.ContextCompat
 import com.sqz.checklist.R
 import com.sqz.checklist.database.Task
 import com.sqz.checklist.database.TaskDetail
-import com.sqz.checklist.database.TaskDetailType
-import com.sqz.checklist.ui.material.InfoAlertDialog
+import com.sqz.checklist.ui.material.dialog.InfoAlertDialog
 import java.time.LocalDate
 
 enum class CardClickType { Reminder, Edit, Pin, Close, Detail }

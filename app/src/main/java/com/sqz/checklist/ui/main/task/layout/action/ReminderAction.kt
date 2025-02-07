@@ -1,4 +1,4 @@
-package com.sqz.checklist.ui.reminder
+package com.sqz.checklist.ui.main.task.layout.action
 
 import android.Manifest
 import android.content.Context
@@ -28,7 +28,8 @@ import androidx.core.app.ActivityCompat
 import com.sqz.checklist.R
 import com.sqz.checklist.notification.PermissionState
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
-import com.sqz.checklist.ui.material.WarningAlertDialog
+import com.sqz.checklist.ui.material.dialog.WarningAlertDialog
+import com.sqz.checklist.ui.material.dialog.TimeSelectDialog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat

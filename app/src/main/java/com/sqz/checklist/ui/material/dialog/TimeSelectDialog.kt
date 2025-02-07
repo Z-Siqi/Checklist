@@ -1,4 +1,4 @@
-package com.sqz.checklist.ui.reminder
+package com.sqz.checklist.ui.material.dialog
 
 import android.Manifest
 import android.content.Context
@@ -67,7 +67,6 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.getString
 import com.sqz.checklist.R
-import com.sqz.checklist.ui.material.WarningAlertDialog
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale

@@ -54,7 +54,7 @@ import com.sqz.checklist.ui.main.NavTooltipContent
 import com.sqz.checklist.ui.main.OnClickType
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
 import com.sqz.checklist.ui.main.task.layout.action.TaskDetailDialog
-import com.sqz.checklist.ui.material.TaskChangeContentCard
+import com.sqz.checklist.ui.material.dialog.TaskChangeContentDialog
 import com.sqz.checklist.ui.material.TextTooltipBox
 import kotlinx.coroutines.launch
 
@@ -169,7 +169,7 @@ private fun TaskAddCard(
     var detail by rememberSaveable { mutableStateOf(false) }
     var detailType by rememberSaveable { mutableStateOf<TaskDetailType?>(null) }
     var detailString by rememberSaveable { mutableStateOf<String?>(null) }
-    TaskChangeContentCard(
+    TaskChangeContentDialog(
         onDismissRequest = onDismissRequest,
         confirm = {
             if (state.text.toString() != "") confirm(
