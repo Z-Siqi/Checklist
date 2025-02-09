@@ -106,7 +106,7 @@ interface TaskReminderDao {
     suspend fun getAll(): List<TaskReminder>
 
     @Query("SELECT * FROM reminder WHERE id = :id")
-    suspend fun getAll(id: Int): TaskReminder
+    suspend fun getAll(id: Int): TaskReminder?
 
     @Query("SELECT COUNT() FROM reminder WHERE isReminded = :isReminded")
     fun getIsRemindedNum(isReminded: Int): Flow<Int>

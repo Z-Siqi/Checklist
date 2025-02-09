@@ -187,11 +187,11 @@ private fun reminderState(reminder: Int?): Boolean {
             try {
                 val databaseRepository = DatabaseRepository(MainActivity.taskDatabase)
                 val timeMillisData =
-                    databaseRepository.getReminderData(reminder).reminderTime
+                    databaseRepository.getReminderData(reminder)?.reminderTime ?: 0L
                 timeMillis = timeMillisData
                 state = timeMillisData >= System.currentTimeMillis()
             } catch (e: Exception) {
-                Log.e("Exception: TaskItem", "$reminder")
+                Log.w("Exception: TaskItem", "$reminder, err: $e")
             }
         } else state = false
     }
@@ -240,7 +240,7 @@ private fun getReminderTime(id: Int): Long {
     var data by rememberSaveable { mutableLongStateOf(0L) }
     LaunchedEffect(Unit) {
         val databaseRepository = DatabaseRepository(MainActivity.taskDatabase)
-        data = databaseRepository.getReminderData(id).reminderTime
+        data = databaseRepository.getReminderData(id)?.reminderTime ?: 0L
     }
     return data
 }

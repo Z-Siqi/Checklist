@@ -59,11 +59,13 @@ class DatabaseRepository(
 
         for (data in this.databaseInstance.taskReminderDao().getAll()) { // remove error item
             if (this.databaseInstance.taskDao().matchReminder(data.id) < 1) {
-                reminderDao.delete(reminderDao.getAll(data.id))
+                val getter = reminderDao.getAll(data.id)
+                if (getter != null) reminderDao.delete(getter)
             }
         }
         if (reminderId == 0 || reminderId == null) throw NoSuchFieldException("No id data!")
-        reminderDao.delete(reminderDao.getAll(reminderId))
+        val getter = reminderDao.getAll(reminderId)
+        if (getter != null) reminderDao.delete(getter)
         this.databaseInstance.taskDao().deleteReminder(taskId)
     }
 
@@ -116,7 +118,7 @@ class DatabaseRepository(
         }
     }
 
-    suspend fun getReminderData(reminderId: Int): TaskReminder {
+    suspend fun getReminderData(reminderId: Int): TaskReminder? {
         return this.databaseInstance!!.taskReminderDao().getAll(reminderId)
     }
 

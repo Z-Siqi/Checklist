@@ -75,7 +75,7 @@ class TaskLayoutViewModel : ViewModel() {
         viewModelScope.launch {
             _listState.update { lists ->
                 val remindedList = MainActivity.taskDatabase.taskDao().getIsRemindedList().filter {
-                    if (it.reminder != null) database().getReminderData(it.reminder).isReminded
+                    if (it.reminder != null) database().getReminderData(it.reminder)!!.isReminded
                     else false
                 }
                 lists.copy(
@@ -189,7 +189,7 @@ class TaskLayoutViewModel : ViewModel() {
             try { // Cancel sent notification
                 if (reminder != 0 && reminder != null) {
                     val data = MainActivity.taskDatabase.taskReminderDao().getAll(reminder)
-                    when (data.mode) {
+                    if (data != null) when (data.mode) {
                         ReminderModeType.AlarmManager -> _notificationManager.value.cancelNotification(
                             data.id.toString(), context, reminder
                         )
@@ -222,7 +222,7 @@ class TaskLayoutViewModel : ViewModel() {
     }
 
     suspend fun getReminderData(taskId: Int): TaskReminder {
-        return database().getReminderData(taskId)
+        return database().getReminderData(taskId)!!
     }
 
     fun getIsRemindedNum(): Flow<Int> = database().getIsRemindedNum(true)
@@ -326,7 +326,7 @@ class TaskLayoutViewModel : ViewModel() {
             if (id != -1L) database().deleteReminderData(id)
             if (autoDel) for (data in _listState.value.isRemindedItem) {
                 val timeMillisData =
-                    if (data.reminder != null) database().getReminderData(data.reminder).reminderTime
+                    if (data.reminder != null) database().getReminderData(data.reminder)?.reminderTime ?: -1L
                     else -1L
                 val delReminderTime = timeMillisData < System.currentTimeMillis() - 43200000
                 if (timeMillisData != -1L && delReminderTime) {
