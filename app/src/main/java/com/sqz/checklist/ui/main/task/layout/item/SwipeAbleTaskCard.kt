@@ -180,16 +180,12 @@ private fun swipeToDismissControl(
 /** check the reminder is set or not **/
 @Composable
 private fun reminderState(reminder: Int?): Boolean {
+    val databaseRepository = DatabaseRepository(MainActivity.taskDatabase)
     var state by remember { mutableStateOf(false) }
-    var timeMillis by remember { mutableLongStateOf(0L) }
-    LaunchedEffect(reminder, (timeMillis >= System.currentTimeMillis())) {
+    LaunchedEffect(databaseRepository.getIsRemindedNum(true)) {
         if (reminder != 0 && reminder != null) {
             try {
-                val databaseRepository = DatabaseRepository(MainActivity.taskDatabase)
-                val timeMillisData =
-                    databaseRepository.getReminderData(reminder)?.reminderTime ?: 0L
-                timeMillis = timeMillisData
-                state = timeMillisData >= System.currentTimeMillis()
+                state = !(databaseRepository.getReminderData(reminder)?.isReminded ?: false)
             } catch (e: Exception) {
                 Log.w("Exception: TaskItem", "$reminder, err: $e")
             }
