@@ -68,8 +68,8 @@ import com.sqz.checklist.database.Task
 import com.sqz.checklist.database.TaskDetail
 import com.sqz.checklist.database.TaskDetailType
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
-import com.sqz.checklist.ui.main.task.layout.action.CheckTaskAction
-import com.sqz.checklist.ui.main.task.layout.action.TaskDetailDialog
+import com.sqz.checklist.ui.main.task.layout.function.CheckTaskAction
+import com.sqz.checklist.ui.main.task.layout.function.TaskDetailDialog
 import com.sqz.checklist.ui.main.task.layout.item.EditState
 import com.sqz.checklist.ui.main.task.layout.item.LazyList
 import com.sqz.checklist.ui.main.task.layout.item.ListData
@@ -78,7 +78,7 @@ import com.sqz.checklist.ui.material.dialog.InfoDialogWithURL
 import com.sqz.checklist.ui.material.dialog.OpenExternalAppDialog
 import com.sqz.checklist.ui.material.dialog.TaskChangeContentDialog
 import com.sqz.checklist.ui.material.TextTooltipBox
-import com.sqz.checklist.ui.main.task.layout.action.ReminderAction
+import com.sqz.checklist.ui.main.task.layout.function.ReminderAction
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -150,7 +150,7 @@ fun TaskLayout(
                 lineHeight = 30.sp, textAlign = TextAlign.Center
             )
         }
-        CheckTaskAction( // processing check & undo
+        if (!listState.unLoading) CheckTaskAction( // processing check & undo
             whenUndo = { undoTask = true },
             taskState = taskState,
             lazyState = lazyState,

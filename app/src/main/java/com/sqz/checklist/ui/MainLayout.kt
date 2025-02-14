@@ -35,6 +35,10 @@ import com.sqz.checklist.ui.main.NavExtendedButtonData
 import com.sqz.checklist.ui.main.NavMode
 import com.sqz.checklist.ui.main.backup.BackupAndRestoreLayout
 import com.sqz.checklist.ui.main.backup.BackupRestoreTopBar
+import com.sqz.checklist.ui.main.settings.layout.SettingsLayout
+import com.sqz.checklist.ui.main.settings.SettingsLayoutViewModel
+import com.sqz.checklist.ui.main.settings.SettingsTopBar
+import com.sqz.checklist.ui.main.settings.settingsExtendedNavButton
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
 import com.sqz.checklist.ui.main.task.history.HistoryTopBar
 import com.sqz.checklist.ui.main.task.history.TaskHistory
@@ -46,7 +50,9 @@ import com.sqz.checklist.ui.main.task.layout.taskExtendedNavButton
 import com.sqz.checklist.ui.main.task.layout.topBarExtendedMenu
 
 enum class MainLayoutNav {
-    TaskLayout, TaskHistory,
+    TaskLayout,
+    TaskHistory,
+    Settings,
     BackupRestore,
     Unknown,
 }
@@ -63,6 +69,7 @@ fun MainLayout(context: Context, view: View, modifier: Modifier = Modifier) {
     // ViewModel
     val taskLayoutViewModel: TaskLayoutViewModel = viewModel()
     val taskHistoryViewModel: TaskHistoryViewModel = viewModel()
+    val settingsLayoutViewModel: SettingsLayoutViewModel = viewModel()
 
     // Top bar
     val topBarState = rememberTopAppBarState()
@@ -98,6 +105,12 @@ fun MainLayout(context: Context, view: View, modifier: Modifier = Modifier) {
             view.playSoundEffect(SoundEffectConstants.CLICK)
         })
     }
+    val settingsTopBar = @Composable {
+        SettingsTopBar(onBack = {
+            navController.popBackStack()
+            settingsLayoutViewModel.resetSearchState()
+        }, view = view)
+    }
 
     // Navigation bar
     val mainNavigationBar: @Composable (mode: NavMode) -> Unit = { mode ->
@@ -105,6 +118,10 @@ fun MainLayout(context: Context, view: View, modifier: Modifier = Modifier) {
             // TaskLayout Extended Nav Button function
             MainLayoutNav.TaskLayout.name -> taskExtendedNavButton(
                 mode = mode, view = view, viewModel = taskLayoutViewModel
+            )
+            // SettingsLayout Extended Nav Button function
+            MainLayoutNav.Settings.name -> settingsExtendedNavButton(
+                viewModel = settingsLayoutViewModel, view = view
             )
             // The else should never happen, never be called
             else -> NavExtendedButtonData({}, {}, {}, rememberBasicTooltipState())
@@ -117,6 +134,7 @@ fun MainLayout(context: Context, view: View, modifier: Modifier = Modifier) {
                 if (index.name != currentRoute) navController.navigate(index.name) {
                     popUpTo(0)
                 }
+                if (currentRoute == MainLayoutNav.Settings.name) settingsLayoutViewModel.resetSearchState()
             },
             modifier = modifier
         )
@@ -144,6 +162,7 @@ fun MainLayout(context: Context, view: View, modifier: Modifier = Modifier) {
             MainLayoutNav.TaskLayout.name -> taskLayoutTopBar
             MainLayoutNav.TaskHistory.name -> taskHistoryTopBar
             MainLayoutNav.BackupRestore.name -> backupRestoreTopBar
+            MainLayoutNav.Settings.name -> settingsTopBar
             else -> nul
         },
         bottomBar = {
@@ -158,6 +177,7 @@ fun MainLayout(context: Context, view: View, modifier: Modifier = Modifier) {
             when (currentRoute) {
                 MainLayoutNav.TaskLayout.name -> mainNavigationBar(navRailMode)
                 MainLayoutNav.TaskHistory.name -> taskHistoryNavBar(navRailMode)
+                MainLayoutNav.Settings.name -> mainNavigationBar(navRailMode)
                 else -> nul()
             }
         },
@@ -181,6 +201,9 @@ fun MainLayout(context: Context, view: View, modifier: Modifier = Modifier) {
                 BackupAndRestoreLayout(view = view) {
                     disableBackButton = it
                 }
+            }
+            composable(MainLayoutNav.Settings.name) {
+                SettingsLayout(viewModel = settingsLayoutViewModel, view = view)
             }
         }
     }

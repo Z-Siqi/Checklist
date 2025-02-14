@@ -1,50 +1,30 @@
 package com.sqz.checklist.ui.main.task.layout
 
-import android.os.Build
-import android.os.VibrationEffect
-import android.os.Vibrator
 import android.view.SoundEffectConstants
 import android.view.View
 import android.widget.Toast
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberBasicTooltipState
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Text
-import androidx.compose.material3.TooltipBox
-import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionOnScreen
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntRect
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.PopupPositionProvider
-import androidx.core.content.ContextCompat
 import com.sqz.checklist.R
 import com.sqz.checklist.database.TaskDetailType
 import com.sqz.checklist.notification.PermissionState
@@ -53,9 +33,10 @@ import com.sqz.checklist.ui.main.NavMode
 import com.sqz.checklist.ui.main.NavTooltipContent
 import com.sqz.checklist.ui.main.OnClickType
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
-import com.sqz.checklist.ui.main.task.layout.action.TaskDetailDialog
-import com.sqz.checklist.ui.material.dialog.TaskChangeContentDialog
+import com.sqz.checklist.ui.main.task.layout.function.TaskDetailDialog
+import com.sqz.checklist.ui.material.NonExtendedTooltip
 import com.sqz.checklist.ui.material.TextTooltipBox
+import com.sqz.checklist.ui.material.dialog.TaskChangeContentDialog
 import kotlinx.coroutines.launch
 
 /** Nav Extended Button Connect Data **/
@@ -244,37 +225,4 @@ private fun TaskAddCard(
         getString = detailString,
         view = view
     )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun NonExtendedTooltip(text: String, view: View) {
-    var rememberPosition by remember { mutableStateOf(IntOffset.Zero) }
-    Spacer(modifier = Modifier
-        .size(40.dp, 30.dp)
-        .onGloballyPositioned { layoutCoordinates ->
-            val position = layoutCoordinates.positionOnScreen()
-            if (position.x < 2147483647L || position.y < 2147483647L) {
-                rememberPosition = IntOffset(position.x.toInt(), position.y.toInt())
-            }
-        })
-    TooltipBox(
-        positionProvider = object : PopupPositionProvider {
-            override fun calculatePosition(
-                anchorBounds: IntRect, windowSize: IntSize, layoutDirection: LayoutDirection,
-                popupContentSize: IntSize
-            ): IntOffset = IntOffset(rememberPosition.x, rememberPosition.y)
-        },
-        tooltip = {
-            PlainTooltip { Text(text = text) }
-            LaunchedEffect(true) { // click feedback
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) ContextCompat.getSystemService(
-                    view.context, Vibrator::class.java
-                )?.vibrate(
-                    VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK)
-                ) else view.playSoundEffect(SoundEffectConstants.CLICK)
-            }
-        },
-        state = rememberTooltipState(initialIsVisible = true, isPersistent = true)
-    ) {}
 }

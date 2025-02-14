@@ -1,10 +1,7 @@
 package com.sqz.checklist.ui.material.dialog
 
 import android.annotation.SuppressLint
-import android.content.Intent
-import android.net.Uri
 import android.view.SoundEffectConstants
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,12 +25,12 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
 import com.sqz.checklist.R
+import com.sqz.checklist.ui.material.UrlText
 
 @Composable
 fun InfoDialogWithURL(
@@ -78,15 +75,8 @@ fun InfoDialogWithURL(
                     SelectionContainer(
                         modifier = modifier.verticalScroll(scrollState)
                     ) {
-                        Text(
-                            text = urlTitle ?: url,
-                            fontSize = 19.sp,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = modifier.clickable {
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                                view.context.startActivity(intent)
-                            },
-                            textDecoration = TextDecoration.Underline
+                        UrlText(
+                            url, text = urlTitle ?: url, view = view, fontSize = 19.sp
                         )
                     }
                 }

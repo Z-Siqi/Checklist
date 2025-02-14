@@ -1,4 +1,4 @@
-package com.sqz.checklist.ui.main.task.layout.action
+package com.sqz.checklist.ui.main.task.layout.function
 
 import android.Manifest
 import android.content.Context
@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
 import com.sqz.checklist.R
 import com.sqz.checklist.notification.PermissionState
+import com.sqz.checklist.preferences.PrimaryPreferences
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
 import com.sqz.checklist.ui.material.dialog.WarningAlertDialog
 import com.sqz.checklist.ui.material.dialog.TimeSelectDialog
@@ -107,7 +108,9 @@ fun ReminderAction(
                             resetState()
                         },
                         onConfirmClick = { timeInMilli ->
-                            if (!taskState.isAlarmPermission()) Toast.makeText(
+                            val preferences =
+                                PrimaryPreferences(context).disableNoScheduleExactAlarmNotice()
+                            if (!taskState.isAlarmPermission() && !preferences) Toast.makeText(
                                 context, context.getString(
                                     R.string.no_SCHEDULE_EXACT_ALARM_permission_explain
                                 ), Toast.LENGTH_SHORT

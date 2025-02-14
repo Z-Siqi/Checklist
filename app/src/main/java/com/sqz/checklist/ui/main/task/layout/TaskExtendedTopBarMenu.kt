@@ -22,9 +22,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.sqz.checklist.R
+import com.sqz.checklist.preferences.PrimaryPreferences
 import com.sqz.checklist.ui.MainLayoutNav
 
-enum class TopBarMenuClickType { History, Search, BackupRestore }
+enum class TopBarMenuClickType { History, Search, BackupRestore, Settings }
 
 /**
  * Top bar menu content.
@@ -38,6 +39,7 @@ fun topBarExtendedMenu(
     view: View,
     modifier: Modifier = Modifier,
 ): Int {
+    val primaryPreferences = PrimaryPreferences(view.context)
     var closeMenu by remember { mutableIntStateOf(-1) }
     LaunchedEffect(closeMenu) { if (state) closeMenu = 1 }
     val taskHistoryClick = {
@@ -49,15 +51,23 @@ fun topBarExtendedMenu(
         onClickType(TopBarMenuClickType.BackupRestore, view.context)
         navController.navigate(MainLayoutNav.BackupRestore.name)
     }
+    val settingsClick = {
+        onClickType(TopBarMenuClickType.Settings, view.context)
+        navController.navigate(MainLayoutNav.Settings.name)
+    }
     val menuList = listOf(
         MenuItem(stringResource(R.string.task_history)) { taskHistoryClick() },
         MenuItem(stringResource(R.string.search)) { searchClick() },
-        MenuItem(stringResource(R.string.backup_restore)) { backupRestoreClick() }
+        MenuItem(stringResource(R.string.backup_restore)) { backupRestoreClick() },
+        MenuItem(stringResource(R.string.settings)) { settingsClick() },
     )
+    val dropList = if (primaryPreferences.allowedNumberOfHistory() != 0) menuList else {
+        menuList.drop(1)
+    }
     MenuLayout(
         expanded = state,
         onDismissRequest = { closeMenu = 0 },
-        menuItem = menuList,
+        menuItem = dropList,
         view = view,
         modifier = modifier
     )

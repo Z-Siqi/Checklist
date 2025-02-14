@@ -1,4 +1,4 @@
-package com.sqz.checklist.ui.main.task.layout.action
+package com.sqz.checklist.ui.main.task.layout.function
 
 import android.content.Context
 import android.os.Build
@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.sqz.checklist.R
+import com.sqz.checklist.preferences.PrimaryPreferences
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
 import kotlinx.coroutines.delay
 
@@ -38,6 +39,7 @@ fun CheckTaskAction(
     lazyState: LazyListState,
     context: Context,
 ) {
+    val preferences = PrimaryPreferences(context).allowedNumberOfHistory()
     val undo = taskState.undo.collectAsState().value
     val isWindowFocused = LocalWindowInfo.current.isWindowFocused
     if (taskState.undoTimeout(lazyState, context)) UndoButton(
@@ -50,7 +52,7 @@ fun CheckTaskAction(
             whenUndo()
         }) else LaunchedEffect(true) { // processing after checked
         delay(100)
-        taskState.autoDeleteHistoryTask(5)
+        if (preferences != 21) taskState.autoDeleteHistoryTask(preferences)
         taskState.remindedState(autoDel = true) // delete reminder info which 12h ago
         Log.d("TaskLayout", "Auto del history tasks & del reminder info that 12h ago")
     }

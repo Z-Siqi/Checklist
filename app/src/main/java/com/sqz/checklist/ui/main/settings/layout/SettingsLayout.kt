@@ -1,0 +1,183 @@
+package com.sqz.checklist.ui.main.settings.layout
+
+import android.view.View
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.ShapeDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.sqz.checklist.R
+import com.sqz.checklist.ui.main.settings.SettingsLayoutViewModel
+
+/**
+ * App Settings layout
+ */
+@Composable
+fun SettingsLayout(
+    viewModel: SettingsLayoutViewModel,
+    view: View,
+    modifier: Modifier = Modifier
+) {
+    var inSearchText by remember { mutableStateOf<String?>(null) }
+    val settingsList = @Composable {
+        if (inSearchText == null) LazyColumn {
+            item { if (viewModel.getSearchState()) Spacer(Modifier.height(55.dp)) }
+            item { SubtitleText(stringResource(R.string.task_history)) }
+            item {
+                var height by remember { mutableIntStateOf(0) }
+                val list = settingsList(view, SettingsType.History) { height = it }
+                OutlinedCard(Modifier.padding(10.dp) then Modifier.height(height.dp)) {
+                    LazyColumn(userScrollEnabled = false) {
+                        items(list) { it.Content() }
+                    }
+                }
+            }
+            item { SubtitleText(stringResource(R.string.notification)) }
+            item {
+                var height by remember { mutableIntStateOf(0) }
+                val list = settingsList(view, SettingsType.Notification) { height = it }
+                OutlinedCard(Modifier.padding(10.dp) then Modifier.height(height.dp)) {
+                    LazyColumn(userScrollEnabled = false) {
+                        items(list) { it.Content() }
+                    }
+                }
+            }
+            item { SubtitleText(stringResource(R.string.general_settings)) }
+            item {
+                var height by remember { mutableIntStateOf(0) }
+                val list = settingsList(view, SettingsType.General) { height = it }
+                OutlinedCard(Modifier.padding(10.dp) then Modifier.height(height.dp)) {
+                    LazyColumn(userScrollEnabled = false) {
+                        items(list) { it.Content() }
+                    }
+                }
+            }
+        } else {
+            val list = settingsList(view).filter {
+                val text = it.text.replace("\n", "").replace(Regex("[A-Z]")) { matchResult ->
+                    matchResult.value.lowercase()
+                }
+                text.contains(inSearchText!!)
+            }
+            LazyColumn {
+                item { if (viewModel.getSearchState()) Spacer(Modifier.height(55.dp)) }
+                items(list) { it.Content() }
+            }
+        }
+        inSearchText = if (viewModel.getSearchState()) searchBar() else {
+            null
+        }
+    }
+    if (viewModel.getSearchState()) BackHandler {
+        viewModel.resetSearchState()
+    } else if (inSearchText != null) {
+        inSearchText = null
+    }
+    Surface(
+        modifier = modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        content = settingsList
+    )
+}
+
+@Composable
+private fun searchBar(): String? {
+    val textFieldState = rememberTextFieldState()
+    Box {
+        OutlinedCard(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 18.dp, end = 18.dp, top = 12.dp)
+                .height(50.dp),
+            shape = ShapeDefaults.ExtraLarge
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    modifier = Modifier.padding(start = 10.dp),
+                    imageVector = Icons.Filled.Search,
+                    contentDescription = stringResource(id = R.string.search)
+                )
+                BasicTextField(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(start = 9.dp, end = 9.dp, top = 10.dp, bottom = 8.dp)
+                        .horizontalScroll(rememberScrollState()),
+                    state = textFieldState,
+                    lineLimits = TextFieldLineLimits.SingleLine,
+                    textStyle = TextStyle(
+                        fontSize = 24.sp,
+                        textAlign = TextAlign.Start
+                    )
+                )
+            }
+        }
+    }
+    return if (textFieldState.text.isEmpty()) null else {
+        textFieldState.text.toString()
+    }
+}
+
+@Composable
+private fun SubtitleText(text: String) {
+    Text(
+        text = text, modifier = Modifier.padding(start = 12.dp, top = 16.dp),
+        fontWeight = FontWeight.ExtraBold, fontSize = 18.sp,
+        color = MaterialTheme.colorScheme.tertiary,
+    )
+}
+
+class SettingsItem(
+    val type: SettingsType,
+    val heightDp: Int,
+    val text: String,
+    private val content: @Composable (String) -> Unit
+) {
+    @Composable
+    fun Content() {
+        this.content(this.text)
+    }
+}
+
+enum class SettingsType { Notification, History, General }
+
+@Preview
+@Composable
+private fun Preview() {
+    val viewModel: SettingsLayoutViewModel = viewModel()
+    SettingsLayout(viewModel, LocalView.current)
+}

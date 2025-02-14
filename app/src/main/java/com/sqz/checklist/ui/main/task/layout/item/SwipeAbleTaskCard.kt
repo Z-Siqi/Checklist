@@ -65,7 +65,9 @@ import java.util.Locale
 @Composable
 fun SwipeAbleTaskCard(
     task: Task,
-    onTaskItemClick: (task: Task, type: CardClickType, reminderState: Boolean) -> Unit,
+    onTaskItemClick: (
+        task: Task, type: CardClickType, reminderState: Boolean, context: Context
+    ) -> Unit,
     checked: (id: Long) -> Unit,
     getIsHistory: Boolean,
     context: Context,
@@ -138,7 +140,7 @@ fun SwipeAbleTaskCard(
                         task.createDate.format(formatter)
                     )
                 },
-                onClick = { type -> onTaskItemClick(task, type, reminderState) },
+                onClick = { type -> onTaskItemClick(task, type, reminderState, context) },
                 timerIconState = reminderState,
                 pinIconState = task.isPin,
                 tooltipRemindText = if (reminderState) remindTime() else null,
@@ -185,9 +187,11 @@ private fun reminderState(reminder: Int?): Boolean {
     LaunchedEffect(databaseRepository.getIsRemindedNum(true)) {
         if (reminder != 0 && reminder != null) {
             try {
-                state = !(databaseRepository.getReminderData(reminder)?.isReminded ?: false)
+                state = !(databaseRepository.getReminderData(reminder)?.isReminded ?: true)
             } catch (e: Exception) {
-                Log.w("Exception: TaskItem", "$reminder, err: $e")
+                if (e.message != "The coroutine scope left the composition") Log.w(
+                    "Exception: TaskItem", "$reminder, err: $e"
+                )
             }
         } else state = false
     }
@@ -250,6 +254,6 @@ private fun Preview() {
     )
     SwipeAbleTaskCard(
         Task(0, "The quick brown fox jumps over the lazy dog.", LocalDate.now()),
-        { _, _, _ -> }, {}, false, LocalContext.current, state, ItemMode.NormalTask
+        { _, _, _, _ -> }, {}, false, LocalContext.current, state, ItemMode.NormalTask
     )
 }

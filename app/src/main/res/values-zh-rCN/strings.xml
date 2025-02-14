@@ -11,6 +11,7 @@
     <string name="warning">注意</string>
     <string name="cancel">取消</string>
     <string name="delete">删除</string>
+    <string name="disable">禁用</string>
     <string name="text">文本</string>
     <string name="url">网址</string>
     <string name="full_date_short">yyyy 年 MMM dd 日 hh:mm a</string>
@@ -96,5 +97,20 @@
     <string name="select_file_to_import">请选择要导入的文件!</string>
     <string name="error_try_undo_import">错误! 尝试撤消导入…</string>
     <string name="finished">完成!</string>
+
+    <!-- Settings -->
+    <string name="settings">设置</string>
+    <string name="general_settings">常规设置</string>
+    <string name="about">关于</string>
+    <string name="notification">通知</string>
+    <string name="disable_remove_notify_in_reminded">禁用单击取消突出显示时删除显示的通知</string>
+    <string name="unlimited">无限</string>
+    <string name="allowed_number_of_history">允许的任务历史记录数量:</string>
+    <string name="disable_no_schedule_exact_alarm_notice"><![CDATA[禁用闹钟和提醒权限未找到提示]]></string>
+    <string name="language">语言</string>
+    <string name="unsupported_below_api_33">不支持 Android TIRAMISU (API 33) 以下版本</string>
+    <string name="unsupported_api_must_higher_than_32">不支持：Android API 必须高于 32</string>
+    <string name="click_select_language">点击以选择语言</string>
+    <string name="developed_by">"开发者: "</string>
 
 </resources>

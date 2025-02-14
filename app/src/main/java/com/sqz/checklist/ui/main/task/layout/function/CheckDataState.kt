@@ -1,4 +1,4 @@
-package com.sqz.checklist.ui.main.task.layout.action
+package com.sqz.checklist.ui.main.task.layout.function
 
 data class CheckDataState(
     val checkTaskAction: Boolean = false,

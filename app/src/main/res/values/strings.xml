@@ -10,6 +10,7 @@
     <string name="warning">Warning</string>
     <string name="cancel">Cancel</string>
     <string name="delete">Delete</string>
+    <string name="disable">Disable</string>
     <string name="text">Text</string>
     <string name="url">URL</string>
     <string name="full_date_short">yyyy dd MMM hh:mm a</string>
@@ -42,7 +43,7 @@
     <string name="input">Input</string>
     <string name="just_reminded">The task just reminded</string>
     <string name="task_reminded_time">Task has reminded \nat: %1$s</string>
-    <string name="cancel_highlight">Cancel highlight at here</string>
+    <string name="cancel_highlight">Cancel highlight</string>
     <string name="search">Search</string>
     <string name="create_as_pin">Create as a pinned task</string>
     <string name="create_with_reminder">Add a reminder after create a task</string>
@@ -95,5 +96,20 @@
     <string name="select_file_to_import">Please select a file to import!</string>
     <string name="error_try_undo_import">Error! Trying to undo the import…</string>
     <string name="finished">Finished!</string>
+
+    <!-- Settings -->
+    <string name="settings">Settings</string>
+    <string name="general_settings">General Settings</string>
+    <string name="about">About</string>
+    <string name="notification">Notification</string>
+    <string name="disable_remove_notify_in_reminded">Disable remove showed notification when click cancel highlight</string>
+    <string name="unlimited">Unlimited</string>
+    <string name="allowed_number_of_history">Number of task history records allowed:</string>
+    <string name="disable_no_schedule_exact_alarm_notice"><![CDATA[Disable Alarms & Reminders permission not found notice]]></string>
+    <string name="language">Language</string>
+    <string name="unsupported_below_api_33">Unsupported below Android TIRAMISU (API 33)</string>
+    <string name="unsupported_api_must_higher_than_32">Unsupported: Android API must higher than 32</string>
+    <string name="click_select_language">Click to select the language</string>
+    <string name="developed_by">"Developed by "</string>
 
 </resources>

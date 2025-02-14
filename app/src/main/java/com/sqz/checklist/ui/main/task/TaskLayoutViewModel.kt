@@ -19,16 +19,17 @@ import com.sqz.checklist.database.TaskDetail
 import com.sqz.checklist.database.TaskDetailType
 import com.sqz.checklist.database.TaskReminder
 import com.sqz.checklist.notification.PermissionState
+import com.sqz.checklist.preferences.PrimaryPreferences
 import com.sqz.checklist.ui.main.task.history.arrangeHistoryId
 import com.sqz.checklist.ui.main.task.layout.NavConnectData
 import com.sqz.checklist.ui.main.task.layout.TopBarMenuClickType
-import com.sqz.checklist.ui.main.task.layout.action.CheckDataState
+import com.sqz.checklist.ui.main.task.layout.function.CheckDataState
 import com.sqz.checklist.ui.main.task.layout.item.CardClickType
 import com.sqz.checklist.ui.main.task.layout.item.EditState
 import com.sqz.checklist.ui.main.task.layout.item.ListData
 import com.sqz.checklist.ui.main.task.layout.item.TaskData
-import com.sqz.checklist.ui.main.task.layout.action.ReminderActionType
-import com.sqz.checklist.ui.main.task.layout.action.ReminderData
+import com.sqz.checklist.ui.main.task.layout.function.ReminderActionType
+import com.sqz.checklist.ui.main.task.layout.function.ReminderData
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -64,6 +65,7 @@ class TaskLayoutViewModel : ViewModel() {
         TopBarMenuClickType.History -> resetUndo(context)
         TopBarMenuClickType.Search -> searchView(!_listState.value.searchView)
         TopBarMenuClickType.BackupRestore -> resetUndo(context)
+        TopBarMenuClickType.Settings -> resetUndo(context)
     }
 
     private var _init by mutableStateOf(false)
@@ -100,6 +102,10 @@ class TaskLayoutViewModel : ViewModel() {
 
     init {
         updateListState(init = true)
+    }
+
+    private fun primaryPreferences(context: Context) : PrimaryPreferences {
+        return PrimaryPreferences(context)
     }
 
     /**
@@ -280,11 +286,18 @@ class TaskLayoutViewModel : ViewModel() {
     fun resetTaskData() = run { _taskData.value = TaskData() }
 
     /** Task click action **/
-    fun onTaskItemClick(task: Task, type: CardClickType, reminderState: Boolean) {
+    fun onTaskItemClick(task: Task, type: CardClickType, reminderState: Boolean, context: Context) {
         when (type) {
             CardClickType.Pin -> pinState(task.id, !task.isPin)
-            CardClickType.Close -> remindedState(id = task.id)
             CardClickType.Detail -> taskDetailData(task.id)
+            CardClickType.Close -> {
+                if (!primaryPreferences(context).disableRemoveNotifyInReminded()) try {
+                    _notificationManager.value.removeShowedNotification(task.reminder!!, context)
+                } catch (e: Exception) {
+                    Log.w("RemoveShowedNotify", "Exception: $e")
+                }
+                remindedState(id = task.id)
+            }
 
             CardClickType.Reminder -> reminderActionCaller(
                 task.id, task.reminder, !reminderState, task.description
@@ -326,7 +339,8 @@ class TaskLayoutViewModel : ViewModel() {
             if (id != -1L) database().deleteReminderData(id)
             if (autoDel) for (data in _listState.value.isRemindedItem) {
                 val timeMillisData =
-                    if (data.reminder != null) database().getReminderData(data.reminder)?.reminderTime ?: -1L
+                    if (data.reminder != null) database().getReminderData(data.reminder)?.reminderTime
+                        ?: -1L
                     else -1L
                 val delReminderTime = timeMillisData < System.currentTimeMillis() - 43200000
                 if (timeMillisData != -1L && delReminderTime) {
