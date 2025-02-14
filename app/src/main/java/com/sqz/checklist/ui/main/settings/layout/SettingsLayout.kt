@@ -1,14 +1,19 @@
 package com.sqz.checklist.ui.main.settings.layout
 
+import android.os.Build
 import android.view.View
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -32,6 +37,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -54,53 +62,70 @@ fun SettingsLayout(
     modifier: Modifier = Modifier
 ) {
     var inSearchText by remember { mutableStateOf<String?>(null) }
+
+    val localConfig = LocalConfiguration.current
+    val screenIsWidth = localConfig.screenWidthDp > localConfig.screenHeightDp * 1.1
+    val left = WindowInsets.displayCutout.asPaddingValues()
+        .calculateLeftPadding(LocalLayoutDirection.current)
+    val safePaddingForFullscreen = if (
+        Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE && screenIsWidth
+    ) modifier.padding(
+        start = left, end = if (left / 3 > 15.dp) 15.dp else left / 3
+    ) else modifier
+    val safeBottomForFullscreen =
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE && screenIsWidth
+        ) (WindowInsets.navigationBars.getBottom(LocalDensity.current) / LocalDensity.current.density).dp else 10.dp
     val settingsList = @Composable {
-        if (inSearchText == null) LazyColumn {
-            item { if (viewModel.getSearchState()) Spacer(Modifier.height(55.dp)) }
-            item { SubtitleText(stringResource(R.string.task_history)) }
-            item {
-                var height by remember { mutableIntStateOf(0) }
-                val list = settingsList(view, SettingsType.History) { height = it }
-                OutlinedCard(Modifier.padding(10.dp) then Modifier.height(height.dp)) {
-                    LazyColumn(userScrollEnabled = false) {
-                        items(list) { it.Content() }
-                    }
-                }
-            }
-            item { SubtitleText(stringResource(R.string.notification)) }
-            item {
-                var height by remember { mutableIntStateOf(0) }
-                val list = settingsList(view, SettingsType.Notification) { height = it }
-                OutlinedCard(Modifier.padding(10.dp) then Modifier.height(height.dp)) {
-                    LazyColumn(userScrollEnabled = false) {
-                        items(list) { it.Content() }
-                    }
-                }
-            }
-            item { SubtitleText(stringResource(R.string.general_settings)) }
-            item {
-                var height by remember { mutableIntStateOf(0) }
-                val list = settingsList(view, SettingsType.General) { height = it }
-                OutlinedCard(Modifier.padding(10.dp) then Modifier.height(height.dp)) {
-                    LazyColumn(userScrollEnabled = false) {
-                        items(list) { it.Content() }
-                    }
-                }
-            }
-        } else {
-            val list = settingsList(view).filter {
-                val text = it.text.replace("\n", "").replace(Regex("[A-Z]")) { matchResult ->
-                    matchResult.value.lowercase()
-                }
-                text.contains(inSearchText!!)
-            }
-            LazyColumn {
+        Box(safePaddingForFullscreen) {
+            if (inSearchText == null) LazyColumn {
                 item { if (viewModel.getSearchState()) Spacer(Modifier.height(55.dp)) }
-                items(list) { it.Content() }
+                item { SubtitleText(stringResource(R.string.task_history)) }
+                item {
+                    var height by remember { mutableIntStateOf(0) }
+                    val list = settingsList(view, SettingsType.History) { height = it }
+                    OutlinedCard(Modifier.padding(10.dp) then Modifier.height(height.dp)) {
+                        LazyColumn(userScrollEnabled = false) {
+                            items(list) { it.Content() }
+                        }
+                    }
+                }
+                item { SubtitleText(stringResource(R.string.notification)) }
+                item {
+                    var height by remember { mutableIntStateOf(0) }
+                    val list = settingsList(view, SettingsType.Notification) { height = it }
+                    OutlinedCard(Modifier.padding(10.dp) then Modifier.height(height.dp)) {
+                        LazyColumn(userScrollEnabled = false) {
+                            items(list) { it.Content() }
+                        }
+                    }
+                }
+                item { SubtitleText(stringResource(R.string.general_settings)) }
+                item {
+                    var height by remember { mutableIntStateOf(0) }
+                    val list = settingsList(view, SettingsType.General) { height = it }
+                    OutlinedCard(Modifier.padding(10.dp) then Modifier.height(height.dp)) {
+                        LazyColumn(userScrollEnabled = false) {
+                            items(list) { it.Content() }
+                        }
+                    }
+                }
+                item { Spacer(modifier = modifier.height(2.dp + safeBottomForFullscreen)) }
+            } else {
+                val list = settingsList(view).filter {
+                    val text = it.text.replace("\n", "").replace(Regex("[A-Z]")) { matchResult ->
+                        matchResult.value.lowercase()
+                    }
+                    text.contains(inSearchText!!)
+                }
+                LazyColumn {
+                    item { if (viewModel.getSearchState()) Spacer(Modifier.height(55.dp)) }
+                    items(list) { it.Content() }
+                    item { Spacer(modifier = modifier.height(2.dp + safeBottomForFullscreen)) }
+                }
             }
-        }
-        inSearchText = if (viewModel.getSearchState()) searchBar() else {
-            null
+            inSearchText = if (viewModel.getSearchState()) searchBar() else {
+                null
+            }
         }
     }
     if (viewModel.getSearchState()) BackHandler {

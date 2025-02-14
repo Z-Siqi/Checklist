@@ -62,7 +62,7 @@ fun LazyList(
     val screenWidthPx = LocalConfiguration.current.screenWidthDp * LocalDensity.current.density
 
     val localConfig = LocalConfiguration.current
-    val screenIsWidth = localConfig.screenWidthDp > localConfig.screenHeightDp * 1.2
+    val screenIsWidth = localConfig.screenWidthDp > localConfig.screenHeightDp * 1.1
     val safeBottomForFullscreen =
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE && screenIsWidth
         ) (WindowInsets.navigationBars.getBottom(LocalDensity.current) / LocalDensity.current.density).dp else 10.dp
