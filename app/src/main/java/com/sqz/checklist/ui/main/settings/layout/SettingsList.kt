@@ -114,7 +114,7 @@ fun settingsList(
                         inactiveTrackColor = MaterialTheme.colorScheme.secondaryContainer,
                     ), modifier = Modifier.height(20.dp) then Modifier.padding(
                         start = 15.dp, end = 15.dp
-                    ), steps = 20, valueRange = 0f..21f
+                    ), steps = 21, valueRange = 0f..21f
                 )
             }
         },
