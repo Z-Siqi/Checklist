@@ -3,10 +3,13 @@ package com.sqz.checklist.ui.main.settings.layout
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
 import android.provider.Settings
 import android.view.SoundEffectConstants
 import android.view.View
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -44,6 +47,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import com.sqz.checklist.R
 import com.sqz.checklist.preferences.PrimaryPreferences
 import com.sqz.checklist.ui.material.UrlText
@@ -91,6 +95,11 @@ fun settingsList(
         ) {
             var sliderPosition by remember {
                 mutableFloatStateOf(primaryPreferences.allowedNumberOfHistory().toFloat())
+            }
+            var old by remember { mutableFloatStateOf(sliderPosition) }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && old != sliderPosition) {
+                old = sliderPosition
+                vibrationEffect(view)
             }
             Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.Center) {
                 OptionText(it, 90)
@@ -220,5 +229,12 @@ private fun OptionText(
         modifier = modifier.sizeIn(maxWidth = (width * 0.7).dp, maxHeight = maxHeight.dp),
         lineHeight = (fontSize.value + 5.sp.value).sp, overflow = TextOverflow.Ellipsis,
         color = textColor, textAlign = textAlign
+    )
+}
+
+@RequiresApi(Build.VERSION_CODES.Q)
+private fun vibrationEffect(view: View) {
+    ContextCompat.getSystemService(view.context, Vibrator::class.java)?.vibrate(
+        VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK)
     )
 }

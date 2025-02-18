@@ -1,6 +1,8 @@
 package com.sqz.checklist.ui.main.task.layout
 
 import android.annotation.SuppressLint
+import android.app.UiModeManager
+import android.content.Context
 import android.os.Build
 import android.view.SoundEffectConstants
 import android.view.View
@@ -84,6 +86,13 @@ fun TaskLayoutTopBar(
     val year = "YYYY"
     val week = "EEEE"
 
+    val uiMode = view.context.getSystemService(Context.UI_MODE_SERVICE) as UiModeManager
+    val textColor = when {
+        Build.VERSION.SDK_INT <= Build.VERSION_CODES.UPSIDE_DOWN_CAKE -> MaterialTheme.colorScheme.primary
+        uiMode.contrast > 0.3 -> MaterialTheme.colorScheme.onSecondaryContainer
+        else -> MaterialTheme.colorScheme.primary
+    }
+
     val title = @Composable {
         if (topBarState.heightOffset <= topBarState.heightOffsetLimit * 0.7 && !topBarForLowScreen) {
             Row(
@@ -94,13 +103,15 @@ fun TaskLayoutTopBar(
                     text = topBarContent(topAppBarTitle),
                     maxLines = 1,
                     modifier = modifier.padding(bottom = 1.dp),
-                    overflow = TextOverflow.Visible
+                    overflow = TextOverflow.Visible,
+                    color = textColor
                 )
                 Text(
                     text = topBarContent(year),
                     maxLines = 1,
                     fontSize = 15.sp,
-                    overflow = TextOverflow.Visible
+                    overflow = TextOverflow.Visible,
+                    color = textColor
                 )
             }
         } else {
@@ -118,7 +129,8 @@ fun TaskLayoutTopBar(
                     modifier = modifier.height(30.dp),
                     maxLines = 1,
                     fontSize = 24.sp,
-                    overflow = TextOverflow.Visible
+                    overflow = TextOverflow.Visible,
+                    color = textColor
                 )
                 Spacer(modifier = modifier.width(10.dp))
                 Text(
@@ -126,7 +138,8 @@ fun TaskLayoutTopBar(
                     modifier = modifier.height(28.dp),
                     maxLines = 1,
                     fontSize = 15.sp,
-                    overflow = TextOverflow.Visible
+                    overflow = TextOverflow.Visible,
+                    color = textColor
                 )
             }
         }
@@ -197,7 +210,7 @@ fun TaskLayoutTopBar(
                         text = topBarContent(week),
                         maxLines = 1,
                         fontSize = 22.sp,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = textColor,
                         overflow = TextOverflow.Visible
                     )
                 }
