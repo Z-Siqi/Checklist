@@ -22,7 +22,7 @@ suspend fun mergeDatabaseCheckpoint(database: RoomDatabase) {
 @Database(
     entities = [
         Task::class, TaskDetail::class, TaskReminder::class
-    ], version = 2, exportSchema = false
+    ], version = 3, exportSchema = false
 )
 @TypeConverters(LocalDateConverter::class)
 abstract class TaskDatabase : RoomDatabase() {
@@ -85,8 +85,16 @@ private val MIGRATION_1_2 = object : Migration(1, 2) {
     }
 }
 
+private val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE taskDetail ADD dataByte BLOB undefined")
+    }
+}
+
 fun buildDatabase(context: Context): TaskDatabase {
-    return Room.databaseBuilder(
-        context, TaskDatabase::class.java, taskDatabaseName
-    ).addMigrations(MIGRATION_1_2).build()
+    val database = Room.databaseBuilder(context, TaskDatabase::class.java, taskDatabaseName)
+        .addMigrations(MIGRATION_1_2)
+        .addMigrations(MIGRATION_2_3)
+        .build()
+    return database
 }

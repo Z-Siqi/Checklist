@@ -1,6 +1,7 @@
 package com.sqz.checklist.ui.main.task
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.lazy.LazyListState
@@ -18,6 +19,7 @@ import com.sqz.checklist.database.Task
 import com.sqz.checklist.database.TaskDetail
 import com.sqz.checklist.database.TaskDetailType
 import com.sqz.checklist.database.TaskReminder
+import com.sqz.checklist.notification.NotifyManager
 import com.sqz.checklist.notification.PermissionState
 import com.sqz.checklist.preferences.PrimaryPreferences
 import com.sqz.checklist.ui.main.task.history.arrangeHistoryId
@@ -30,6 +32,7 @@ import com.sqz.checklist.ui.main.task.layout.item.ListData
 import com.sqz.checklist.ui.main.task.layout.item.TaskData
 import com.sqz.checklist.ui.main.task.layout.function.ReminderActionType
 import com.sqz.checklist.ui.main.task.layout.function.ReminderData
+import com.sqz.checklist.ui.main.task.layout.function.TaskDetailData
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,6 +40,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.io.ByteArrayOutputStream
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -104,16 +108,14 @@ class TaskLayoutViewModel : ViewModel() {
         updateListState(init = true)
     }
 
-    private fun primaryPreferences(context: Context) : PrimaryPreferences {
+    private fun primaryPreferences(context: Context): PrimaryPreferences {
         return PrimaryPreferences(context)
     }
 
     /**
      * ----- Reminder-related -----
      */
-    private val _notificationManager = MutableStateFlow(
-        com.sqz.checklist.notification.NotifyManager()
-    )
+    private val _notificationManager = MutableStateFlow(NotifyManager())
 
     fun notificationInitState(context: Context, init: Boolean = false): PermissionState {
         val requestPermission = _notificationManager.value.requestPermission(context)
@@ -315,16 +317,23 @@ class TaskLayoutViewModel : ViewModel() {
         }
     }
 
-    private var _taskDetailId = MutableStateFlow(TaskDetail(0, TaskDetailType.Text, ""))
+    private var _emptyTaskDetail = TaskDetail(0, TaskDetailType.Text, "", null)
+    private var _taskDetailId = MutableStateFlow(_emptyTaskDetail)
     fun taskDetailData(setter: Long? = null): MutableStateFlow<TaskDetail> {
         if (setter != null) viewModelScope.launch {
-            if (setter != 0L) _taskDetailId.update {
+            if (setter >= 1) _taskDetailId.update {
                 val data = database().getDetailData(setter)!!
-                it.copy(id = data.id, type = data.type, dataString = data.dataString)
-            } else _taskDetailId.update { it.copy(id = 0) }
+                it.copy(
+                    id = data.id, type = data.type,
+                    dataString = data.dataString, dataByte = data.dataByte
+                )
+            } else _taskDetailId.value = _emptyTaskDetail
         }
         return _taskDetailId
     }
+
+    private val _taskDetailDataSaver = TaskDetailData.instance()
+    fun taskDetailDataSaver(): TaskDetailData = _taskDetailDataSaver
 
     /** Set task pin **/
     private fun pinState(id: Long, set: Boolean) = viewModelScope.launch {
@@ -351,23 +360,35 @@ class TaskLayoutViewModel : ViewModel() {
         }
     }
 
+    private fun pictureConvert(bitmap: Bitmap?): ByteArray? {
+        val outputStream = ByteArrayOutputStream()
+        bitmap?.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
+        val byteArray = if (bitmap == null) null else outputStream.toByteArray()
+        return byteArray
+    }
+
     /** Insert task to database **/
     suspend fun insertTask(
         description: String, pin: Boolean = false,
-        detailType: TaskDetailType?, detailDataString: String?
+        detailType: TaskDetailType?, detailDataString: String?, detailDataBitmap: Bitmap?
     ): Long {
+        val byteArray = pictureConvert(detailDataBitmap)
         return database().insertTaskData(
-            description, isPin = pin, detailType = detailType, detailDataString = detailDataString
+            description, isPin = pin, detailType = detailType,
+            detailDataString = detailDataString, dataByte = byteArray
         ).also { updateListState() }
     }
 
     /** Edit task **/
     fun editTask(
-        id: Long, edit: String, detailType: TaskDetailType?, detailDataString: String?,
+        id: Long, edit: String, detailType: TaskDetailType?,
+        detailDataString: String?, detailDataBitmap: Bitmap?,
         context: Context
     ) {
         viewModelScope.launch {
-            database().editTask(id, edit, detailType, detailDataString)
+            database().editTask(
+                id, edit, detailType, detailDataString, pictureConvert(detailDataBitmap)
+            )
             if (database().getReminderData(id) != null) {
                 val notify = _notificationManager.value.requestPermission(context)
                 if (notify == PermissionState.Notification || notify == PermissionState.Both) setReminder(
@@ -377,6 +398,7 @@ class TaskLayoutViewModel : ViewModel() {
                     context
                 ) else cancelReminder(id, database().getReminderData(id)!!.id, context)
             }
+            _taskDetailDataSaver.releaseMemory()
             updateListState()
         }
     }

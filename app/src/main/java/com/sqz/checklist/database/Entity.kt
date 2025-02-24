@@ -38,8 +38,23 @@ data class TaskDetail(
     @PrimaryKey val id: Long, // same as task id
     @ColumnInfo val type: TaskDetailType,
     @ColumnInfo val dataString: String,
-)
+    @ColumnInfo val dataByte: ByteArray? = null
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+        other as TaskDetail
+        if (type != other.type) return false
+        if (dataString != other.dataString) return false
+        if (!dataByte.contentEquals(other.dataByte)) return false
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return dataByte.contentHashCode()
+    }
+}
 
 enum class TaskDetailType {
-    Text, URL, Application //, Picture, Video, ChildList
+    Text, URL, Application, Picture //, Video, ChildList
 }

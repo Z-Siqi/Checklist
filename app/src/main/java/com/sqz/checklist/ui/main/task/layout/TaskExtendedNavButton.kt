@@ -1,5 +1,6 @@
 package com.sqz.checklist.ui.main.task.layout
 
+import android.graphics.Bitmap
 import android.view.SoundEffectConstants
 import android.view.View
 import android.widget.Toast
@@ -33,6 +34,7 @@ import com.sqz.checklist.ui.main.NavMode
 import com.sqz.checklist.ui.main.NavTooltipContent
 import com.sqz.checklist.ui.main.OnClickType
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
+import com.sqz.checklist.ui.main.task.layout.function.TaskDetailData
 import com.sqz.checklist.ui.main.task.layout.function.TaskDetailDialog
 import com.sqz.checklist.ui.material.NonExtendedTooltip
 import com.sqz.checklist.ui.material.TextTooltipBox
@@ -103,9 +105,9 @@ fun taskExtendedNavButton(
     // to add task
     if (taskAddCard) TaskAddCard(
         onDismissRequest = { taskAddCard = false },
-        confirm = { text, pin, reminder, detail, detailString ->
+        confirm = { text, pin, reminder, detail, detailString, bitmap ->
             coroutineScope.launch {
-                viewModel.insertTask(text, pin, detail, detailString).let { taskId ->
+                viewModel.insertTask(text, pin, detail, detailString, bitmap).let { taskId ->
                     if (reminder) viewModel.reminderActionCaller(
                         taskId, null, true, text
                     ).also {
@@ -122,6 +124,7 @@ fun taskExtendedNavButton(
         reminderButton = viewModel.notificationInitState(view.context).let {
             it == PermissionState.Notification || it == PermissionState.Both
         },
+        detailData = viewModel.taskDetailDataSaver(),
         view = view,
     )
 
@@ -138,9 +141,11 @@ fun taskExtendedNavButton(
 private fun TaskAddCard(
     onDismissRequest: () -> Unit,
     confirm: (
-        text: String, pin: Boolean, reminder: Boolean, detailType: TaskDetailType?, detailDataString: String?
+        text: String, pin: Boolean, reminder: Boolean,
+        detailType: TaskDetailType?, detailDataString: String?, detailDataBitmap: Bitmap?
     ) -> Unit,
     reminderButton: Boolean,
+    detailData: TaskDetailData,
     view: View,
 ) {
     val state = rememberTextFieldState()
@@ -148,13 +153,12 @@ private fun TaskAddCard(
     var pin by rememberSaveable { mutableStateOf(false) }
     var reminder by rememberSaveable { mutableStateOf(false) }
     var detail by rememberSaveable { mutableStateOf(false) }
-    var detailType by rememberSaveable { mutableStateOf<TaskDetailType?>(null) }
-    var detailString by rememberSaveable { mutableStateOf<String?>(null) }
     TaskChangeContentDialog(
-        onDismissRequest = onDismissRequest,
+        onDismissRequest = { onDismissRequest().also { detailData.releaseMemory() } },
         confirm = {
             if (state.text.toString() != "") confirm(
-                state.text.toString(), pin, reminder, detailType, detailString
+                state.text.toString(), pin, reminder,
+                detailData.detailType(), detailData.detailString(), detailData.detailBitmap()
             ) else {
                 Toast.makeText(view.context, noDoNothing, Toast.LENGTH_SHORT).show()
             }
@@ -178,7 +182,7 @@ private fun TaskAddCard(
             TextTooltipBox(textRid = R.string.create_task_detail) {
                 IconButton(
                     onClick = { detail = !detail },
-                    colors = if (detailType != null) {
+                    colors = if (detailData.detailType() != null) {
                         IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
                     } else IconButtonDefaults.iconButtonColors()
                 ) {
@@ -210,19 +214,16 @@ private fun TaskAddCard(
     if (detail) TaskDetailDialog(
         onDismissRequest = { onDismissClick ->
             if (onDismissClick != null && onDismissClick) {
-                detailType = null
-                detailString = null
+                detailData.releaseMemory()
             }
             detail = false
         },
-        confirm = { type, string ->
-            detailType = type
-            detailString = string
+        confirm = { type, string, bitmap ->
+            detailData.setter(type, string, bitmap)
             detail = false
         },
         title = stringResource(R.string.create_task_detail),
-        getType = detailType,
-        getString = detailString,
+        detailData = detailData,
         view = view
     )
 }

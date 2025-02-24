@@ -1,6 +1,8 @@
 package com.sqz.checklist.ui.main.task.layout
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.os.Build
 import android.view.View
 import android.widget.Toast
@@ -50,6 +52,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -79,6 +82,8 @@ import com.sqz.checklist.ui.material.dialog.OpenExternalAppDialog
 import com.sqz.checklist.ui.material.dialog.TaskChangeContentDialog
 import com.sqz.checklist.ui.material.TextTooltipBox
 import com.sqz.checklist.ui.main.task.layout.function.ReminderAction
+import com.sqz.checklist.ui.main.task.layout.function.TaskDetailData
+import com.sqz.checklist.ui.material.PictureViewDialog
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -161,6 +166,7 @@ fun TaskLayout(
         editState = taskState.taskData.collectAsState().value.editState,
         editTask = taskState::editTask,
         resetState = { taskState.resetTaskData() },
+        detailData = taskState.taskDetailDataSaver(),
         view = view
     )
     if (!isPreview) ReminderAction(
@@ -171,7 +177,7 @@ fun TaskLayout(
         coroutineScope = coroutineScope
     )
     TaskDetailInfoDialog(
-        onDismissRequest = { taskState.taskDetailData(0L) },
+        onDismissRequest = { taskState.taskDetailData(-1L) },
         detail = taskState.taskDetailData().collectAsState().value
     )
 }
@@ -193,6 +199,12 @@ private fun TaskDetailInfoDialog(onDismissRequest: () -> Unit, detail: TaskDetai
             onDismissRequest = onDismissRequest,
             packageName = detail.dataString, title = stringResource(R.string.application)
         )
+
+        TaskDetailType.Picture -> PictureViewDialog(
+            onDismissRequest = onDismissRequest,
+            byteArray = detail.dataByte!!, imageName = detail.dataString,
+            title = stringResource(R.string.picture)
+        )
     }
 }
 
@@ -200,30 +212,41 @@ private fun TaskDetailInfoDialog(onDismissRequest: () -> Unit, detail: TaskDetai
 private fun EditTask(
     editState: EditState,
     editTask: (
-        id: Long, edit: String, detailType: TaskDetailType?, detailDataString: String?, context: Context
+        id: Long, edit: String, detailType: TaskDetailType?,
+        detailDataString: String?, detailDataBitmap: Bitmap?, context: Context
     ) -> Unit,
+    detailData: TaskDetailData,
     resetState: () -> Unit,
     view: View
 ) {
     if (editState.state) {
         val textState = rememberTextFieldState()
         var detail by rememberSaveable { mutableStateOf(false) }
-        var detailType by rememberSaveable { mutableStateOf<TaskDetailType?>(null) }
-        var detailString by rememberSaveable { mutableStateOf<String?>(null) }
-        LaunchedEffect(true) {
+        var remember by rememberSaveable { mutableStateOf(false) }
+        if (!remember) LaunchedEffect(true) {
             textState.clearText()
             textState.edit { insert(0, editState.task.description) }
-            detailType = editState.detail?.type
-            detailString = editState.detail?.dataString
+            detailData.detailType(editState.detail?.type)
+            detailData.detailString(editState.detail?.dataString!!)
+            if (editState.detail.dataByte != null) {
+                val bitmap = BitmapFactory.decodeByteArray(
+                    editState.detail.dataByte, 0, editState.detail.dataByte.size
+                )
+                detailData.detailBitmap(bitmap)
+            }
+            remember = true
         }
         val noChangeDoNothing = stringResource(R.string.no_change_do_nothing)
         TaskChangeContentDialog(
-            onDismissRequest = { resetState() },
+            onDismissRequest = {
+                resetState()
+                detailData.releaseMemory()
+            },
             confirm = {
                 if (textState.text.toString() != "") {
                     editTask(
-                        editState.task.id, textState.text.toString(), detailType, detailString,
-                        view.context
+                        editState.task.id, textState.text.toString(), detailData.detailType(),
+                        detailData.detailString(), detailData.detailBitmap(), view.context
                     )
                     resetState()
                 } else Toast.makeText(view.context, noChangeDoNothing, Toast.LENGTH_SHORT).show()
@@ -235,7 +258,7 @@ private fun EditTask(
                 TextTooltipBox(textRid = R.string.create_task_detail) {
                     IconButton(
                         onClick = { detail = !detail },
-                        colors = if (detailType != null) {
+                        colors = if (detailData.detailType() != null) {
                             IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
                         } else IconButtonDefaults.iconButtonColors()
                     ) {
@@ -251,19 +274,16 @@ private fun EditTask(
         if (detail) TaskDetailDialog(
             onDismissRequest = { onDismissClick ->
                 if (onDismissClick != null && onDismissClick) {
-                    detailType = null
-                    detailString = null
+                    detailData.releaseMemory()
                 }
                 detail = false
             },
-            confirm = { type, string ->
-                detailType = type
-                detailString = string
+            confirm = { type, string, bitmap ->
+                detailData.setter(type, string, bitmap)
                 detail = false
             },
             title = stringResource(R.string.create_task_detail),
-            getType = detailType,
-            getString = detailString,
+            detailData = detailData,
             view = view
         )
     }
@@ -300,8 +320,10 @@ private fun taskSearchBar(
                     lineLimits = TextFieldLineLimits.SingleLine,
                     textStyle = TextStyle(
                         fontSize = 24.sp,
-                        textAlign = TextAlign.Start
-                    )
+                        textAlign = TextAlign.Start,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    ),
+                    cursorBrush = SolidColor(MaterialTheme.colorScheme.onSurfaceVariant)
                 )
                 var oldText by remember { mutableStateOf("") }
                 if (textFieldState.text.toString() != oldText || undo.checkTaskAction) {

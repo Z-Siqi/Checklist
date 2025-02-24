@@ -21,6 +21,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
+import com.sqz.checklist.cache.clearExpiredCache
+import com.sqz.checklist.cache.clearOldCacheIfNeeded
 import com.sqz.checklist.database.TaskDatabase
 import com.sqz.checklist.database.buildDatabase
 import com.sqz.checklist.ui.MainLayout
@@ -74,5 +76,12 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    @Override
+    override fun onStop() {
+        super.onStop()
+        clearExpiredCache(applicationContext)
+        clearOldCacheIfNeeded(applicationContext)
     }
 }

@@ -8,7 +8,8 @@ class DatabaseRepository(
 ) : Exception() {
     suspend fun insertTaskData(
         description: String, doingState: String? = null, isPin: Boolean = false,
-        detailType: TaskDetailType? = null, detailDataString: String? = null,
+        detailType: TaskDetailType? = null,
+        detailDataString: String? = null, dataByte: ByteArray? = null
     ): Long {
         val task = Task(
             description = description,
@@ -24,7 +25,8 @@ class DatabaseRepository(
             val taskDetail = TaskDetail(
                 id = insertTask,
                 type = detailType,
-                dataString = detailDataString
+                dataString = detailDataString,
+                dataByte = dataByte
             )
             this.databaseInstance.taskDao().insertAll(taskDetail)
             insertTask
@@ -38,7 +40,7 @@ class DatabaseRepository(
 
     suspend fun editTask(
         taskId: Long, edit: String,
-        detailType: TaskDetailType?, detailDataString: String?
+        detailType: TaskDetailType?, detailDataString: String?, dataByte: ByteArray? = null
     ) {
         val taskDao = this.databaseInstance!!.taskDao()
         suspend fun deleteTaskDetail() {
@@ -48,7 +50,7 @@ class DatabaseRepository(
         }
         if (detailType != null && detailDataString != null) {
             deleteTaskDetail()
-            taskDao.insertAll(TaskDetail(taskId, detailType, detailDataString))
+            taskDao.insertAll(TaskDetail(taskId, detailType, detailDataString, dataByte))
         } else deleteTaskDetail()
         taskDao.editTask(taskId, edit, detailType != null && detailDataString != null)
     }

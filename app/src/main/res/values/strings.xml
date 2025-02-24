@@ -59,6 +59,10 @@
     <string name="loading">Loading…</string>
     <string name="application">Application</string>
     <string name="failed_found_package">Failed to found saved package name!</string>
+    <string name="picture">Picture</string>
+    <string name="click_select_picture">Click to select a picture</string>
+    <string name="selected_picture">Selected picture</string>
+    <string name="open_with">Open with</string>
 
     <!-- Notification -->
     <string name="task_reminder">Task Reminder</string>
