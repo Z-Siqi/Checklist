@@ -8,6 +8,7 @@ import android.net.Uri
 import android.provider.OpenableColumns
 import android.view.SoundEffectConstants
 import android.view.View
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -28,6 +29,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,8 +40,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import com.sqz.checklist.R
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
+import java.lang.IllegalStateException
 
 @Composable
 fun PictureSelector(
@@ -50,6 +54,7 @@ fun PictureSelector(
 ) {
     var picture by remember { mutableStateOf<Bitmap?>(null) }
     var title by remember { mutableStateOf<String?>(null) }
+    var checkSize by rememberSaveable { mutableStateOf(false) }
     if (picture == null && getBitmap != null) {
         picture = getBitmap
     }
@@ -65,6 +70,7 @@ fun PictureSelector(
                 val inputStream = view.context.contentResolver.openInputStream(it)
                 val bitmap = BitmapFactory.decodeStream(inputStream)
                 picture = bitmap
+                checkSize = true
             }
         }
     Column(
@@ -83,6 +89,17 @@ fun PictureSelector(
             stringResource(R.string.click_select_picture), color = MaterialTheme.colorScheme.outline
         )
     }
+    if (checkSize) {
+        val size = picture?.toByteArray()?.size ?: 0
+        if ((size * 1024 * 1024) > 25) {
+            picture = null
+            title = null
+            Toast.makeText(
+                view.context, stringResource(R.string.picture_size_limit), Toast.LENGTH_SHORT
+            ).show()
+        }
+        checkSize = false
+    }
     pictureValues(title, picture)
 }
 
@@ -94,6 +111,7 @@ fun PictureViewDialog(
     title: String,
     modifier: Modifier = Modifier,
 ) {
+    if (byteArray.size <= 1) throw IllegalStateException("Invalid byteArray data!")
     val view = LocalView.current
     val screenHeightDp = LocalConfiguration.current.screenHeightDp
     val height = when {
@@ -143,10 +161,20 @@ fun byteArrayToBitmap(byteArray: ByteArray): Bitmap? {
     return bitmap
 }
 
+fun Bitmap.toByteArray(
+    quality: Int = 80, type: Bitmap.CompressFormat = Bitmap.CompressFormat.JPEG
+): ByteArray {
+    val outputStream = ByteArrayOutputStream()
+    this.compress(type, quality, outputStream)
+    val byteArray = outputStream.toByteArray()
+    return byteArray
+}
+
 fun openImageBySystem(
     imageName: String, byteArray: ByteArray, context: Context
 ) {
-    val file = File(context.cacheDir, imageName)
+    val name = if (imageName == "") "unknown_name" else imageName
+    val file = File(context.cacheDir, name)
     fun uri(file: File): Uri {
         val fileOutputStream = FileOutputStream(file)
         fileOutputStream.write(byteArray)

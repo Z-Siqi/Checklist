@@ -226,13 +226,15 @@ private fun EditTask(
         if (!remember) LaunchedEffect(true) {
             textState.clearText()
             textState.edit { insert(0, editState.task.description) }
-            detailData.detailType(editState.detail?.type)
-            detailData.detailString(editState.detail?.dataString!!)
-            if (editState.detail.dataByte != null) {
-                val bitmap = BitmapFactory.decodeByteArray(
-                    editState.detail.dataByte, 0, editState.detail.dataByte.size
-                )
-                detailData.detailBitmap(bitmap)
+            if (editState.detail?.type != null) { // when found task detail
+                detailData.detailType(editState.detail.type)
+                detailData.detailString(editState.detail.dataString)
+                if (editState.detail.dataByte != null) {
+                    val bitmap = BitmapFactory.decodeByteArray(
+                        editState.detail.dataByte, 0, editState.detail.dataByte.size
+                    )
+                    detailData.detailBitmap(bitmap)
+                }
             }
             remember = true
         }

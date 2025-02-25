@@ -33,6 +33,7 @@ import com.sqz.checklist.ui.main.task.layout.item.TaskData
 import com.sqz.checklist.ui.main.task.layout.function.ReminderActionType
 import com.sqz.checklist.ui.main.task.layout.function.ReminderData
 import com.sqz.checklist.ui.main.task.layout.function.TaskDetailData
+import com.sqz.checklist.ui.material.toByteArray
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -40,7 +41,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.io.ByteArrayOutputStream
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -360,19 +360,12 @@ class TaskLayoutViewModel : ViewModel() {
         }
     }
 
-    private fun pictureConvert(bitmap: Bitmap?): ByteArray? {
-        val outputStream = ByteArrayOutputStream()
-        bitmap?.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
-        val byteArray = if (bitmap == null) null else outputStream.toByteArray()
-        return byteArray
-    }
-
     /** Insert task to database **/
     suspend fun insertTask(
         description: String, pin: Boolean = false,
         detailType: TaskDetailType?, detailDataString: String?, detailDataBitmap: Bitmap?
     ): Long {
-        val byteArray = pictureConvert(detailDataBitmap)
+        val byteArray = detailDataBitmap?.toByteArray()
         return database().insertTaskData(
             description, isPin = pin, detailType = detailType,
             detailDataString = detailDataString, dataByte = byteArray
@@ -387,7 +380,7 @@ class TaskLayoutViewModel : ViewModel() {
     ) {
         viewModelScope.launch {
             database().editTask(
-                id, edit, detailType, detailDataString, pictureConvert(detailDataBitmap)
+                id, edit, detailType, detailDataString, detailDataBitmap?.toByteArray()
             )
             if (database().getReminderData(id) != null) {
                 val notify = _notificationManager.value.requestPermission(context)

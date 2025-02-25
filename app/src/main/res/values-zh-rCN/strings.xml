@@ -64,6 +64,7 @@
     <string name="click_select_picture">单击选择图片</string>
     <string name="selected_picture">选定的图片</string>
     <string name="open_with">打开方式</string>
+    <string name="picture_size_limit">图片大小不能超过25MB!</string>
 
     <!-- Notification -->
     <string name="task_reminder">任务提醒</string>

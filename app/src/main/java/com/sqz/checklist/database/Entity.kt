@@ -33,7 +33,7 @@ enum class ReminderModeType {
     Worker, AlarmManager
 }
 
-@Entity(tableName = "taskDetail") // some part not implemented
+@Entity(tableName = "taskDetail")
 data class TaskDetail(
     @PrimaryKey val id: Long, // same as task id
     @ColumnInfo val type: TaskDetailType,
@@ -55,6 +55,6 @@ data class TaskDetail(
     }
 }
 
-enum class TaskDetailType {
+enum class TaskDetailType { // some part not implemented
     Text, URL, Application, Picture //, Video, ChildList
 }

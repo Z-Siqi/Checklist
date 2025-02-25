@@ -63,6 +63,7 @@
     <string name="click_select_picture">Click to select a picture</string>
     <string name="selected_picture">Selected picture</string>
     <string name="open_with">Open with</string>
+    <string name="picture_size_limit">Picture size cannot more than 25MB!</string>
 
     <!-- Notification -->
     <string name="task_reminder">Task Reminder</string>
