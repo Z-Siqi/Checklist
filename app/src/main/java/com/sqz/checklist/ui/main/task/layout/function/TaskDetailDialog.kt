@@ -1,6 +1,5 @@
 package com.sqz.checklist.ui.main.task.layout.function
 
-import android.graphics.Bitmap
 import android.util.Patterns
 import android.view.View
 import android.widget.Toast
@@ -26,13 +25,14 @@ import androidx.compose.ui.unit.sp
 import com.sqz.checklist.R
 import com.sqz.checklist.database.TaskDetailType
 import com.sqz.checklist.ui.material.ApplicationList
-import com.sqz.checklist.ui.material.PictureSelector
+import com.sqz.checklist.ui.material.media.PictureSelector
 import com.sqz.checklist.ui.material.dialog.DialogWithMenu
+import com.sqz.checklist.ui.material.media.toByteArray
 
 @Composable
 fun TaskDetailDialog(
     onDismissRequest: (onDismissClick: Boolean?) -> Unit,
-    confirm: (detailType: TaskDetailType, detailString: String, detailBitmap: Bitmap?) -> Unit,
+    confirm: (detailType: TaskDetailType, detailString: String, getByteArray: ByteArray?) -> Unit,
     title: String,
     detailData: TaskDetailData,
     view: View
@@ -72,7 +72,7 @@ fun TaskDetailDialog(
 
                         else -> detailTextState.text.toString()
                     }
-                    confirm(detailData.detailType()!!, detailString, detailData.detailBitmap())
+                    confirm(detailData.detailType()!!, detailString, detailData.detailByteArray())
                 }
             } else Toast.makeText(view.context, noDoNothing, Toast.LENGTH_SHORT).show()
         },
@@ -98,9 +98,9 @@ fun TaskDetailDialog(
                 }, detailData.detailString(), view.context) == Unit
 
                 TaskDetailType.Picture -> PictureSelector({ title, picture ->
-                    detailData.detailString(title ?: "")
-                    detailData.detailBitmap(picture)
-                }, view, getBitmap = detailData.detailBitmap()) == Unit
+                    if (title != null) detailData.detailString(title)
+                    detailData.detailByteArray(picture?.toByteArray())
+                }, view, getByteArray = detailData.detailByteArray()) == Unit
 
                 else -> Text(
                     stringResource(R.string.select_detail_type),
@@ -137,16 +137,16 @@ class TaskDetailData private constructor() {
 
     private var detailType by mutableStateOf<TaskDetailType?>(null)
     private var detailString by mutableStateOf("")
-    private var bitmap by mutableStateOf<Bitmap?>(null)
+    private var byteArray by mutableStateOf<ByteArray?>(null)
 
     fun detailType(): TaskDetailType? = this.detailType
     fun detailType(setter: TaskDetailType?) {
         this.detailType = setter
     }
 
-    fun detailBitmap(): Bitmap? = this.bitmap
-    fun detailBitmap(setter: Bitmap?) {
-        this.bitmap = setter
+    fun detailByteArray(): ByteArray? = this.byteArray
+    fun detailByteArray(setter: ByteArray?) {
+        this.byteArray = setter
     }
 
     fun detailString(): String = this.detailString
@@ -154,16 +154,16 @@ class TaskDetailData private constructor() {
         this.detailString = setter
     }
 
-    fun setter(detailType: TaskDetailType, detailString: String, detailBitmap: Bitmap? = null) {
+    fun setter(detailType: TaskDetailType, detailString: String, detailBitmap: ByteArray? = null) {
         this.detailType = detailType
         this.detailString = detailString
-        this.bitmap = detailBitmap
+        this.byteArray = detailBitmap
     }
 
     fun releaseMemory() {
         this.detailType = null
         this.detailString = ""
-        this.bitmap = null
+        this.byteArray = null
     }
 }
 

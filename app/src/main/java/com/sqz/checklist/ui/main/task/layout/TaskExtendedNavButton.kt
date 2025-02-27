@@ -1,6 +1,5 @@
 package com.sqz.checklist.ui.main.task.layout
 
-import android.graphics.Bitmap
 import android.view.SoundEffectConstants
 import android.view.View
 import android.widget.Toast
@@ -105,9 +104,9 @@ fun taskExtendedNavButton(
     // to add task
     if (taskAddCard) TaskAddCard(
         onDismissRequest = { taskAddCard = false },
-        confirm = { text, pin, reminder, detail, detailString, bitmap ->
+        confirm = { text, pin, reminder, detail, detailString, byteArray ->
             coroutineScope.launch {
-                viewModel.insertTask(text, pin, detail, detailString, bitmap).let { taskId ->
+                viewModel.insertTask(text, pin, detail, detailString, byteArray).let { taskId ->
                     if (reminder) viewModel.reminderActionCaller(
                         taskId, null, true, text
                     ).also {
@@ -142,7 +141,7 @@ private fun TaskAddCard(
     onDismissRequest: () -> Unit,
     confirm: (
         text: String, pin: Boolean, reminder: Boolean,
-        detailType: TaskDetailType?, detailDataString: String?, detailDataBitmap: Bitmap?
+        detailType: TaskDetailType?, detailDataString: String?, detailDataByteArray: ByteArray?
     ) -> Unit,
     reminderButton: Boolean,
     detailData: TaskDetailData,
@@ -158,7 +157,7 @@ private fun TaskAddCard(
         confirm = {
             if (state.text.toString() != "") confirm(
                 state.text.toString(), pin, reminder,
-                detailData.detailType(), detailData.detailString(), detailData.detailBitmap()
+                detailData.detailType(), detailData.detailString(), detailData.detailByteArray()
             ) else {
                 Toast.makeText(view.context, noDoNothing, Toast.LENGTH_SHORT).show()
             }

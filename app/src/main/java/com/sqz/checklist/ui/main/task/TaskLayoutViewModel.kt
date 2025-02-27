@@ -1,7 +1,6 @@
 package com.sqz.checklist.ui.main.task
 
 import android.content.Context
-import android.graphics.Bitmap
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.lazy.LazyListState
@@ -33,7 +32,6 @@ import com.sqz.checklist.ui.main.task.layout.item.TaskData
 import com.sqz.checklist.ui.main.task.layout.function.ReminderActionType
 import com.sqz.checklist.ui.main.task.layout.function.ReminderData
 import com.sqz.checklist.ui.main.task.layout.function.TaskDetailData
-import com.sqz.checklist.ui.material.toByteArray
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -363,24 +361,23 @@ class TaskLayoutViewModel : ViewModel() {
     /** Insert task to database **/
     suspend fun insertTask(
         description: String, pin: Boolean = false,
-        detailType: TaskDetailType?, detailDataString: String?, detailDataBitmap: Bitmap?
+        detailType: TaskDetailType?, detailDataString: String?, detailDataByteArray: ByteArray?
     ): Long {
-        val byteArray = detailDataBitmap?.toByteArray()
         return database().insertTaskData(
             description, isPin = pin, detailType = detailType,
-            detailDataString = detailDataString, dataByte = byteArray
+            detailDataString = detailDataString, dataByte = detailDataByteArray
         ).also { updateListState() }
     }
 
     /** Edit task **/
     fun editTask(
         id: Long, edit: String, detailType: TaskDetailType?,
-        detailDataString: String?, detailDataBitmap: Bitmap?,
+        detailDataString: String?, detailDataByteArray: ByteArray?,
         context: Context
     ) {
         viewModelScope.launch {
             database().editTask(
-                id, edit, detailType, detailDataString, detailDataBitmap?.toByteArray()
+                id, edit, detailType, detailDataString, detailDataByteArray
             )
             if (database().getReminderData(id) != null) {
                 val notify = _notificationManager.value.requestPermission(context)

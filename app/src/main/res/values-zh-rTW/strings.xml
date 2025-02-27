@@ -23,6 +23,8 @@
     <string name="more_options">更多選項</string>
     <string name="scroll_to_end">捲動\n至末尾</string>
     <string name="scroll_to_top">捲動\n至頂端</string>
+    <string name="failed_large_file_size">失敗！檔案大小不能大於 25MB</string>
+    <string name="report_normal_file_size">如果檔案大小不大於 25MB，請向開發人員報告</string>
 
     <!-- TaskLayout -->
     <string name="task_date_format">yyyy 年 MMM dd 日</string>

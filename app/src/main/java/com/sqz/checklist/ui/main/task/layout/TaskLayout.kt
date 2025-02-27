@@ -1,8 +1,6 @@
 package com.sqz.checklist.ui.main.task.layout
 
 import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.os.Build
 import android.view.View
 import android.widget.Toast
@@ -83,7 +81,7 @@ import com.sqz.checklist.ui.material.dialog.TaskChangeContentDialog
 import com.sqz.checklist.ui.material.TextTooltipBox
 import com.sqz.checklist.ui.main.task.layout.function.ReminderAction
 import com.sqz.checklist.ui.main.task.layout.function.TaskDetailData
-import com.sqz.checklist.ui.material.PictureViewDialog
+import com.sqz.checklist.ui.material.media.PictureViewDialog
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -213,7 +211,7 @@ private fun EditTask(
     editState: EditState,
     editTask: (
         id: Long, edit: String, detailType: TaskDetailType?,
-        detailDataString: String?, detailDataBitmap: Bitmap?, context: Context
+        detailDataString: String?, detailByteArray: ByteArray?, context: Context
     ) -> Unit,
     detailData: TaskDetailData,
     resetState: () -> Unit,
@@ -230,10 +228,7 @@ private fun EditTask(
                 detailData.detailType(editState.detail.type)
                 detailData.detailString(editState.detail.dataString)
                 if (editState.detail.dataByte != null) {
-                    val bitmap = BitmapFactory.decodeByteArray(
-                        editState.detail.dataByte, 0, editState.detail.dataByte.size
-                    )
-                    detailData.detailBitmap(bitmap)
+                    detailData.detailByteArray(editState.detail.dataByte)
                 }
             }
             remember = true
@@ -248,7 +243,7 @@ private fun EditTask(
                 if (textState.text.toString() != "") {
                     editTask(
                         editState.task.id, textState.text.toString(), detailData.detailType(),
-                        detailData.detailString(), detailData.detailBitmap(), view.context
+                        detailData.detailString(), detailData.detailByteArray(), view.context
                     )
                     resetState()
                 } else Toast.makeText(view.context, noChangeDoNothing, Toast.LENGTH_SHORT).show()

@@ -22,6 +22,8 @@
     <string name="more_options">more options</string>
     <string name="scroll_to_end">Scroll\nto end</string>
     <string name="scroll_to_top">Scroll\nto top</string>
+    <string name="failed_large_file_size">Failed! File size cannot be larger than 25MB</string>
+    <string name="report_normal_file_size">Please report to developer if file size not larger than 25MB</string>
 
     <!-- TaskLayout -->
     <string name="task_date_format">dd MMM yyyy</string>

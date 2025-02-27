@@ -1,4 +1,4 @@
-package com.sqz.checklist.ui.material
+package com.sqz.checklist.ui.material.media
 
 import android.content.Context
 import android.content.Intent
@@ -6,6 +6,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.provider.OpenableColumns
+import android.util.Log
 import android.view.SoundEffectConstants
 import android.view.View
 import android.widget.Toast
@@ -50,27 +51,41 @@ fun PictureSelector(
     pictureValues: (title: String?, picture: Bitmap?) -> Unit,
     view: View,
     modifier: Modifier = Modifier,
-    getBitmap: Bitmap? = null,
+    getByteArray: ByteArray?,
 ) {
     var picture by remember { mutableStateOf<Bitmap?>(null) }
-    var title by remember { mutableStateOf<String?>(null) }
+    var title by rememberSaveable { mutableStateOf<String?>(null) }
     var checkSize by rememberSaveable { mutableStateOf(false) }
-    if (picture == null && getBitmap != null) {
-        picture = getBitmap
+    if (picture == null && getByteArray != null) {
+        picture = BitmapFactory.decodeByteArray(getByteArray, 0, getByteArray.size)
     }
     val launcher =
         rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
-            uri?.let {
-                view.context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-                    val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                    if (nameIndex != -1 && cursor.moveToFirst()) {
-                        title = cursor.getString(nameIndex)
+            try {
+                uri?.let {
+                    view.context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                        val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                        if (nameIndex != -1 && cursor.moveToFirst()) {
+                            title = cursor.getString(nameIndex)
+                        }
                     }
+                    val inputStream = view.context.contentResolver.openInputStream(it)
+                    val bitmap = BitmapFactory.decodeStream(inputStream)
+                    picture = bitmap
+                    checkSize = true
                 }
-                val inputStream = view.context.contentResolver.openInputStream(it)
-                val bitmap = BitmapFactory.decodeStream(inputStream)
-                picture = bitmap
-                checkSize = true
+            } catch (e: Exception) {
+                picture = null
+                title = null
+                Log.e("PictureHelper", "Failed to select a picture: $e")
+                Toast.makeText(
+                    view.context, view.context.getString(R.string.failed_large_file_size),
+                    Toast.LENGTH_LONG
+                ).show()
+                Toast.makeText(
+                    view.context, view.context.getString(R.string.report_normal_file_size),
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         }
     Column(
