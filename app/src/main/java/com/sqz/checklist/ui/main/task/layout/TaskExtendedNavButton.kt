@@ -117,6 +117,7 @@ fun taskExtendedNavButton(
                         ).show()
                     }
                 }
+                viewModel.taskDetailDataSaver().releaseMemory()
                 taskAddCard = false
             }
         },

@@ -105,8 +105,8 @@ fun PictureSelector(
         )
     }
     if (checkSize) {
-        val size = picture?.toByteArray()?.size ?: 0
-        if ((size * 1024 * 1024) > 25) {
+        val size = picture?.toByteArray()?.size ?: 1
+        if ((size / 1024 / 1024) > 25) {
             picture = null
             title = null
             Toast.makeText(
