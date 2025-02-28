@@ -25,9 +25,11 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
@@ -78,8 +80,10 @@ fun BackupAndRestoreLayout(
     val localConfig = LocalConfiguration.current
     val screenIsWidth = localConfig.screenWidthDp > localConfig.screenHeightDp * 1.2
     val safePaddingForFullscreen = if (screenIsWidth) modifier.padding(
-        start = WindowInsets.displayCutout.asPaddingValues().calculateLeftPadding(LocalLayoutDirection.current),
-        end = WindowInsets.displayCutout.asPaddingValues().calculateRightPadding(LocalLayoutDirection.current)
+        start = WindowInsets.displayCutout.asPaddingValues()
+            .calculateLeftPadding(LocalLayoutDirection.current),
+        end = WindowInsets.displayCutout.asPaddingValues()
+            .calculateRightPadding(LocalLayoutDirection.current)
     ) else modifier
 
     var disableBackHandler by rememberSaveable { mutableStateOf(false) }
@@ -133,6 +137,7 @@ fun BackupAndRestoreLayout(
             onClick = true
         }) {
             Text(text = stringResource(R.string.export))
+            if (onClick) ProcessingDialog()
             ExportTaskDatabase(onClick, mode == 1, view, dbPath) {
                 onClick = false
             }
@@ -194,6 +199,7 @@ fun BackupAndRestoreLayout(
             ).show()
         }) {
             Text(text = stringResource(R.string.import_text))
+            if (onClick) ProcessingDialog()
             if (onClick) ImportTaskDatabaseAction(uri, view) {
                 if (it == IOdbState.Error) Toast.makeText(
                     view.context, view.context.getString(R.string.error_try_undo_import),
@@ -259,6 +265,21 @@ private fun TitleText(text: String, modifier: Modifier = Modifier) = Text(
     fontWeight = FontWeight.Bold,
     fontSize = 17.sp
 )
+
+@Composable
+private fun ProcessingDialog() {
+    AlertDialog(onDismissRequest = {}, confirmButton = {}, text = {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.padding(8.dp))
+            CircularProgressIndicator()
+            Spacer(modifier = Modifier.padding(5.dp))
+            Text(stringResource(R.string.processing))
+        }
+    })
+}
 
 private fun clickFeedback(view: View, audioManager: AudioManager) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {

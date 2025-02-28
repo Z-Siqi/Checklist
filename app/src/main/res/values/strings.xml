@@ -103,6 +103,7 @@
     <string name="select_file_to_import">Please select a file to import!</string>
     <string name="error_try_undo_import">Error! Trying to undo the import…</string>
     <string name="finished">Finished!</string>
+    <string name="processing">Processing…</string>
 
     <!-- Settings -->
     <string name="settings">Settings</string>

@@ -104,6 +104,7 @@
     <string name="select_file_to_import">请选择要导入的文件!</string>
     <string name="error_try_undo_import">错误! 尝试撤消导入…</string>
     <string name="finished">完成!</string>
+    <string name="processing">正在处理…</string>
 
     <!-- Settings -->
     <string name="settings">设置</string>
