@@ -2,8 +2,6 @@ package com.sqz.checklist.ui.material.media
 
 import android.content.Context
 import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.util.Log
@@ -26,7 +24,6 @@ import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,48 +31,51 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
+import coil.compose.rememberAsyncImagePainter
 import com.sqz.checklist.R
-import java.io.ByteArrayOutputStream
+import com.sqz.checklist.ui.main.task.layout.function.toUri
 import java.io.File
+import java.io.FileInputStream
+import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.lang.IllegalStateException
 
 @Composable
 fun PictureSelector(
-    pictureValues: (title: String?, picture: Bitmap?) -> Unit,
+    pictureValues: (title: String?, pictureUri: Uri?) -> Unit,
     view: View,
     modifier: Modifier = Modifier,
-    getByteArray: ByteArray?,
+    getUri: Uri?,
 ) {
-    var picture by remember { mutableStateOf<Bitmap?>(null) }
+    var pictureUri by remember { mutableStateOf<Uri?>(null) }
     var title by rememberSaveable { mutableStateOf<String?>(null) }
-    var checkSize by rememberSaveable { mutableStateOf(false) }
-    if (picture == null && getByteArray != null) {
-        picture = BitmapFactory.decodeByteArray(getByteArray, 0, getByteArray.size)
+    var checkSize by rememberSaveable { mutableStateOf<Long?>(null) }
+    if (pictureUri == null && getUri != null) {
+        pictureUri = getUri
     }
     val launcher =
         rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
             try {
                 uri?.let {
                     view.context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                        val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
+                        if (sizeIndex != -1 && cursor.moveToFirst()) {
+                            checkSize = cursor.getLong(sizeIndex)
+                        }
                         val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
                         if (nameIndex != -1 && cursor.moveToFirst()) {
                             title = cursor.getString(nameIndex)
                         }
                     }
-                    val inputStream = view.context.contentResolver.openInputStream(it)
-                    val bitmap = BitmapFactory.decodeStream(inputStream)
-                    picture = bitmap
-                    checkSize = true
+                    pictureUri = uri
                 }
             } catch (e: Exception) {
-                picture = null
+                pictureUri = null
                 title = null
                 Log.e("PictureHelper", "Failed to select a picture: $e")
                 Toast.makeText(
@@ -98,24 +98,25 @@ fun PictureSelector(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        if (picture != null) Image(
-            picture!!.asImageBitmap(), stringResource(R.string.selected_picture)
+        if (pictureUri != null) Image(
+            rememberAsyncImagePainter(pictureUri),
+            stringResource(R.string.selected_picture), modifier.fillMaxSize()
         ) else Text(
             stringResource(R.string.click_select_picture), color = MaterialTheme.colorScheme.outline
         )
     }
-    if (checkSize) {
-        val size = picture?.toByteArray()?.size ?: 1
+    if (checkSize != null) {
+        val size = checkSize ?: 1
         if ((size / 1024 / 1024) > 25) {
-            picture = null
+            pictureUri = null
             title = null
             Toast.makeText(
                 view.context, stringResource(R.string.picture_size_limit), Toast.LENGTH_SHORT
             ).show()
         }
-        checkSize = false
+        checkSize = null
     }
-    pictureValues(title, picture)
+    pictureValues(title, pictureUri)
 }
 
 @Composable
@@ -145,7 +146,6 @@ fun PictureViewDialog(
             }
         },
         text = {
-            val bitmap = byteArrayToBitmap(byteArray)
             OutlinedCard(
                 modifier = modifier.fillMaxWidth() then modifier.height(height.dp),
                 colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh)
@@ -157,9 +157,7 @@ fun PictureViewDialog(
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    if (bitmap == null) Text(
-                        stringResource(R.string.loading), color = MaterialTheme.colorScheme.outline
-                    ) else Image(bitmap.asImageBitmap(), imageName)
+                    Image(rememberAsyncImagePainter(byteArray.toUri()), imageName)
                 }
             }
         },
@@ -167,42 +165,55 @@ fun PictureViewDialog(
     )
 }
 
-@Composable
-fun byteArrayToBitmap(byteArray: ByteArray): Bitmap? {
-    var bitmap by remember { mutableStateOf<Bitmap?>(null) }
-    if (bitmap == null) LaunchedEffect(Unit) {
-        bitmap = BitmapFactory.decodeByteArray(byteArray, 0, byteArray.size)
-    }
-    return bitmap
-}
-
-fun Bitmap.toByteArray(
-    quality: Int = 80, type: Bitmap.CompressFormat = Bitmap.CompressFormat.JPEG
-): ByteArray {
-    val outputStream = ByteArrayOutputStream()
-    this.compress(type, quality, outputStream)
-    val byteArray = outputStream.toByteArray()
-    return byteArray
-}
-
 fun openImageBySystem(
     imageName: String, byteArray: ByteArray, context: Context
 ) {
-    val name = if (imageName == "") "unknown_name" else imageName
-    val file = File(context.cacheDir, name)
-    fun uri(file: File): Uri {
-        val fileOutputStream = FileOutputStream(file)
-        fileOutputStream.write(byteArray)
-        fileOutputStream.close()
-        return FileProvider.getUriForFile(
-            context, "${context.packageName}.provider", file
-        )
+    try {
+        val name = if (imageName == "") "unknown_name" else imageName
+        val file = File(context.cacheDir, name)
+        fun uri(file: File): Uri {
+            val saved = File(byteArray.toUri().path!!)
+            val inputStream = FileInputStream(saved)
+            val outputStream = FileOutputStream(file)
+            inputStream.copyTo(outputStream)
+            inputStream.close()
+            outputStream.close()
+            return FileProvider.getUriForFile(
+                context, "${context.packageName}.provider", file
+            )
+        }
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri(file), "image/*")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(Intent.createChooser(intent, context.getString(R.string.open_with)))
+    } catch (e: FileNotFoundException) {
+        Toast.makeText(context, context.getString(R.string.failed_open), Toast.LENGTH_SHORT).show()
+    } catch (e: Exception) {
+        e.printStackTrace()
     }
+}
 
-    val intent = Intent(Intent.ACTION_VIEW).apply {
-        setDataAndType(uri(file), "image/*")
-        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+fun insertPicture(context: Context, uri: Uri): Uri? {
+    val mediaDir = File(context.filesDir, "media/picture/")
+    if (!mediaDir.exists()) mediaDir.mkdirs()
+    val fileName = "IMG_${System.currentTimeMillis()}"
+    val file = File(mediaDir, fileName)
+    return try {
+        val inputStream = context.contentResolver.openInputStream(uri)
+        val outputStream = FileOutputStream(file)
+        inputStream?.copyTo(outputStream)
+        inputStream?.close()
+        outputStream.close()
+        Uri.fromFile(file)
+    } catch (e: FileNotFoundException) {
+        Toast.makeText(
+            context, context.getString(R.string.detail_file_not_found), Toast.LENGTH_LONG
+        ).show()
+        null
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
     }
-    context.startActivity(Intent.createChooser(intent, context.getString(R.string.open_with)))
 }

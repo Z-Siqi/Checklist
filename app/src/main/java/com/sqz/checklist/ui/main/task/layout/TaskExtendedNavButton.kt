@@ -35,9 +35,11 @@ import com.sqz.checklist.ui.main.OnClickType
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
 import com.sqz.checklist.ui.main.task.layout.function.TaskDetailData
 import com.sqz.checklist.ui.main.task.layout.function.TaskDetailDialog
+import com.sqz.checklist.ui.main.task.layout.function.toByteArray
 import com.sqz.checklist.ui.material.NonExtendedTooltip
 import com.sqz.checklist.ui.material.TextTooltipBox
 import com.sqz.checklist.ui.material.dialog.TaskChangeContentDialog
+import com.sqz.checklist.ui.material.media.insertPicture
 import kotlinx.coroutines.launch
 
 /** Nav Extended Button Connect Data **/
@@ -117,7 +119,7 @@ fun taskExtendedNavButton(
                         ).show()
                     }
                 }
-                viewModel.taskDetailDataSaver().releaseMemory()
+                viewModel.taskDetailDataSaver().releaseMemory(view.context)
                 taskAddCard = false
             }
         },
@@ -154,12 +156,22 @@ private fun TaskAddCard(
     var reminder by rememberSaveable { mutableStateOf(false) }
     var detail by rememberSaveable { mutableStateOf(false) }
     TaskChangeContentDialog(
-        onDismissRequest = { onDismissRequest().also { detailData.releaseMemory() } },
+        onDismissRequest = { onDismissRequest().also { detailData.releaseMemory(view.context) } },
         confirm = {
-            if (state.text.toString() != "") confirm(
-                state.text.toString(), pin, reminder,
-                detailData.detailType(), detailData.detailString(), detailData.detailByteArray()
-            ) else {
+            if (state.text.toString() != "") {
+                val uri = if (detailData.detailType() == TaskDetailType.Picture) {
+                    val picture = insertPicture(view.context, detailData.detailUri()!!)
+                        ?.toByteArray()
+                    if (picture != null) picture else {
+                        detailData.detailType(TaskDetailType.Text)
+                        null
+                    }
+                } else detailData.detailUri()?.toByteArray()
+                confirm(
+                    state.text.toString(), pin, reminder,
+                    detailData.detailType(), detailData.detailString(), uri
+                )
+            } else {
                 Toast.makeText(view.context, noDoNothing, Toast.LENGTH_SHORT).show()
             }
         },
@@ -214,7 +226,7 @@ private fun TaskAddCard(
     if (detail) TaskDetailDialog(
         onDismissRequest = { onDismissClick ->
             if (onDismissClick != null && onDismissClick) {
-                detailData.releaseMemory()
+                detailData.releaseMemory(view.context)
             }
             detail = false
         },

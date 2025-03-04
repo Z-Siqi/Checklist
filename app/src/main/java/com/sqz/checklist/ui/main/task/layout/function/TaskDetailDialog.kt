@@ -1,5 +1,7 @@
 package com.sqz.checklist.ui.main.task.layout.function
 
+import android.content.Context
+import android.net.Uri
 import android.util.Patterns
 import android.view.View
 import android.widget.Toast
@@ -23,16 +25,16 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sqz.checklist.R
+import com.sqz.checklist.cache.deleteCacheFileByName
 import com.sqz.checklist.database.TaskDetailType
 import com.sqz.checklist.ui.material.ApplicationList
 import com.sqz.checklist.ui.material.media.PictureSelector
 import com.sqz.checklist.ui.material.dialog.DialogWithMenu
-import com.sqz.checklist.ui.material.media.toByteArray
 
 @Composable
 fun TaskDetailDialog(
     onDismissRequest: (onDismissClick: Boolean?) -> Unit,
-    confirm: (detailType: TaskDetailType, detailString: String, getByteArray: ByteArray?) -> Unit,
+    confirm: (detailType: TaskDetailType, detailString: String, getUri: Uri?) -> Unit,
     title: String,
     detailData: TaskDetailData,
     view: View
@@ -72,7 +74,7 @@ fun TaskDetailDialog(
 
                         else -> detailTextState.text.toString()
                     }
-                    confirm(detailData.detailType()!!, detailString, detailData.detailByteArray())
+                    confirm(detailData.detailType()!!, detailString, detailData.detailUri())
                 }
             } else Toast.makeText(view.context, noDoNothing, Toast.LENGTH_SHORT).show()
         },
@@ -97,10 +99,10 @@ fun TaskDetailDialog(
                     detailData.detailString(name)
                 }, detailData.detailString(), view.context) == Unit
 
-                TaskDetailType.Picture -> PictureSelector({ title, picture ->
+                TaskDetailType.Picture -> PictureSelector({ title, uri ->
                     if (title != null) detailData.detailString(title)
-                    detailData.detailByteArray(picture?.toByteArray())
-                }, view, getByteArray = detailData.detailByteArray()) == Unit
+                    if (uri != null) detailData.detailUri(uri)
+                }, view, getUri = detailData.detailUri()) == Unit
 
                 else -> Text(
                     stringResource(R.string.select_detail_type),
@@ -112,6 +114,7 @@ fun TaskDetailDialog(
         currentMenuSelection = {
             if (it != null && detailData.detailType() != it) {
                 detailData.detailString("")
+                detailData.detailUri(null)
                 detailTextState.clearText()
             }
         },
@@ -132,21 +135,28 @@ fun TaskDetailDialog(
 
 class TaskDetailData private constructor() {
     companion object {
+        //private val data = TaskDetailData()
         fun instance(): TaskDetailData = TaskDetailData()
+
+        //@Volatile private var instance: TaskDetailData? = null
+        //        fun instance(): TaskDetailData = instance ?: synchronized(this) {
+        //            instance ?: TaskDetailData().also { instance = it }
+        //        }
     }
 
     private var detailType by mutableStateOf<TaskDetailType?>(null)
     private var detailString by mutableStateOf("")
-    private var byteArray by mutableStateOf<ByteArray?>(null)
+    private var uri by mutableStateOf<Uri?>(null)
+    private var cacheString by mutableStateOf<String?>(null)
 
     fun detailType(): TaskDetailType? = this.detailType
     fun detailType(setter: TaskDetailType?) {
         this.detailType = setter
     }
 
-    fun detailByteArray(): ByteArray? = this.byteArray
-    fun detailByteArray(setter: ByteArray?) {
-        this.byteArray = setter
+    fun detailUri(): Uri? = this.uri
+    fun detailUri(setter: Uri?) {
+        this.uri = setter
     }
 
     fun detailString(): String = this.detailString
@@ -154,17 +164,35 @@ class TaskDetailData private constructor() {
         this.detailString = setter
     }
 
-    fun setter(detailType: TaskDetailType, detailString: String, detailBitmap: ByteArray? = null) {
+    /*fun cacheString(): String? = this.cacheString
+    fun cacheString(setter: String) {
+        this.cacheString = setter
+    }*/
+
+    fun setter(detailType: TaskDetailType, detailString: String, detailUri: Uri? = null) {
         this.detailType = detailType
         this.detailString = detailString
-        this.byteArray = detailBitmap
+        this.uri = detailUri
     }
 
-    fun releaseMemory() {
+    private fun releaseMemory() {
         this.detailType = null
         this.detailString = ""
-        this.byteArray = null
+        this.uri = null
     }
+
+    fun releaseMemory(context: Context) {
+        this.cacheString?.let { deleteCacheFileByName(context, it.substringAfterLast("/")) }
+        this.releaseMemory()
+    }
+}
+
+fun Uri.toByteArray(): ByteArray {
+    return this.toString().toByteArray(Charsets.UTF_8)
+}
+
+fun ByteArray.toUri(): Uri {
+    return Uri.parse(String(this, Charsets.UTF_8))
 }
 
 @Preview

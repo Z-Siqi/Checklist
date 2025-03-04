@@ -1,6 +1,8 @@
 package com.sqz.checklist.database
 
+import com.sqz.checklist.ui.main.task.layout.function.toUri
 import kotlinx.coroutines.flow.Flow
+import java.io.File
 import java.time.LocalDate
 
 class DatabaseRepository(
@@ -44,9 +46,9 @@ class DatabaseRepository(
     ) {
         val taskDao = this.databaseInstance!!.taskDao()
         suspend fun deleteTaskDetail() {
-            if (taskDao.matchTaskDetail(taskId) >= 1) taskDao.delete(
-                TaskDetail(taskId, TaskDetailType.Text, "")
-            )
+            if (taskDao.matchTaskDetail(taskId) >= 1) {
+                this.deleteDetail(taskId, taskDao, true)
+            }
         }
         if (detailType != null && detailDataString != null) {
             deleteTaskDetail()
@@ -76,12 +78,10 @@ class DatabaseRepository(
         val value = taskDao.getIsHistorySum()
         if (value > maxRetainIdNum) for (i in 1..(value - maxRetainIdNum)) {
             val id = taskDao.getIsHistoryBottomKeyId()
-            if (taskDao.getAll(id).detail) taskDao.delete(
-                TaskDetail(id, TaskDetailType.Text, "")
-            )
+            this.deleteDetail(id, taskDao)
             for (data in taskDao.getTaskDetail()) { // remove error item
                 if (taskDao.matchTask(data.id) < 1) {
-                    taskDao.delete(TaskDetail(data.id, TaskDetailType.Text, ""))
+                    this.deleteDetail(data.id, taskDao, true)
                 }
             }
             taskDao.delete(Task(id = id, description = "", createDate = LocalDate.MIN))
@@ -91,21 +91,29 @@ class DatabaseRepository(
 
     suspend fun deleteTask(taskId: Long) {
         val taskDao = this.databaseInstance!!.taskDao()
-
-        if (taskDao.getAll(taskId).detail) taskDao.delete(
-            TaskDetail(taskId, TaskDetailType.Text, "")
-        )
+        this.deleteDetail(taskId, taskDao)
         taskDao.delete(Task(id = taskId, description = "", createDate = LocalDate.MIN))
     }
 
     suspend fun deleteAllHistory() {
         val taskDao = this.databaseInstance!!.taskDao()
         for (data in taskDao.getAllOrderByIsHistoryId()) {
-            if (data.detail) {
-                taskDao.delete(TaskDetail(data.id, TaskDetailType.Text, ""))
-            }
+            this.deleteDetail(data.id, taskDao)
         }
         taskDao.deleteAllHistory()
+    }
+
+    private suspend fun deleteDetail(taskId: Long, taskDao: TaskDao, ignoreCheck: Boolean = false) {
+        if (taskDao.getAll(taskId).detail || ignoreCheck) {
+            try {
+                val data = taskDao.getTaskDetail(taskId).dataByte?.toUri()
+                val file = File(data?.path!!)
+                if (file.exists()) file.delete()
+            } catch (_: Exception) {}
+            taskDao.delete(
+                TaskDetail(taskId, TaskDetailType.Text, "")
+            )
+        }
     }
 
     suspend fun getDetailData(detailId: Long): TaskDetail? {

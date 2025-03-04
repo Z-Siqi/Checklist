@@ -14,6 +14,7 @@
     <string name="disable">禁用</string>
     <string name="text">文本</string>
     <string name="url">網址</string>
+    <string name="failed_open">打開失敗!</string>
     <string name="full_date_short">yyyy 年 MMM dd 日 hh:mm a</string>
 
     <!-- MainLayout -->
@@ -67,6 +68,7 @@
     <string name="selected_picture">選定的圖片</string>
     <string name="open_with">打開方式</string>
     <string name="picture_size_limit">圖片大小不能超過25MB!</string>
+    <string name="detail_file_not_found">由於文件未找到，無法將詳細內容新增至任務!</string>
 
     <!-- Notification -->
     <string name="task_reminder">提醒</string>

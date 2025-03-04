@@ -1,6 +1,7 @@
 package com.sqz.checklist.cache
 
 import android.content.Context
+import java.io.File
 
 /**
  * Clear old cache files. Default: clear one day before cache files
@@ -37,5 +38,18 @@ fun clearOldCacheIfNeeded(context: Context) {
                 }
             }
         }
+    }
+}
+
+/**
+ * Clear cache file by name
+ */
+fun deleteCacheFileByName(context: Context, fileName: String): Boolean {
+    val cacheFile = File(context.cacheDir, fileName)
+    if (cacheFile.exists()) {
+        val deleted = cacheFile.delete()
+        return deleted
+    } else {
+        return false
     }
 }

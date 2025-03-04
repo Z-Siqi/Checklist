@@ -81,7 +81,10 @@ import com.sqz.checklist.ui.material.dialog.TaskChangeContentDialog
 import com.sqz.checklist.ui.material.TextTooltipBox
 import com.sqz.checklist.ui.main.task.layout.function.ReminderAction
 import com.sqz.checklist.ui.main.task.layout.function.TaskDetailData
+import com.sqz.checklist.ui.main.task.layout.function.toByteArray
+import com.sqz.checklist.ui.main.task.layout.function.toUri
 import com.sqz.checklist.ui.material.media.PictureViewDialog
+import com.sqz.checklist.ui.material.media.insertPicture
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -228,7 +231,7 @@ private fun EditTask(
                 detailData.detailType(editState.detail.type)
                 detailData.detailString(editState.detail.dataString)
                 if (editState.detail.dataByte != null) {
-                    detailData.detailByteArray(editState.detail.dataByte)
+                    detailData.detailUri(editState.detail.dataByte.toUri())
                 }
             }
             remember = true
@@ -237,13 +240,21 @@ private fun EditTask(
         TaskChangeContentDialog(
             onDismissRequest = {
                 resetState()
-                detailData.releaseMemory()
+                detailData.releaseMemory(view.context)
             },
             confirm = {
                 if (textState.text.toString() != "") {
+                    val uri = if (detailData.detailType() == TaskDetailType.Picture) {
+                        val picture = insertPicture(view.context, detailData.detailUri()!!)
+                            ?.toByteArray()
+                        if (picture != null) picture else {
+                            detailData.detailType(TaskDetailType.Text)
+                            null
+                        }
+                    } else detailData.detailUri()?.toByteArray()
                     editTask(
                         editState.task.id, textState.text.toString(), detailData.detailType(),
-                        detailData.detailString(), detailData.detailByteArray(), view.context
+                        detailData.detailString(), uri, view.context
                     )
                     resetState()
                 } else Toast.makeText(view.context, noChangeDoNothing, Toast.LENGTH_SHORT).show()
@@ -271,12 +282,12 @@ private fun EditTask(
         if (detail) TaskDetailDialog(
             onDismissRequest = { onDismissClick ->
                 if (onDismissClick != null && onDismissClick) {
-                    detailData.releaseMemory()
+                    detailData.releaseMemory(view.context)
                 }
                 detail = false
             },
-            confirm = { type, string, bitmap ->
-                detailData.setter(type, string, bitmap)
+            confirm = { type, string, uri ->
+                detailData.setter(type, string, uri)
                 detail = false
             },
             title = stringResource(R.string.create_task_detail),

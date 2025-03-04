@@ -388,7 +388,7 @@ class TaskLayoutViewModel : ViewModel() {
                     context
                 ) else cancelReminder(id, database().getReminderData(id)!!.id, context)
             }
-            _taskDetailDataSaver.releaseMemory()
+            _taskDetailDataSaver.releaseMemory(context)
             updateListState()
         }
     }
