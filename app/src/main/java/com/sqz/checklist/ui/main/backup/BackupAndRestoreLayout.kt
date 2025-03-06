@@ -2,11 +2,9 @@ package com.sqz.checklist.ui.main.backup
 
 import android.content.Context
 import android.media.AudioManager
-import android.net.Uri
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
-import android.util.Log
 import android.view.SoundEffectConstants
 import android.view.View
 import android.widget.Toast
@@ -60,10 +58,8 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat.getSystemService
 import com.sqz.checklist.R
 import com.sqz.checklist.database.ExportTaskDatabase
-import com.sqz.checklist.database.GetUri
 import com.sqz.checklist.database.IOdbState
-import com.sqz.checklist.database.ImportTaskDatabaseAction
-import com.sqz.checklist.database.taskDatabaseName
+import com.sqz.checklist.database.ImportTaskDatabase
 
 /**
  * Backup & Restore layout
@@ -72,7 +68,6 @@ import com.sqz.checklist.database.taskDatabaseName
 fun BackupAndRestoreLayout(
     view: View,
     modifier: Modifier = Modifier,
-    dbPath: String = view.context.getDatabasePath(taskDatabaseName).absolutePath,
     disableBackHandlerState: (Boolean) -> Unit = {}
 ) {
     val audioManager = view.context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
@@ -93,6 +88,7 @@ fun BackupAndRestoreLayout(
         ).show()
     }
     disableBackHandlerState(disableBackHandler)
+    var loadingState by rememberSaveable { mutableIntStateOf(0) }
 
     val backupCardLayout: @Composable ColumnScope.() -> Unit = {
         var mode by rememberSaveable { mutableIntStateOf(0) }
@@ -129,7 +125,7 @@ fun BackupAndRestoreLayout(
             }
         }
         Spacer(modifier = Modifier.weight(1f))
-        var onClick by remember { mutableStateOf(false) }
+        var onClick by rememberSaveable { mutableStateOf(false) }
         Button(modifier = Modifier
             .padding(8.dp)
             .align(Alignment.End), onClick = {
@@ -137,9 +133,12 @@ fun BackupAndRestoreLayout(
             onClick = true
         }) {
             Text(text = stringResource(R.string.export))
-            if (onClick) ProcessingDialog()
-            ExportTaskDatabase(onClick, mode == 1, view, dbPath) {
-                onClick = false
+            if (onClick) ProcessingDialog(loadingState)
+            ExportTaskDatabase(onClick, mode == 1, view) { state, loading ->
+                loadingState = loading
+                if (state == IOdbState.Error || state == IOdbState.Finished || loading == 100) {
+                    onClick = false
+                }
             }
         }
     }
@@ -154,11 +153,7 @@ fun BackupAndRestoreLayout(
             fontWeight = FontWeight.Medium
         )
         var selectUri by remember { mutableStateOf(false) }
-        var uri by rememberSaveable { mutableStateOf<Uri?>(null) }
-        if (selectUri) GetUri {
-            uri = it
-            selectUri = false
-        }
+        var selected by rememberSaveable { mutableStateOf(view.context.getString(R.string.click_select_file_import)) }
         var onClick by rememberSaveable { mutableStateOf(false) }
         Card(
             modifier = Modifier
@@ -171,17 +166,8 @@ fun BackupAndRestoreLayout(
                 selectUri = true
             }
         ) {
-            val text = if (uri == null) stringResource(R.string.click_select_file_import) else {
-                var selected by rememberSaveable { mutableStateOf(view.context.getString(R.string.selected_file)) }
-                try {
-                    selected = uri!!.path.toString().replace("/document/primary:", "")
-                } catch (e: Exception) {
-                    Log.w("ChecklistDataImport", "Failed to show selected file: $e")
-                }
-                selected
-            }
             Text(
-                text = text,
+                text = selected,
                 modifier = Modifier.padding(
                     start = 5.dp, top = 3.dp, end = 5.dp, bottom = 3.dp
                 ),
@@ -193,24 +179,34 @@ fun BackupAndRestoreLayout(
             .padding(8.dp)
             .align(Alignment.End), onClick = {
             clickFeedback(view, audioManager)
-            if (uri != null) onClick = true else Toast.makeText(
+            if (selected != view.context.getString(R.string.click_select_file_import)) {
+                onClick = true
+            } else Toast.makeText(
                 view.context, view.context.getString(R.string.select_file_to_import),
                 Toast.LENGTH_SHORT
             ).show()
         }) {
             Text(text = stringResource(R.string.import_text))
-            if (onClick) ProcessingDialog()
-            if (onClick) ImportTaskDatabaseAction(uri, view) {
-                if (it == IOdbState.Error) Toast.makeText(
-                    view.context, view.context.getString(R.string.error_try_undo_import),
-                    Toast.LENGTH_SHORT
-                ).show()
-                disableBackHandler = it == IOdbState.Processing
-                if (it == IOdbState.Finished) Toast.makeText(
-                    view.context, view.context.getString(R.string.finished), Toast.LENGTH_SHORT
-                ).show()
-                if (it == IOdbState.Finished || it == IOdbState.Error) onClick = false
-            }
+            if (onClick) ProcessingDialog(loadingState)
+            ImportTaskDatabase(
+                selectClicked = selectUri, importClicked = onClick,
+                selected = {
+                    when (it) {
+                        "" -> selected = view.context.getString(R.string.selected_file)
+                        null -> { selectUri = false }
+                        else -> selected = it
+                    }
+                    selectUri = false
+                },
+                dbState = { state, loading ->
+                    loadingState = loading
+                    disableBackHandler = state == IOdbState.Processing
+                    if (state == IOdbState.Error || state == IOdbState.Finished || loading == 100) {
+                        onClick = false
+                    }
+                },
+                view = view
+            )
         }
     }
 
@@ -267,7 +263,7 @@ private fun TitleText(text: String, modifier: Modifier = Modifier) = Text(
 )
 
 @Composable
-private fun ProcessingDialog() {
+private fun ProcessingDialog(loading: Int) {
     AlertDialog(onDismissRequest = {}, confirmButton = {}, text = {
         Column(
             modifier = Modifier.fillMaxWidth(),
@@ -276,6 +272,7 @@ private fun ProcessingDialog() {
             Spacer(modifier = Modifier.padding(8.dp))
             CircularProgressIndicator()
             Spacer(modifier = Modifier.padding(5.dp))
+            Text("$loading %")
             Text(stringResource(R.string.processing))
         }
     })
@@ -295,5 +292,5 @@ private fun clickFeedback(view: View, audioManager: AudioManager) {
 @Preview(showBackground = true, locale = "EN")
 @Composable
 private fun Preview() {
-    BackupAndRestoreLayout(LocalView.current, dbPath = "")
+    BackupAndRestoreLayout(LocalView.current)
 }

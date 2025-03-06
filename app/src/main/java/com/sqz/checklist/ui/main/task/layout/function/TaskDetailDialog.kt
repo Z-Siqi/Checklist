@@ -137,11 +137,6 @@ class TaskDetailData private constructor() {
     companion object {
         //private val data = TaskDetailData()
         fun instance(): TaskDetailData = TaskDetailData()
-
-        //@Volatile private var instance: TaskDetailData? = null
-        //        fun instance(): TaskDetailData = instance ?: synchronized(this) {
-        //            instance ?: TaskDetailData().also { instance = it }
-        //        }
     }
 
     private var detailType by mutableStateOf<TaskDetailType?>(null)
