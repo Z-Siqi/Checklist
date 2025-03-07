@@ -1,12 +1,12 @@
 package com.sqz.checklist.database
 
+import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.database.sqlite.SQLiteDatabase
 import android.net.Uri
 import android.util.Log
 import android.view.View
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
@@ -19,11 +19,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.core.content.FileProvider
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.asLiveData
+import androidx.lifecycle.viewModelScope
 import com.sqz.checklist.MainActivity.Companion.taskDatabase
 import com.sqz.checklist.R
 import com.sqz.checklist.notification.NotifyManager
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
@@ -39,12 +42,12 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
-class DatabaseIO private constructor() {
+class DatabaseIO private constructor(application: Application) : AndroidViewModel(application) {
     companion object {
         @Volatile
         private var instance: DatabaseIO? = null
-        fun instance(): DatabaseIO = instance ?: synchronized(this) {
-            instance ?: DatabaseIO().also { instance = it }
+        fun instance(application: Application): DatabaseIO = instance ?: synchronized(this) {
+            instance ?: DatabaseIO(application).also { instance = it }
         }
     }
 
@@ -69,9 +72,9 @@ class DatabaseIO private constructor() {
     }
 
     fun exportDatabase(
-        uri: Uri?, coroutineScope: CoroutineScope, context: Context
+        uri: Uri?, context: Context
     ) = try {
-        if (_loadingState.value == 0) coroutineScope.launch {
+        if (_loadingState.value == 0) viewModelScope.launch(Dispatchers.IO) {
             setIOdbState(IOdbState.Processing)
             setLoading(1) // close database
             taskDatabase.close()
@@ -106,8 +109,10 @@ class DatabaseIO private constructor() {
             } else {
                 val intent: Intent = Intent().apply {
                     action = Intent.ACTION_SEND
-                    putExtra(Intent.EXTRA_STREAM, FileProvider.getUriForFile(
-                        context, "${context.packageName}.provider", zipFile)
+                    putExtra(
+                        Intent.EXTRA_STREAM, FileProvider.getUriForFile(
+                            context, "${context.packageName}.provider", zipFile
+                        )
                     )
                     type = "application/octet-stream"
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
@@ -144,63 +149,76 @@ class DatabaseIO private constructor() {
         }
     }
 
+    private var restoreJob: Job? = null
     fun importDatabase(
-        uri: Uri, coroutineScope: CoroutineScope, context: Context
+        uri: Uri, context: Context
     ) = try {
-        if (_loadingState.value == 0) coroutineScope.launch {
-            setIOdbState(IOdbState.Processing)
-            setLoading(1) // getting backup file
-            val dbPath = context.getDatabasePath(taskDatabaseName).absolutePath
-            val mediaDir = File(context.filesDir, "media/")
-            val zipFile = File(context.cacheDir, "restore.zip")
-            context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                zipFile.outputStream().use { output ->
-                    inputStream.copyTo(output)
+        if (restoreJob == null && _loadingState.value == 0) restoreJob =
+            viewModelScope.launch(Dispatchers.IO) {
+                setIOdbState(IOdbState.Processing)
+                setLoading(1) // checking backup file
+                if (!verifyImportZip(context, uri)) {
+                    setIOdbState(IOdbState.Error)
+                    _loadingState.update { -1 }
                 }
-            }
-            setLoading(20) // cancel all notification
-            cancelAllNotification(taskDatabase, context)
-            setLoading(25) // close database
-            taskDatabase.close()
-            setLoading(30) // merge database checkpoint ("PRAGMA wal_checkpoint(FULL)")
-            mergeDatabaseCheckpoint(taskDatabase)
-            setLoading(35) // remove media files
-            clearMediaFolder(mediaDir)
-            setLoading(50) // import backup
-            ZipInputStream(FileInputStream(zipFile)).use { zipIn ->
-                var entry: ZipEntry?
-                while (zipIn.nextEntry.also { entry = it } != null) {
-                    val entryName = entry!!.name
-                    val outputFile = if (entryName == "$taskDatabaseName.db") {
-                        File(dbPath)
-                    } else {
-                        File(mediaDir, entryName.removePrefix("media/"))
+                setLoading(10) // getting backup file
+                val dbPath = context.getDatabasePath(taskDatabaseName).absolutePath
+                val mediaDir = File(context.filesDir, "media/")
+                val zipFile = File(context.cacheDir, "restore.zip")
+                context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                    zipFile.outputStream().use { output ->
+                        inputStream.copyTo(output)
                     }
-                    outputFile.parentFile?.mkdirs()
-                    if (entry!!.isDirectory) {
-                        outputFile.mkdirs()
-                    } else {
-                        outputFile.outputStream().use { output ->
-                            zipIn.copyTo(output)
+                }
+                setLoading(20) // cancel all notification
+                cancelAllNotification(taskDatabase, context)
+                setLoading(25) // close database
+                //val db = SQLiteDatabase.openDatabase(dbPath, null, SQLiteDatabase.OPEN_READWRITE)
+                taskDatabase.close()
+                //db.close()
+                Thread.sleep(500)
+                setLoading(30) // merge database checkpoint ("PRAGMA wal_checkpoint(FULL)")
+                mergeDatabaseCheckpoint(taskDatabase)
+                setLoading(35) // remove old data
+                deleteDbFiles(File(dbPath))
+                clearMediaFolder(mediaDir)
+                setLoading(50) // import backup
+                ZipInputStream(FileInputStream(zipFile)).use { zipIn ->
+                    var entry: ZipEntry?
+                    while (zipIn.nextEntry.also { entry = it } != null) {
+                        val entryName = entry!!.name
+                        val outputFile = if (entryName == "$taskDatabaseName.db") {
+                            File(dbPath)
+                        } else {
+                            File(mediaDir, entryName.removePrefix("media/"))
                         }
+                        outputFile.parentFile?.mkdirs()
+                        if (entry!!.isDirectory) {
+                            outputFile.mkdirs()
+                        } else {
+                            outputFile.outputStream().use { output ->
+                                zipIn.copyTo(output)
+                            }
+                        }
+                        zipIn.closeEntry()
                     }
-                    zipIn.closeEntry()
                 }
-            }
-            setLoading(80) // re-open database
-            taskDatabase = buildDatabase(context)
-            setLoading(85) // check database
-            if (!isDatabaseValid(dbPath)) {
-                setIOdbState(IOdbState.Error)
-                Log.e("ChecklistDatabase", "Failed to import database: Invalid database!")
-                Toast.makeText(context, "Invalid database!", Toast.LENGTH_SHORT).show()
-                taskDatabase.clearAllTables()
-            }
-            setLoading(90) // restore notification
-            restoreNotification(taskDatabase, context)
-            setLoading(100) // finished
-            setIOdbState(IOdbState.Finished)
-        } else if (_dbState.value != IOdbState.Processing) {
+                setLoading(75) // delete cache
+                zipFile.delete()
+                setLoading(80) // re-open database
+                taskDatabase = buildDatabase(context)
+                setLoading(85) // check database
+                if (!isDatabaseValid(dbPath)) {
+                    setIOdbState(IOdbState.Error)
+                    Log.e("ChecklistDatabase", "Failed to import database: Invalid database!")
+                    deleteDbFiles(File(dbPath))
+                }
+                setLoading(90) // restore notification
+                restoreNotification(taskDatabase, context)
+                setLoading(100) // finished
+                setIOdbState(IOdbState.Finished)
+                restoreJob?.cancel()
+            } else if (_dbState.value != IOdbState.Processing) {
             Log.d("DatabaseIO", "Note: reset before next run")
         } else {
             Log.d("ChecklistDatabase", "Importing...")
@@ -222,9 +240,77 @@ class DatabaseIO private constructor() {
         }
     }
 
+    private fun deleteDbFiles(dbFile: File) {
+        if (dbFile.exists()) {
+            val dbDirectory = dbFile.parentFile
+            val dbName = dbFile.nameWithoutExtension
+            dbDirectory?.listFiles()?.forEach { file ->
+                if (file.name.startsWith(dbName)) {
+                    file.delete()
+                    Log.d("DB_DELETE", "deleted file: ${file.absolutePath}")
+                }
+            }
+        }
+    }
+
+    private fun verifyImportZip(context: Context, uri: Uri): Boolean {
+        try {
+            context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                ZipInputStream(inputStream).use { zipIn ->
+                    var entry: ZipEntry?
+                    var hasDatabase = false
+                    var rootFileCount = 0
+                    var rootFolderCount = 0
+                    while (zipIn.nextEntry.also { entry = it } != null) {
+                        val entryName = entry!!.name
+                        // check zip work
+                        if (entry!!.method == ZipEntry.DEFLATED && entry!!.extra != null) {
+                            Log.e("DatabaseIO", "Cannot unzip!")
+                            return false
+                        }
+                        // check database file
+                        if (entryName == "$taskDatabaseName.db") {
+                            hasDatabase = true
+                        }
+                        // check directory
+                        if (!entryName.contains("/")) {
+                            if (entry!!.isDirectory) {
+                                rootFolderCount++
+                            } else {
+                                rootFileCount++
+                            }
+                        }
+                        // closeEntry
+                        zipIn.closeEntry()
+                    }
+                    return when {
+                        !hasDatabase -> {
+                            Log.e("DatabaseIO", "Database file not found!")
+                            false
+                        }
+
+                        rootFolderCount > 1 || rootFileCount > 1 -> {
+                            val errText = "Zip type incorrect: $rootFolderCount, $rootFileCount"
+                            Log.e("DatabaseIO", errText)
+                            false
+                        }
+
+                        else -> true
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Log.e("DatabaseIO", "Zip File ERR: $e")
+            return false
+        }
+        return false
+    }
+
     fun releaseMemory() {
         this._loadingState.update { 0 }
         this._dbState.update { IOdbState.Default }
+        this.restoreJob = null
     }
 }
 
@@ -236,17 +322,19 @@ fun ExportTaskDatabase(
     dbState: (state: IOdbState, loading: Int) -> Unit = { _, _ -> }
 ) {
     val exportName = "Checklist_Backup"
-    val databaseIO = DatabaseIO.instance()
+    val databaseIO = DatabaseIO.instance(Application())
     var canceled by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
     val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("db/sqlite")
+        contract = ActivityResultContracts.CreateDocument("application/zip")
     ) { selectedUri: Uri? ->
         selectedUri?.let {
-            databaseIO.exportDatabase(selectedUri, coroutineScope, view.context)
+            databaseIO.exportDatabase(selectedUri, view.context)
         }
         coroutineScope.launch {
-            if (databaseIO.getIOdbState().asLiveData(this.coroutineContext).value == IOdbState.Default) {
+            if (databaseIO.getIOdbState().asLiveData(this.coroutineContext).value
+                == IOdbState.Default
+            ) {
                 databaseIO.setLoading(100)
                 Log.d("ExportTaskDatabase", "Export canceled")
                 canceled = true
@@ -254,7 +342,7 @@ fun ExportTaskDatabase(
         }
     }
     if (state) { // Export actions
-        if (useChooser) databaseIO.exportDatabase(null, coroutineScope, view.context) else {
+        if (useChooser) databaseIO.exportDatabase(null, view.context) else {
             val currentTime = remember {
                 val sdf = SimpleDateFormat(timeFormat, Locale.getDefault())
                 sdf.format(Date())
@@ -268,7 +356,9 @@ fun ExportTaskDatabase(
         databaseIO.getIOdbState().collectAsState(IOdbState.Default).value,
         databaseIO.getLoadingState().collectAsState(0).value
     )
-    if (canceled || databaseIO.getIOdbState().collectAsState(IOdbState.Default).value == IOdbState.Finished) {
+    if (canceled || databaseIO.getIOdbState().collectAsState(IOdbState.Default).value
+        == IOdbState.Finished && state
+    ) {
         databaseIO.releaseMemory()
         canceled = false
     }
@@ -280,7 +370,6 @@ fun ImportTaskDatabase(
     selected: (text: String?) -> Unit, dbState: (IOdbState, loading: Int) -> Unit,
     view: View
 ) {
-    val coroutineScope = rememberCoroutineScope()
     var uri by rememberSaveable { mutableStateOf<Uri?>(null) }
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -297,24 +386,22 @@ fun ImportTaskDatabase(
     if (selectClicked) LaunchedEffect(Unit) {
         launcher.launch("application/zip")
     }
-    val databaseIO = DatabaseIO.instance()
+    val databaseIO = DatabaseIO.instance(Application())
     val getIOdbState = databaseIO.getIOdbState().collectAsState(IOdbState.Default).value
-    if (importClicked) {
-        if (uri != null) uri?.let {
-            databaseIO.importDatabase(uri!!, coroutineScope, view.context)
-            if (getIOdbState == IOdbState.Finished) {
-                databaseIO.releaseMemory()
-                uri = null
-            }
-        } else Toast.makeText(
-            view.context, view.context.getString(R.string.select_file_to_import),
-            Toast.LENGTH_SHORT
-        ).show()
+    if (importClicked && uri != null) {
+        databaseIO.importDatabase(uri!!, view.context)
+        if (getIOdbState == IOdbState.Finished) {
+            databaseIO.releaseMemory()
+            uri = null
+        }
         dbState(getIOdbState, databaseIO.getLoadingState().collectAsState(0).value)
+    } else if (uri == null) {
+        dbState(IOdbState.Default, 100)
     }
 }
 
 private suspend fun restoreNotification(dbInstance: TaskDatabase, context: Context) {
+    Log.d("RestoreReminder", "trying to restore all reminder")
     val notificationManager = MutableStateFlow(NotifyManager())
     notificationManager.value.requestPermission(context)
     val databaseRepository = DatabaseRepository(dbInstance)
@@ -343,6 +430,7 @@ private suspend fun restoreNotification(dbInstance: TaskDatabase, context: Conte
 }
 
 private suspend fun cancelAllNotification(dbInstance: TaskDatabase, context: Context) {
+    Log.d("CancelReminder", "trying to cancel all reminder")
     try {
         val notificationManager = MutableStateFlow(NotifyManager())
         notificationManager.value.requestPermission(context)

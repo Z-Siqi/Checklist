@@ -1,6 +1,7 @@
 package com.sqz.checklist.database
 
 import android.content.Context
+import android.util.Log
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
@@ -16,6 +17,7 @@ const val taskDatabaseName = "task-database"
 suspend fun mergeDatabaseCheckpoint(database: RoomDatabase) {
     withContext(Dispatchers.IO) {
         database.query(SimpleSQLiteQuery("PRAGMA wal_checkpoint(FULL)"))
+        Log.d("database", "mergeDatabaseCheckpoint")
     }
 }
 

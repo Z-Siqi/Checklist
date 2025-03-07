@@ -103,7 +103,7 @@
     <string name="selected_file">Selected!</string>
     <string name="back_disabled_notice">Back is disabled! Just a moment…</string>
     <string name="select_file_to_import">Please select a file to import!</string>
-    <string name="error_try_undo_import">Error! Trying to undo the import…</string>
+    <string name="failed_in_zip">Failed! Please make sure zip is valid! (tip: catch log for more details)</string>
     <string name="finished">Finished!</string>
     <string name="processing">Processing…</string>
 

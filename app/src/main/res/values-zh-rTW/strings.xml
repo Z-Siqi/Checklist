@@ -104,7 +104,7 @@
     <string name="selected_file">已選擇!</string>
     <string name="back_disabled_notice">後退已禁用！請稍等片刻…</string>
     <string name="select_file_to_import">請選擇要匯入的文件!</string>
-    <string name="error_try_undo_import">錯誤! 嘗試撤銷導入…</string>
+    <string name="failed_in_zip">失敗的！請確保 zip 有效！ （提示：查看日誌以了解更多詳細資訊）</string>
     <string name="finished">完成!</string>
     <string name="processing">正在處理…</string>
 

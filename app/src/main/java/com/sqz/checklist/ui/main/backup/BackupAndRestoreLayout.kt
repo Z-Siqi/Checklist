@@ -153,7 +153,8 @@ fun BackupAndRestoreLayout(
             fontWeight = FontWeight.Medium
         )
         var selectUri by remember { mutableStateOf(false) }
-        var selected by rememberSaveable { mutableStateOf(view.context.getString(R.string.click_select_file_import)) }
+        val selectingText = view.context.getString(R.string.click_select_file_import)
+        var selected by rememberSaveable { mutableStateOf(selectingText) }
         var onClick by rememberSaveable { mutableStateOf(false) }
         Card(
             modifier = Modifier
@@ -179,7 +180,7 @@ fun BackupAndRestoreLayout(
             .padding(8.dp)
             .align(Alignment.End), onClick = {
             clickFeedback(view, audioManager)
-            if (selected != view.context.getString(R.string.click_select_file_import)) {
+            if (selected != selectingText) {
                 onClick = true
             } else Toast.makeText(
                 view.context, view.context.getString(R.string.select_file_to_import),
@@ -193,7 +194,10 @@ fun BackupAndRestoreLayout(
                 selected = {
                     when (it) {
                         "" -> selected = view.context.getString(R.string.selected_file)
-                        null -> { selectUri = false }
+                        null -> {
+                            selectUri = false
+                        }
+
                         else -> selected = it
                     }
                     selectUri = false
@@ -201,8 +205,22 @@ fun BackupAndRestoreLayout(
                 dbState = { state, loading ->
                     loadingState = loading
                     disableBackHandler = state == IOdbState.Processing
+                    when (state) {
+                        IOdbState.Error -> Toast.makeText(
+                            view.context, view.context.getString(R.string.failed_in_zip),
+                            Toast.LENGTH_LONG
+                        ).show()
+
+                        IOdbState.Finished -> Toast.makeText(
+                            view.context, view.context.getString(R.string.finished),
+                            Toast.LENGTH_SHORT
+                        ).show()
+
+                        else -> {}
+                    }
                     if (state == IOdbState.Error || state == IOdbState.Finished || loading == 100) {
                         onClick = false
+                        selected = selectingText
                     }
                 },
                 view = view
