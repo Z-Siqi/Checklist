@@ -160,64 +160,66 @@ class DatabaseIO private constructor(application: Application) : AndroidViewMode
                 if (!verifyImportZip(context, uri)) {
                     setIOdbState(IOdbState.Error)
                     _loadingState.update { -1 }
-                }
-                setLoading(10) // getting backup file
-                val dbPath = context.getDatabasePath(taskDatabaseName).absolutePath
-                val mediaDir = File(context.filesDir, "media/")
-                val zipFile = File(context.cacheDir, "restore.zip")
-                context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                    zipFile.outputStream().use { output ->
-                        inputStream.copyTo(output)
-                    }
-                }
-                setLoading(20) // cancel all notification
-                cancelAllNotification(taskDatabase, context)
-                setLoading(25) // close database
-                //val db = SQLiteDatabase.openDatabase(dbPath, null, SQLiteDatabase.OPEN_READWRITE)
-                taskDatabase.close()
-                //db.close()
-                Thread.sleep(500)
-                setLoading(30) // merge database checkpoint ("PRAGMA wal_checkpoint(FULL)")
-                mergeDatabaseCheckpoint(taskDatabase)
-                setLoading(35) // remove old data
-                deleteDbFiles(File(dbPath))
-                clearMediaFolder(mediaDir)
-                setLoading(50) // import backup
-                ZipInputStream(FileInputStream(zipFile)).use { zipIn ->
-                    var entry: ZipEntry?
-                    while (zipIn.nextEntry.also { entry = it } != null) {
-                        val entryName = entry!!.name
-                        val outputFile = if (entryName == "$taskDatabaseName.db") {
-                            File(dbPath)
-                        } else {
-                            File(mediaDir, entryName.removePrefix("media/"))
+                    restoreJob?.cancel()
+                } else {
+                    setLoading(10) // getting backup file
+                    val dbPath = context.getDatabasePath(taskDatabaseName).absolutePath
+                    val mediaDir = File(context.filesDir, "media/")
+                    val zipFile = File(context.cacheDir, "restore.zip")
+                    context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                        zipFile.outputStream().use { output ->
+                            inputStream.copyTo(output)
                         }
-                        outputFile.parentFile?.mkdirs()
-                        if (entry!!.isDirectory) {
-                            outputFile.mkdirs()
-                        } else {
-                            outputFile.outputStream().use { output ->
-                                zipIn.copyTo(output)
-                            }
-                        }
-                        zipIn.closeEntry()
                     }
-                }
-                setLoading(75) // delete cache
-                zipFile.delete()
-                setLoading(80) // re-open database
-                taskDatabase = buildDatabase(context)
-                setLoading(85) // check database
-                if (!isDatabaseValid(dbPath)) {
-                    setIOdbState(IOdbState.Error)
-                    Log.e("ChecklistDatabase", "Failed to import database: Invalid database!")
+                    setLoading(20) // cancel all notification
+                    cancelAllNotification(taskDatabase, context)
+                    setLoading(25) // close database
+                    //val db = SQLiteDatabase.openDatabase(dbPath, null, SQLiteDatabase.OPEN_READWRITE)
+                    taskDatabase.close()
+                    //db.close()
+                    Thread.sleep(500)
+                    setLoading(30) // merge database checkpoint ("PRAGMA wal_checkpoint(FULL)")
+                    mergeDatabaseCheckpoint(taskDatabase)
+                    setLoading(35) // remove old data
                     deleteDbFiles(File(dbPath))
+                    clearMediaFolder(mediaDir)
+                    setLoading(50) // import backup
+                    ZipInputStream(FileInputStream(zipFile)).use { zipIn ->
+                        var entry: ZipEntry?
+                        while (zipIn.nextEntry.also { entry = it } != null) {
+                            val entryName = entry!!.name
+                            val outputFile = if (entryName == "$taskDatabaseName.db") {
+                                File(dbPath)
+                            } else {
+                                File(mediaDir, entryName.removePrefix("media/"))
+                            }
+                            outputFile.parentFile?.mkdirs()
+                            if (entry!!.isDirectory) {
+                                outputFile.mkdirs()
+                            } else {
+                                outputFile.outputStream().use { output ->
+                                    zipIn.copyTo(output)
+                                }
+                            }
+                            zipIn.closeEntry()
+                        }
+                    }
+                    setLoading(75) // delete cache
+                    zipFile.delete()
+                    setLoading(80) // re-open database
+                    taskDatabase = buildDatabase(context)
+                    setLoading(85) // check database
+                    if (!isDatabaseValid(dbPath)) {
+                        setIOdbState(IOdbState.Error)
+                        Log.e("ChecklistDatabase", "Failed to import database: Invalid database!")
+                        deleteDbFiles(File(dbPath))
+                    }
+                    setLoading(90) // restore notification
+                    restoreNotification(taskDatabase, context)
+                    setLoading(100) // finished
+                    setIOdbState(IOdbState.Finished)
+                    restoreJob?.cancel()
                 }
-                setLoading(90) // restore notification
-                restoreNotification(taskDatabase, context)
-                setLoading(100) // finished
-                setIOdbState(IOdbState.Finished)
-                restoreJob?.cancel()
             } else if (_dbState.value != IOdbState.Processing) {
             Log.d("DatabaseIO", "Note: reset before next run")
         } else {

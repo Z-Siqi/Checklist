@@ -1,5 +1,6 @@
 package com.sqz.checklist.ui.main.backup
 
+import android.app.Application
 import android.content.Context
 import android.media.AudioManager
 import android.os.Build
@@ -57,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat.getSystemService
 import com.sqz.checklist.R
+import com.sqz.checklist.database.DatabaseIO
 import com.sqz.checklist.database.ExportTaskDatabase
 import com.sqz.checklist.database.IOdbState
 import com.sqz.checklist.database.ImportTaskDatabase
@@ -206,10 +208,13 @@ fun BackupAndRestoreLayout(
                     loadingState = loading
                     disableBackHandler = state == IOdbState.Processing
                     when (state) {
-                        IOdbState.Error -> Toast.makeText(
-                            view.context, view.context.getString(R.string.failed_in_zip),
-                            Toast.LENGTH_LONG
-                        ).show()
+                        IOdbState.Error -> {
+                            Toast.makeText(
+                                view.context, view.context.getString(R.string.failed_in_zip),
+                                Toast.LENGTH_LONG
+                            ).show()
+                            DatabaseIO.instance(Application()).releaseMemory()
+                        }
 
                         IOdbState.Finished -> Toast.makeText(
                             view.context, view.context.getString(R.string.finished),

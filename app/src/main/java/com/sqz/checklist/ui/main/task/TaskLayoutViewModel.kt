@@ -343,16 +343,20 @@ class TaskLayoutViewModel : ViewModel() {
     /** Remind task. autoDel and id (del reminder info) **/
     fun remindedState(id: Long = -1L, autoDel: Boolean = false) {
         viewModelScope.launch {
-            if (id != -1L) database().deleteReminderData(id)
-            if (autoDel) for (data in _listState.value.isRemindedItem) {
-                val timeMillisData =
-                    if (data.reminder != null) database().getReminderData(data.reminder)?.reminderTime
-                        ?: -1L
-                    else -1L
-                val delReminderTime = timeMillisData < System.currentTimeMillis() - 43200000
-                if (timeMillisData != -1L && delReminderTime) {
-                    database().deleteReminderData(data.id)
+            if (id != -1L) try {
+                database().deleteReminderData(id)
+                if (autoDel) for (data in _listState.value.isRemindedItem) {
+                    val timeMillisData =
+                        if (data.reminder != null) database().getReminderData(data.reminder)?.reminderTime
+                            ?: -1L
+                        else -1L
+                    val delReminderTime = timeMillisData < System.currentTimeMillis() - 43200000
+                    if (timeMillisData != -1L && delReminderTime) {
+                        database().deleteReminderData(data.id)
+                    }
                 }
+            } catch (e: NoSuchFieldException) {
+                Log.w("DeleteReminderData", "Noting need to delete")
             }
             updateListState()
         }

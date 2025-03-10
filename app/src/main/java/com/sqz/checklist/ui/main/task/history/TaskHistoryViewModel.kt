@@ -12,11 +12,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class TaskHistoryViewModel(
-    private val _databaseRepository: DatabaseRepository = DatabaseRepository(
+class TaskHistoryViewModel: ViewModel() {
+    private fun database(): DatabaseRepository = DatabaseRepository(
         MainActivity.taskDatabase
     )
-) : ViewModel() {
 
     /** Load history task **/
     private val _taskHistoryData = MutableStateFlow(listOf<Task>())
@@ -33,7 +32,7 @@ class TaskHistoryViewModel(
     fun doAllTask(doAllTaskAction: DoTaskAction) = viewModelScope.launch {
         when (doAllTaskAction) {
             DoTaskAction.Redo -> MainActivity.taskDatabase.taskDao().setAllNotHistory()
-            DoTaskAction.Delete -> _databaseRepository.deleteAllHistory()
+            DoTaskAction.Delete -> database().deleteAllHistory()
         }
         // Update to LazyColumn
         updateTaskHistoryData()
@@ -82,16 +81,16 @@ class TaskHistoryViewModel(
     }
 
     /** Delete action **/
-    private fun deleteTask(id: Long) = viewModelScope.launch {
+    private suspend fun deleteTask(id: Long) {
         // Actions
-        _databaseRepository.deleteTask(id)
+        database().deleteTask(id)
         arrangeHistoryId()
         // Update to LazyColumn
         updateTaskHistoryData()
     }
 
     /** Undo to history **/
-    private fun changeTaskVisibilityAsUndo(id: Long) = viewModelScope.launch {
+    private suspend fun changeTaskVisibilityAsUndo(id: Long) {
         // Actions
         MainActivity.taskDatabase.taskDao().setHistoryId(0, id)
         arrangeHistoryId()
