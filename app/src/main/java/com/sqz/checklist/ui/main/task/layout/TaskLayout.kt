@@ -42,6 +42,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -84,6 +85,7 @@ import com.sqz.checklist.ui.main.task.layout.function.TaskDetailData
 import com.sqz.checklist.ui.main.task.layout.function.toByteArray
 import com.sqz.checklist.ui.main.task.layout.function.toUri
 import com.sqz.checklist.ui.material.media.PictureViewDialog
+import com.sqz.checklist.ui.material.media.errUri
 import com.sqz.checklist.ui.material.media.insertPicture
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -237,28 +239,39 @@ private fun EditTask(
             remember = true
         }
         val noChangeDoNothing = stringResource(R.string.no_change_do_nothing)
+        var confirmState by rememberSaveable { mutableIntStateOf(0) }
+        if (confirmState != 0) {
+            if (textState.text.toString() != "") {
+                val uri = if (detailData.detailType() == TaskDetailType.Picture) {
+                    val insertPicture = insertPicture(view.context, detailData.detailUri()!!)
+                    val picture = insertPicture?.toByteArray()
+                    if (insertPicture != null) confirmState = 2
+                    if (insertPicture != errUri) picture else {
+                        detailData.detailType(TaskDetailType.Text)
+                        null
+                    }
+                } else {
+                    confirmState = 2
+                    detailData.detailUri()?.toByteArray()
+                }
+                if (confirmState == 2) {
+                    editTask(
+                        editState.task.id, textState.text.toString(), detailData.detailType(),
+                        detailData.detailString(), uri, view.context
+                    )
+                    resetState().also { confirmState = 0 }
+                }
+            } else {
+                Toast.makeText(view.context, noChangeDoNothing, Toast.LENGTH_SHORT).show()
+                confirmState = 0
+            }
+        }
         TaskChangeContentDialog(
             onDismissRequest = {
                 resetState()
                 detailData.releaseMemory(view.context)
             },
-            confirm = {
-                if (textState.text.toString() != "") {
-                    val uri = if (detailData.detailType() == TaskDetailType.Picture) {
-                        val picture = insertPicture(view.context, detailData.detailUri()!!)
-                            ?.toByteArray()
-                        if (picture != null) picture else {
-                            detailData.detailType(TaskDetailType.Text)
-                            null
-                        }
-                    } else detailData.detailUri()?.toByteArray()
-                    editTask(
-                        editState.task.id, textState.text.toString(), detailData.detailType(),
-                        detailData.detailString(), uri, view.context
-                    )
-                    resetState()
-                } else Toast.makeText(view.context, noChangeDoNothing, Toast.LENGTH_SHORT).show()
-            },
+            confirm = { confirmState = 1 },
             state = textState,
             title = stringResource(R.string.edit_task),
             confirmText = stringResource(R.string.edit),

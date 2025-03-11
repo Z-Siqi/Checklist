@@ -17,6 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -39,6 +40,7 @@ import com.sqz.checklist.ui.main.task.layout.function.toByteArray
 import com.sqz.checklist.ui.material.NonExtendedTooltip
 import com.sqz.checklist.ui.material.TextTooltipBox
 import com.sqz.checklist.ui.material.dialog.TaskChangeContentDialog
+import com.sqz.checklist.ui.material.media.errUri
 import com.sqz.checklist.ui.material.media.insertPicture
 import kotlinx.coroutines.launch
 
@@ -151,30 +153,38 @@ private fun TaskAddCard(
     view: View,
 ) {
     val state = rememberTextFieldState()
+    var confirmState by rememberSaveable { mutableIntStateOf(0) }
     val noDoNothing = stringResource(R.string.no_do_nothing)
     var pin by rememberSaveable { mutableStateOf(false) }
     var reminder by rememberSaveable { mutableStateOf(false) }
     var detail by rememberSaveable { mutableStateOf(false) }
+
+    if (confirmState != 0) {
+        if (state.text.toString() != "") {
+            val uri = if (detailData.detailType() == TaskDetailType.Picture) {
+                val insertPicture = insertPicture(view.context, detailData.detailUri()!!)
+                val picture = insertPicture?.toByteArray()
+                if (insertPicture != null) confirmState = 2
+                if (insertPicture != errUri) picture else {
+                    detailData.detailType(TaskDetailType.Text)
+                    null
+                }
+            } else {
+                confirmState = 2
+                detailData.detailUri()?.toByteArray()
+            }
+            if (confirmState == 2) confirm(
+                state.text.toString(), pin, reminder,
+                detailData.detailType(), detailData.detailString(), uri
+            ).also { confirmState = 0 }
+        } else{
+            Toast.makeText(view.context, noDoNothing, Toast.LENGTH_SHORT).show()
+            confirmState = 0
+        }
+    }
     TaskChangeContentDialog(
         onDismissRequest = { onDismissRequest().also { detailData.releaseMemory(view.context) } },
-        confirm = {
-            if (state.text.toString() != "") {
-                val uri = if (detailData.detailType() == TaskDetailType.Picture) {
-                    val picture = insertPicture(view.context, detailData.detailUri()!!)
-                        ?.toByteArray()
-                    if (picture != null) picture else {
-                        detailData.detailType(TaskDetailType.Text)
-                        null
-                    }
-                } else detailData.detailUri()?.toByteArray()
-                confirm(
-                    state.text.toString(), pin, reminder,
-                    detailData.detailType(), detailData.detailString(), uri
-                )
-            } else {
-                Toast.makeText(view.context, noDoNothing, Toast.LENGTH_SHORT).show()
-            }
-        },
+        confirm = { confirmState = 1 },
         state = state,
         extraButtonTop = {
             val onPinClick = {

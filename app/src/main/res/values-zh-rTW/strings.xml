@@ -15,6 +15,7 @@
     <string name="text">文本</string>
     <string name="url">網址</string>
     <string name="failed_open">打開失敗!</string>
+    <string name="processing">正在處理…</string>
     <string name="full_date_short">yyyy 年 MMM dd 日 hh:mm a</string>
 
     <!-- MainLayout -->
@@ -24,8 +25,8 @@
     <string name="more_options">更多選項</string>
     <string name="scroll_to_end">捲動\n至末尾</string>
     <string name="scroll_to_top">捲動\n至頂端</string>
-    <string name="failed_large_file_size">失敗！檔案大小不能大於 25MB</string>
-    <string name="report_normal_file_size">如果檔案大小不大於 25MB，請向開發人員報告</string>
+    <string name="failed_large_file_size">失敗！檔案大小不能大於 %1$sMB</string>
+    <string name="report_normal_file_size">如果檔案大小不大於 %1$sMB，請向開發人員報告</string>
 
     <!-- TaskLayout -->
     <string name="task_date_format">yyyy 年 MMM dd 日</string>
@@ -67,8 +68,9 @@
     <string name="click_select_picture">點選選擇圖片</string>
     <string name="selected_picture">選定的圖片</string>
     <string name="open_with">打開方式</string>
-    <string name="picture_size_limit">圖片大小不能超過25MB!</string>
+    <string name="picture_size_limit">圖片大小不能超過 50MB!</string>
     <string name="detail_file_not_found">由於文件未找到，無法將詳細內容新增至任務!</string>
+    <string name="failed_add_picture">新增圖片失敗!</string>
 
     <!-- Notification -->
     <string name="task_reminder">提醒</string>
@@ -106,7 +108,6 @@
     <string name="select_file_to_import">請選擇要匯入的文件!</string>
     <string name="failed_in_zip">失敗的！請確保 zip 有效！ （提示：查看日誌以了解更多詳細資訊）</string>
     <string name="finished">完成!</string>
-    <string name="processing">正在處理…</string>
 
     <!-- Settings -->
     <string name="settings">設定</string>
@@ -122,5 +123,8 @@
     <string name="unsupported_api_must_higher_than_32">不支援：Android API 必須高於 32</string>
     <string name="click_select_language">點選選擇語言</string>
     <string name="developed_by">"開發者: "</string>
+    <string name="picture_compression_rate">任務詳細內容圖片壓縮率</string>
+    <string name="compression_rate_describe">更高的壓縮率將節省更多的儲存空間</string>
+    <string name="original">原始</string>
 
 </resources>

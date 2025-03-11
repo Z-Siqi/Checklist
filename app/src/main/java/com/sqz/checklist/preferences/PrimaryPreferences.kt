@@ -23,4 +23,10 @@ class PrimaryPreferences(context: Context) : PreferencesAccess(context) {
         if (setter != null) writePreferencesState(preferences, setter)
         return readPreferencesState(preferences, false)
     }
+
+    fun pictureCompressionRate(setter: Int? = null): Int {
+        val preferences = "picture_compression_rate"
+        if (setter != null) writePreferencesState(preferences, setter)
+        return readPreferencesState(preferences, 20)
+    }
 }

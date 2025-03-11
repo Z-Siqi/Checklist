@@ -2,6 +2,8 @@ package com.sqz.checklist.ui.material.media
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.util.Log
@@ -14,11 +16,14 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
@@ -27,6 +32,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -36,9 +42,15 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
+import androidx.core.net.toUri
 import coil.compose.rememberAsyncImagePainter
 import com.sqz.checklist.R
+import com.sqz.checklist.cache.deleteCacheFileByName
+import com.sqz.checklist.preferences.PreferencesInCache
+import com.sqz.checklist.preferences.PrimaryPreferences
 import com.sqz.checklist.ui.main.task.layout.function.toUri
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileNotFoundException
@@ -79,11 +91,11 @@ fun PictureSelector(
                 title = null
                 Log.e("PictureHelper", "Failed to select a picture: $e")
                 Toast.makeText(
-                    view.context, view.context.getString(R.string.failed_large_file_size),
+                    view.context, view.context.getString(R.string.failed_large_file_size, "50"),
                     Toast.LENGTH_LONG
                 ).show()
                 Toast.makeText(
-                    view.context, view.context.getString(R.string.report_normal_file_size),
+                    view.context, view.context.getString(R.string.report_normal_file_size, "50"),
                     Toast.LENGTH_SHORT
                 ).show()
             }
@@ -107,7 +119,7 @@ fun PictureSelector(
     }
     if (checkSize != null) {
         val size = checkSize ?: 1
-        if ((size / 1024 / 1024) > 25) {
+        if ((size / 1024 / 1024) > 50) {
             pictureUri = null
             title = null
             Toast.makeText(
@@ -165,11 +177,17 @@ fun PictureViewDialog(
     )
 }
 
-fun openImageBySystem(
-    imageName: String, byteArray: ByteArray, context: Context
-) {
+fun openImageBySystem(imageName: String, byteArray: ByteArray, context: Context) {
+    val name = if (imageName == "") "unknown_name" else {
+        imageName
+    }
+    val cache = PreferencesInCache(context)
+    val getCacheName = cache.waitingDeletedCacheName()
+    if (getCacheName != null && getCacheName != name) {
+        deleteCacheFileByName(context, getCacheName)
+        cache.waitingDeletedCacheName(null)
+    }
     try {
-        val name = if (imageName == "") "unknown_name" else imageName
         val file = File(context.cacheDir, name)
         fun uri(file: File): Uri {
             val saved = File(byteArray.toUri().path!!)
@@ -182,12 +200,14 @@ fun openImageBySystem(
                 context, "${context.packageName}.provider", file
             )
         }
+
         val intent = Intent(Intent.ACTION_VIEW).apply {
             setDataAndType(uri(file), "image/*")
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         context.startActivity(Intent.createChooser(intent, context.getString(R.string.open_with)))
+        cache.waitingDeletedCacheName(name)
     } catch (e: FileNotFoundException) {
         Toast.makeText(context, context.getString(R.string.failed_open), Toast.LENGTH_SHORT).show()
     } catch (e: Exception) {
@@ -195,25 +215,72 @@ fun openImageBySystem(
     }
 }
 
-fun insertPicture(context: Context, uri: Uri): Uri? {
+val errUri = "ERROR".toUri()
+
+fun insertPicture(context: Context, uri: Uri, compression: Int): Uri? {
     val mediaDir = File(context.filesDir, "media/picture/")
     if (!mediaDir.exists()) mediaDir.mkdirs()
-    val fileName = "IMG_${System.currentTimeMillis()}"
+    val toCompression = compression in 1..100
+    val fileName = if (!toCompression) "IMG_${System.currentTimeMillis()}" else {
+        "IMG_${System.currentTimeMillis()}.jpg"
+    }
     val file = File(mediaDir, fileName)
     return try {
         val inputStream = context.contentResolver.openInputStream(uri)
-        val outputStream = FileOutputStream(file)
-        inputStream?.copyTo(outputStream)
-        inputStream?.close()
-        outputStream.close()
+        if (!toCompression) {
+            val outputStream = FileOutputStream(file)
+            inputStream?.copyTo(outputStream)
+            inputStream?.close()
+            outputStream.close()
+        } else {
+            val quality = 100 - compression
+            val bitmap = BitmapFactory.decodeStream(inputStream)
+            val outputStream = FileOutputStream(file)
+            bitmap?.compress(Bitmap.CompressFormat.JPEG, quality, outputStream)
+            outputStream.flush()
+            outputStream.close()
+        }
         Uri.fromFile(file)
     } catch (e: FileNotFoundException) {
         Toast.makeText(
             context, context.getString(R.string.detail_file_not_found), Toast.LENGTH_LONG
         ).show()
-        null
+        errUri
     } catch (e: Exception) {
         e.printStackTrace()
-        null
+        errUri
     }
+}
+
+@Composable
+fun insertPicture(context: Context, uri: Uri): Uri? {
+    val coroutineScope = rememberCoroutineScope()
+    var rememberUri by rememberSaveable { mutableStateOf<Uri?>(null) }
+    val preference = PrimaryPreferences(context)
+    if (rememberUri == null) {
+        ProcessingDialog {
+            coroutineScope.launch(Dispatchers.IO) {
+                rememberUri = insertPicture(context, uri, preference.pictureCompressionRate())
+            }
+        }
+    }
+    if (rememberUri == errUri) Toast.makeText(
+        context, stringResource(R.string.failed_add_picture), Toast.LENGTH_LONG
+    ).show()
+    return rememberUri
+}
+
+@Composable
+private fun ProcessingDialog(run: () -> Unit) {
+    AlertDialog(onDismissRequest = {}, confirmButton = {}, text = {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.padding(8.dp))
+            CircularProgressIndicator()
+            Text(stringResource(R.string.processing))
+        }
+    })
+    run()
 }

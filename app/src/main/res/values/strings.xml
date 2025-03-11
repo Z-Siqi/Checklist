@@ -14,6 +14,7 @@
     <string name="text">Text</string>
     <string name="url">URL</string>
     <string name="failed_open">Failed to open!</string>
+    <string name="processing">Processing…</string>
     <string name="full_date_short">yyyy dd MMM hh:mm a</string>
 
     <!-- MainLayout -->
@@ -23,8 +24,8 @@
     <string name="more_options">more options</string>
     <string name="scroll_to_end">Scroll\nto end</string>
     <string name="scroll_to_top">Scroll\nto top</string>
-    <string name="failed_large_file_size">Failed! File size cannot be larger than 25MB</string>
-    <string name="report_normal_file_size">Please report to developer if file size not larger than 25MB</string>
+    <string name="failed_large_file_size">Failed! File size cannot be larger than %1$sMB</string>
+    <string name="report_normal_file_size">Please report to developer if file size not larger than %1$sMB</string>
 
     <!-- TaskLayout -->
     <string name="task_date_format">dd MMM yyyy</string>
@@ -66,8 +67,9 @@
     <string name="click_select_picture">Click to select a picture</string>
     <string name="selected_picture">Selected picture</string>
     <string name="open_with">Open with</string>
-    <string name="picture_size_limit">Picture size cannot more than 25MB!</string>
+    <string name="picture_size_limit">Picture size cannot more than 50MB!</string>
     <string name="detail_file_not_found">Failed to add detail to task due to file not found!</string>
+    <string name="failed_add_picture">Failed to add picture!</string>
 
     <!-- Notification -->
     <string name="task_reminder">Task Reminder</string>
@@ -105,7 +107,6 @@
     <string name="select_file_to_import">Please select a file to import!</string>
     <string name="failed_in_zip">Failed! Please make sure zip is valid! (tip: catch log for more details)</string>
     <string name="finished">Finished!</string>
-    <string name="processing">Processing…</string>
 
     <!-- Settings -->
     <string name="settings">Settings</string>
@@ -121,5 +122,8 @@
     <string name="unsupported_api_must_higher_than_32">Unsupported: Android API must higher than 32</string>
     <string name="click_select_language">Click to select the language</string>
     <string name="developed_by">"Developed by "</string>
+    <string name="picture_compression_rate">Picture compression rate of task detail</string>
+    <string name="compression_rate_describe">Higher compression ratio will save more storage space</string>
+    <string name="original">Original</string>
 
 </resources>

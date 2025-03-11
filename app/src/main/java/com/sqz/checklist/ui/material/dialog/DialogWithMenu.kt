@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
@@ -40,6 +41,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
@@ -54,6 +56,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
+import com.sqz.checklist.ui.material.verticalColumnScrollbar
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -119,9 +122,18 @@ fun DialogWithMenu(
                     fontSize = 18.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                val scrollState = rememberScrollState()
                 DropdownMenu(expanded = expanded,
-                    modifier = modifier.width(parentWidthDp),
-                    onDismissRequest = { expanded = false }) {
+                    modifier = modifier
+                        .width(parentWidthDp)
+                        .heightIn(min = 80.dp, max = 200.dp)
+                        .verticalColumnScrollbar(
+                            scrollState = scrollState, width = 5.dp, scrollBarCornerRadius = 25f,
+                            scrollBarTrackColor = Color.Transparent,
+                            scrollBarColor = MaterialTheme.colorScheme.outline,
+                            endPadding = 28f, topBottomPadding = 28f
+                        ),
+                    scrollState = scrollState, onDismissRequest = { expanded = false }) {
                     menuListGetter.forEach {
                         DropdownMenuItem(onClick = {
                             type = it

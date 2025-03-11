@@ -15,6 +15,7 @@
     <string name="text">文本</string>
     <string name="url">网址</string>
     <string name="failed_open">打开失败!</string>
+    <string name="processing">正在处理…</string>
     <string name="full_date_short">yyyy 年 MMM dd 日 hh:mm a</string>
 
     <!-- MainLayout -->
@@ -24,8 +25,8 @@
     <string name="more_options">更多选项</string>
     <string name="scroll_to_end">滚动\n到最下方</string>
     <string name="scroll_to_top">滚动\n到顶端</string>
-    <string name="failed_large_file_size">失败！文件大小不能大于 25MB</string>
-    <string name="report_normal_file_size">如果文件大小不大于 25MB，请向开发人员报告</string>
+    <string name="failed_large_file_size">失败！文件大小不能大于 %1$sMB</string>
+    <string name="report_normal_file_size">如果文件大小不大于 %1$sMB，请向开发人员报告</string>
 
     <!-- TaskLayout -->
     <string name="task_date_format">yyyy 年 MMM dd 日</string>
@@ -67,8 +68,9 @@
     <string name="click_select_picture">单击选择图片</string>
     <string name="selected_picture">选定的图片</string>
     <string name="open_with">打开方式</string>
-    <string name="picture_size_limit">图片大小不能超过25MB!</string>
+    <string name="picture_size_limit">图片大小不能超过 50MB!</string>
     <string name="detail_file_not_found">由于文件未找到，无法将详细信息添加到任务!</string>
+    <string name="failed_add_picture">添加图片失败!</string>
 
     <!-- Notification -->
     <string name="task_reminder">任务提醒</string>
@@ -81,7 +83,7 @@
     <string name="no_change_do_nothing">不要把计划变成空气!!</string>
     <string name="remind_at_preview">%1$s 小时 %2$s 分钟之后</string>
     <string name="remind_at">将于 %1$s 提醒</string>
-    <string name="nothing_need_do">选择无需做任何事! \n点击 \'添加\' 以创建任务</string>
+    <string name="nothing_need_do">无需做任何事! \n点击 \'添加\' 以创建任务</string>
     <string name="setting_remind_warning">不建议设置时间太久的提醒, 而且你不应该将你的计划推迟那么久。 此外，这也可能会导致意外的错误。\n\n点击确认以继续设置.</string>
     <string name="cannot_set_past">为过去设置提醒是做不到的! lol</string>
     <string name="please_grant_permission">请授予权限!</string>
@@ -106,7 +108,6 @@
     <string name="select_file_to_import">请选择要导入的文件!</string>
     <string name="failed_in_zip">失败！请确保 zip 有效！（提示：查看日志以了解更多详细信息）</string>
     <string name="finished">完成!</string>
-    <string name="processing">正在处理…</string>
 
     <!-- Settings -->
     <string name="settings">设置</string>
@@ -122,5 +123,8 @@
     <string name="unsupported_api_must_higher_than_32">不支持：Android API 必须高于 32</string>
     <string name="click_select_language">点击以选择语言</string>
     <string name="developed_by">"开发者: "</string>
+    <string name="picture_compression_rate">任务详情图片压缩率</string>
+    <string name="compression_rate_describe">更高的压缩率将节省更多的存储空间</string>
+    <string name="original">原始</string>
 
 </resources>

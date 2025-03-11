@@ -10,19 +10,29 @@ import android.view.SoundEffectConstants
 import android.view.View
 import android.widget.Toast
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
@@ -39,7 +49,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -51,6 +63,7 @@ import androidx.core.content.ContextCompat
 import com.sqz.checklist.R
 import com.sqz.checklist.preferences.PrimaryPreferences
 import com.sqz.checklist.ui.material.UrlText
+import com.sqz.checklist.ui.material.verticalColumnScrollbar
 
 @Composable
 fun settingsList(
@@ -71,6 +84,7 @@ fun settingsList(
                 Switch(
                     checked = setting, onCheckedChange = {
                         setting = primaryPreferences.disableRemoveNotifyInReminded(it)
+                        view.playSoundEffect(SoundEffectConstants.CLICK)
                     }
                 )
             }
@@ -86,6 +100,7 @@ fun settingsList(
                 Switch(
                     checked = setting, onCheckedChange = {
                         setting = primaryPreferences.disableNoScheduleExactAlarmNotice(it)
+                        view.playSoundEffect(SoundEffectConstants.CLICK)
                     }
                 )
             }
@@ -125,6 +140,78 @@ fun settingsList(
                         start = 15.dp, end = 15.dp
                     ), steps = 21, valueRange = 0f..21f
                 )
+            }
+        },
+        SettingsItem(
+            SettingsType.General, 70, stringResource(R.string.picture_compression_rate)
+        ) {
+            var setting by remember { mutableIntStateOf(primaryPreferences.pictureCompressionRate()) }
+            val list = listOf(
+                CompressionItem("100", 100), CompressionItem("90", 90),
+                CompressionItem("80", 80), CompressionItem("70", 70),
+                CompressionItem("60", 60), CompressionItem("50", 50),
+                CompressionItem("40", 40), CompressionItem("30", 30),
+                CompressionItem("20", 20), CompressionItem("10", 10),
+                CompressionItem(stringResource(R.string.original), 0),
+                //CompressionItem("Custom", -1),
+            )
+            var expanded by remember { mutableStateOf(false) }
+            Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                var parentWidthDp by remember { mutableStateOf(0.dp) }
+                val density = LocalDensity.current
+                Column {
+                    OptionText(it, 20)
+                    OptionText(
+                        stringResource(R.string.compression_rate_describe), 50,
+                        miniTitle = true, textColor = MaterialTheme.colorScheme.outline
+                    )
+                }
+                Spacer(modifier = Modifier.weight(1f))
+                OutlinedCard(
+                    modifier = Modifier
+                        .size(85.dp, 40.dp) then Modifier.onGloballyPositioned { coordinates ->
+                        val widthPx = coordinates.size.width
+                        parentWidthDp = with(density) { widthPx.toDp() }
+                    },
+                    shape = ShapeDefaults.ExtraSmall,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                    onClick = {
+                        expanded = !expanded
+                        view.playSoundEffect(SoundEffectConstants.CLICK)
+                    }
+                ) {
+                    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center) {
+                        Text(
+                            text = list.find { it.value == setting }?.name ?: setting.toString(),
+                            modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.secondary,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                    val scrollState = rememberScrollState()
+                    val canScroll = scrollState.canScrollBackward || scrollState.canScrollForward
+                    val screenHeight = LocalConfiguration.current.screenHeightDp
+                    DropdownMenu(expanded = expanded,
+                        modifier = Modifier
+                            .width(parentWidthDp)
+                            .heightIn(min = 200.dp, max = (screenHeight / 2.1).dp)
+                            .verticalColumnScrollbar(
+                                scrollState = scrollState, width = 5.dp, scrollBarCornerRadius = 25f,
+                                showScrollBar = canScroll, scrollBarTrackColor = Color.Transparent,
+                                scrollBarColor = MaterialTheme.colorScheme.outline,
+                                endPadding = 25f, topBottomPadding = 25f
+                            ),
+                        scrollState = scrollState, onDismissRequest = { expanded = false }) {
+                        list.forEach {
+                            DropdownMenuItem(text = { Text(it.name) }, onClick = {
+                                if (it.value != -1) {
+                                    setting = primaryPreferences.pictureCompressionRate(it.value)
+                                }
+                                expanded = false
+                            })
+                        }
+                    }
+                }
             }
         },
         SettingsItem(
@@ -207,6 +294,8 @@ fun settingsList(
         it.type == type
     }
 }
+
+private data class CompressionItem(val name: String, val value: Int)
 
 @Composable
 private fun OptionText(
