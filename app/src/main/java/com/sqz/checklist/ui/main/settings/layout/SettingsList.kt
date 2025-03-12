@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -63,6 +64,7 @@ import androidx.core.content.ContextCompat
 import com.sqz.checklist.R
 import com.sqz.checklist.preferences.PrimaryPreferences
 import com.sqz.checklist.ui.material.UrlText
+import com.sqz.checklist.ui.material.dialog.TaskChangeContentDialog
 import com.sqz.checklist.ui.material.verticalColumnScrollbar
 
 @Composable
@@ -153,7 +155,7 @@ fun settingsList(
                 CompressionItem("40", 40), CompressionItem("30", 30),
                 CompressionItem("20", 20), CompressionItem("10", 10),
                 CompressionItem(stringResource(R.string.original), 0),
-                //CompressionItem("Custom", -1),
+                CompressionItem(stringResource(R.string.custom), -1),
             )
             var expanded by remember { mutableStateOf(false) }
             Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -180,6 +182,7 @@ fun settingsList(
                         view.playSoundEffect(SoundEffectConstants.CLICK)
                     }
                 ) {
+                    var custom by remember { mutableStateOf(false) }
                     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center) {
                         Text(
                             text = list.find { it.value == setting }?.name ?: setting.toString(),
@@ -196,19 +199,55 @@ fun settingsList(
                             .width(parentWidthDp)
                             .heightIn(min = 200.dp, max = (screenHeight / 2.1).dp)
                             .verticalColumnScrollbar(
-                                scrollState = scrollState, width = 5.dp, scrollBarCornerRadius = 25f,
-                                showScrollBar = canScroll, scrollBarTrackColor = Color.Transparent,
+                                scrollState = scrollState,
+                                width = 5.dp,
+                                scrollBarCornerRadius = 25f,
+                                showScrollBar = canScroll,
+                                scrollBarTrackColor = Color.Transparent,
                                 scrollBarColor = MaterialTheme.colorScheme.outline,
-                                endPadding = 25f, topBottomPadding = 25f
+                                endPadding = 25f,
+                                topBottomPadding = 25f
                             ),
                         scrollState = scrollState, onDismissRequest = { expanded = false }) {
                         list.forEach {
                             DropdownMenuItem(text = { Text(it.name) }, onClick = {
+                                view.playSoundEffect(SoundEffectConstants.CLICK)
                                 if (it.value != -1) {
                                     setting = primaryPreferences.pictureCompressionRate(it.value)
-                                }
+                                } else custom = true
                                 expanded = false
                             })
+                        }
+                    }
+                    if (custom) {
+                        val state = rememberTextFieldState()
+                        var isNumeric by remember { mutableStateOf(true) }
+                        TaskChangeContentDialog(
+                            onDismissRequest = { custom = false },
+                            confirm = {
+                                setting = primaryPreferences.pictureCompressionRate(
+                                    state.text.toString().toInt()
+                                )
+                                custom = false
+                            },
+                            title = stringResource(R.string.custom),
+                            confirmText = stringResource(R.string.confirm),
+                            state = state,
+                            singleLine = true, numberOnly = true,
+                            disableConform = isNumeric,
+                            onDisableConformClick = {
+                                Toast.makeText(
+                                    view.context, view.context.getString(R.string.in_0_to_100_only),
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        )
+                        LaunchedEffect(state.text.toString()) {
+                            isNumeric = try {
+                                state.text.toString().toInt() !in 0..100
+                            } catch (e: NumberFormatException) {
+                                true
+                            }
                         }
                     }
                 }

@@ -125,5 +125,7 @@
     <string name="picture_compression_rate">Picture compression rate of task detail</string>
     <string name="compression_rate_describe">Higher compression ratio will save more storage space</string>
     <string name="original">Original</string>
+    <string name="in_0_to_100_only">Only integers between 0 and 100 are allowed!</string>
+    <string name="custom">Custom</string>
 
 </resources>

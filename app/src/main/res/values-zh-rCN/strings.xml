@@ -126,5 +126,7 @@
     <string name="picture_compression_rate">任务详情图片压缩率</string>
     <string name="compression_rate_describe">更高的压缩率将节省更多的存储空间</string>
     <string name="original">原始</string>
+    <string name="in_0_to_100_only">仅允许使用 0 到 100 之间的整数!</string>
+    <string name="custom">自定义</string>
 
 </resources>

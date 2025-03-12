@@ -179,7 +179,9 @@ fun PictureViewDialog(
 
 fun openImageBySystem(imageName: String, byteArray: ByteArray, context: Context) {
     val name = if (imageName == "") "unknown_name" else {
-        imageName
+        if (byteArray.toUri().path.toString()
+                .endsWith("jpg")
+        ) imageName.replace(imageName.substringAfterLast('.', ""), "jpg") else imageName
     }
     val cache = PreferencesInCache(context)
     val getCacheName = cache.waitingDeletedCacheName()

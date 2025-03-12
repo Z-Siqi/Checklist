@@ -17,10 +17,12 @@ import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -41,6 +43,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -59,8 +62,12 @@ fun TaskChangeContentDialog(
     modifier: Modifier = Modifier,
     extraButtonTop: @Composable () -> Unit = {},
     extraButtonBottom: @Composable () -> Unit = {},
-    lineLimits: TextFieldLineLimits = TextFieldLineLimits.MultiLine(),
-    doneImeAction: Boolean = false
+    singleLine: Boolean = false,
+    lineLimits: TextFieldLineLimits = if (singleLine) TextFieldLineLimits.SingleLine else TextFieldLineLimits.MultiLine(),
+    doneImeAction: Boolean = singleLine,
+    numberOnly: Boolean = false,
+    disableConform: Boolean = false,
+    onDisableConformClick: () -> Unit = {},
 ) {
     val view = LocalView.current
     var clearFocus by remember { mutableStateOf(false) }
@@ -88,12 +95,14 @@ fun TaskChangeContentDialog(
                     Text(text = stringResource(R.string.cancel))
                 }
                 Spacer(modifier = modifier.width(8.dp))
-                TextButton(onClick = {
-                    coroutineScope.launch {
+                TextButton(colors = if (disableConform) {
+                    ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.outlineVariant)
+                } else ButtonDefaults.textButtonColors(), onClick = {
+                    if (!disableConform) coroutineScope.launch {
                         clearFocus = true
                         delay(80)
                         confirm()
-                    }
+                    } else onDisableConformClick()
                     view.playSoundEffect(SoundEffectConstants.CLICK)
                 }) {
                     Text(text = confirmText)
@@ -110,13 +119,19 @@ fun TaskChangeContentDialog(
         text = {
             val screenHeightDp = LocalConfiguration.current.screenHeightDp
             val height = when {
+                singleLine -> 100
                 screenHeightDp >= 700 -> (screenHeightDp / 5.8).toInt()
                 screenHeightDp < (LocalConfiguration.current.screenWidthDp / 1.2) -> (screenHeightDp / 3.2).toInt()
                 else -> (screenHeightDp / 5.1).toInt()
             }
             OutlinedCard(
-                modifier = modifier.fillMaxWidth() then modifier.height(height.dp),
-                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainer)
+                modifier = modifier
+                    .fillMaxWidth()
+                    .height(height.dp) then if (singleLine)
+                    modifier.padding(top = 16.dp, bottom = 16.dp)
+                else modifier,
+                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainer),
+                shape = if (singleLine) ShapeDefaults.Small else CardDefaults.outlinedShape
             ) {
                 val focus = LocalFocusManager.current
                 if (clearFocus) LaunchedEffect(true) {
@@ -137,7 +152,8 @@ fun TaskChangeContentDialog(
                         capitalization = KeyboardCapitalization.Sentences,
                         imeAction = if (doneImeAction) {
                             ImeAction.Done
-                        } else ImeAction.Default
+                        } else ImeAction.Default,
+                        keyboardType = if (numberOnly) KeyboardType.Number else KeyboardType.Unspecified
                     ),
                     onKeyboardAction = { if (doneImeAction) clearFocus = true },
                     lineLimits = lineLimits,
@@ -154,5 +170,8 @@ private fun TaskChangeContentCardPreview() {
     @Composable
     fun icon() = Icon(painter = painterResource(id = R.drawable.close), contentDescription = null)
     val state = rememberTextFieldState()
-    TaskChangeContentDialog({}, {}, "TEST", "TEST", state, Modifier, { icon() }, { icon() })
+    TaskChangeContentDialog(
+        {}, {}, "TEST", "TEST", state, Modifier, { icon() }, { icon() },
+        singleLine = false
+    )
 }
