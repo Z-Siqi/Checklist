@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.core.net.toUri
 import coil.compose.rememberAsyncImagePainter
+import com.sqz.checklist.MainActivity
 import com.sqz.checklist.R
 import com.sqz.checklist.cache.deleteCacheFileByName
 import com.sqz.checklist.preferences.PreferencesInCache
@@ -169,7 +170,7 @@ fun PictureViewDialog(
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Image(rememberAsyncImagePainter(byteArray.toUri()), imageName)
+                    Image(rememberAsyncImagePainter(byteArray.toUri(MainActivity.appDir)), imageName)
                 }
             }
         },
@@ -178,6 +179,7 @@ fun PictureViewDialog(
 }
 
 fun openImageBySystem(imageName: String, byteArray: ByteArray, context: Context) {
+    val convertUri = byteArray.toUri(MainActivity.appDir)
     val name = if (imageName == "") "unknown_name" else {
         if (byteArray.toUri().path.toString()
                 .endsWith("jpg")
@@ -192,7 +194,7 @@ fun openImageBySystem(imageName: String, byteArray: ByteArray, context: Context)
     try {
         val file = File(context.cacheDir, name)
         fun uri(file: File): Uri {
-            val saved = File(byteArray.toUri().path!!)
+            val saved = File(convertUri.path!!)
             val inputStream = FileInputStream(saved)
             val outputStream = FileOutputStream(file)
             inputStream.copyTo(outputStream)

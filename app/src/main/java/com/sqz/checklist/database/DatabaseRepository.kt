@@ -1,5 +1,6 @@
 package com.sqz.checklist.database
 
+import com.sqz.checklist.MainActivity
 import com.sqz.checklist.ui.main.task.layout.function.toUri
 import kotlinx.coroutines.flow.Flow
 import java.io.File
@@ -106,7 +107,7 @@ class DatabaseRepository(
     private suspend fun deleteDetail(taskId: Long, taskDao: TaskDao, ignoreCheck: Boolean = false) {
         if (taskDao.getAll(taskId).detail || ignoreCheck) {
             try {
-                val data = taskDao.getTaskDetail(taskId).dataByte?.toUri()
+                val data = taskDao.getTaskDetail(taskId).dataByte?.toUri(MainActivity.appDir)
                 val file = File(data?.path!!)
                 if (file.exists()) file.delete()
             } catch (_: Exception) {}

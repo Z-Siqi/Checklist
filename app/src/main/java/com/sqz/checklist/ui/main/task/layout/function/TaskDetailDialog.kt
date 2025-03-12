@@ -190,6 +190,11 @@ fun ByteArray.toUri(): Uri {
     return Uri.parse(String(this, Charsets.UTF_8))
 }
 
+fun ByteArray.toUri(filesDir: String): Uri {
+    val regex = Regex("file:///.*/files/")
+    return Uri.parse(String(this, Charsets.UTF_8).replace(regex, "file://$filesDir/"))
+}
+
 @Preview
 @Composable
 private fun Preview() {

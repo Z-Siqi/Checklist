@@ -31,11 +31,13 @@ import com.sqz.checklist.ui.theme.ChecklistTheme
 class MainActivity : ComponentActivity() {
     companion object {
         lateinit var taskDatabase: TaskDatabase
+        lateinit var appDir: String
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         taskDatabase = buildDatabase(applicationContext)
+        appDir = applicationContext.filesDir.absolutePath
         setContent {
             var getNavHeight by remember { mutableIntStateOf(0) }
             val navigationBars = WindowInsets.navigationBars.toString()

@@ -65,6 +65,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.sqz.checklist.MainActivity
 import com.sqz.checklist.R
 import com.sqz.checklist.database.Task
 import com.sqz.checklist.database.TaskDetail
@@ -233,7 +234,7 @@ private fun EditTask(
                 detailData.detailType(editState.detail.type)
                 detailData.detailString(editState.detail.dataString)
                 if (editState.detail.dataByte != null) {
-                    detailData.detailUri(editState.detail.dataByte.toUri())
+                    detailData.detailUri(editState.detail.dataByte.toUri(MainActivity.appDir))
                 }
             }
             remember = true
