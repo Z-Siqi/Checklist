@@ -56,6 +56,7 @@
     <string name="detail">详情信息</string>
     <string name="add_detail">添加详情信息</string>
     <string name="create_task_detail">创建任务详情</string>
+    <string name="edit_task_detail">编辑任务详情</string>
     <string name="click_select_detail_type">单击选择详细信息类型</string>
     <string name="invalid_url">网址无效!</string>
     <string name="select_detail_type">请先选择详细信息类型!</string>

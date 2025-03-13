@@ -64,7 +64,7 @@ import androidx.core.content.ContextCompat
 import com.sqz.checklist.R
 import com.sqz.checklist.preferences.PrimaryPreferences
 import com.sqz.checklist.ui.material.UrlText
-import com.sqz.checklist.ui.material.dialog.TaskChangeContentDialog
+import com.sqz.checklist.ui.material.dialog.EditableContentDialog
 import com.sqz.checklist.ui.material.verticalColumnScrollbar
 
 @Composable
@@ -222,7 +222,7 @@ fun settingsList(
                     if (custom) {
                         val state = rememberTextFieldState()
                         var isNumeric by remember { mutableStateOf(true) }
-                        TaskChangeContentDialog(
+                        EditableContentDialog(
                             onDismissRequest = { custom = false },
                             confirm = {
                                 setting = primaryPreferences.pictureCompressionRate(

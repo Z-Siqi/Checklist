@@ -5,43 +5,30 @@ import android.view.View
 import android.widget.Toast
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.rememberBasicTooltipState
-import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import com.sqz.checklist.R
-import com.sqz.checklist.database.TaskDetailType
 import com.sqz.checklist.notification.PermissionState
 import com.sqz.checklist.ui.main.NavExtendedButtonData
 import com.sqz.checklist.ui.main.NavMode
 import com.sqz.checklist.ui.main.NavTooltipContent
 import com.sqz.checklist.ui.main.OnClickType
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
+import com.sqz.checklist.ui.main.task.layout.function.CreateTask
 import com.sqz.checklist.ui.main.task.layout.function.TaskDetailData
-import com.sqz.checklist.ui.main.task.layout.function.TaskDetailDialog
-import com.sqz.checklist.ui.main.task.layout.function.toByteArray
+import com.sqz.checklist.ui.main.task.layout.function.TaskModifyDialog
 import com.sqz.checklist.ui.material.NonExtendedTooltip
-import com.sqz.checklist.ui.material.TextTooltipBox
-import com.sqz.checklist.ui.material.dialog.TaskChangeContentDialog
-import com.sqz.checklist.ui.material.media.errUri
-import com.sqz.checklist.ui.material.media.insertPicture
 import kotlinx.coroutines.launch
 
 /** Nav Extended Button Connect Data **/
@@ -108,11 +95,14 @@ fun taskExtendedNavButton(
     // to add task
     if (taskAddCard) TaskAddCard(
         onDismissRequest = { taskAddCard = false },
-        confirm = { text, pin, reminder, detail, detailString, byteArray ->
+        confirm = {
             coroutineScope.launch {
-                viewModel.insertTask(text, pin, detail, detailString, byteArray).let { taskId ->
-                    if (reminder) viewModel.reminderActionCaller(
-                        taskId, null, true, text
+                viewModel.insertTask(
+                    it.description, it.pin,
+                    it.detail?.type, it.detail?.dataString, it.detail?.dataByte
+                ).let { taskId ->
+                    if (it.reminder) viewModel.reminderActionCaller(
+                        taskId, null, true, it.description
                     ).also {
                         Toast.makeText(
                             view.context,
@@ -121,14 +111,11 @@ fun taskExtendedNavButton(
                         ).show()
                     }
                 }
-                viewModel.taskDetailDataSaver().releaseMemory(view.context)
+                viewModel.taskDetailDataSaver().releaseMemory()
                 taskAddCard = false
             }
         },
-        reminderButton = viewModel.notificationInitState(view.context).let {
-            it == PermissionState.Notification || it == PermissionState.Both
-        },
-        detailData = viewModel.taskDetailDataSaver(),
+        permissionState = viewModel.notificationInitState(view.context),
         view = view,
     )
 
@@ -144,108 +131,19 @@ fun taskExtendedNavButton(
 @Composable
 private fun TaskAddCard(
     onDismissRequest: () -> Unit,
-    confirm: (
-        text: String, pin: Boolean, reminder: Boolean,
-        detailType: TaskDetailType?, detailDataString: String?, detailDataByteArray: ByteArray?
-    ) -> Unit,
-    reminderButton: Boolean,
-    detailData: TaskDetailData,
+    confirm: (CreateTask) -> Unit,
+    permissionState: PermissionState,
     view: View,
 ) {
-    val state = rememberTextFieldState()
-    var confirmState by rememberSaveable { mutableIntStateOf(0) }
-    val noDoNothing = stringResource(R.string.no_do_nothing)
-    var pin by rememberSaveable { mutableStateOf(false) }
-    var reminder by rememberSaveable { mutableStateOf(false) }
-    var detail by rememberSaveable { mutableStateOf(false) }
-
-    if (confirmState != 0) {
-        if (state.text.toString() != "") {
-            val uri = if (detailData.detailType() == TaskDetailType.Picture) {
-                val insertPicture = insertPicture(view.context, detailData.detailUri()!!)
-                val picture = insertPicture?.toByteArray()
-                if (insertPicture != null) confirmState = 2
-                if (insertPicture != errUri) picture else {
-                    detailData.detailType(TaskDetailType.Text)
-                    null
-                }
-            } else {
-                confirmState = 2
-                detailData.detailUri()?.toByteArray()
-            }
-            if (confirmState == 2) confirm(
-                state.text.toString(), pin, reminder,
-                detailData.detailType(), detailData.detailString(), uri
-            ).also { confirmState = 0 }
-        } else{
-            Toast.makeText(view.context, noDoNothing, Toast.LENGTH_SHORT).show()
-            confirmState = 0
-        }
-    }
-    TaskChangeContentDialog(
-        onDismissRequest = { onDismissRequest().also { detailData.releaseMemory(view.context) } },
-        confirm = { confirmState = 1 },
-        state = state,
-        extraButtonTop = {
-            val onPinClick = {
-                pin = !pin
-                view.playSoundEffect(SoundEffectConstants.CLICK)
-            }
-            TextTooltipBox(textRid = R.string.create_as_pin) {
-                IconButton(onClick = onPinClick, modifier = Modifier.rotate(40f)) {
-                    Icon(
-                        painter = painterResource(if (pin) R.drawable.pinned else R.drawable.pin),
-                        contentDescription = stringResource(R.string.create_as_pin)
-                    )
-                }
-            }
+    TaskModifyDialog(
+        reminderButton = permissionState.let {
+            it == PermissionState.Notification || it == PermissionState.Both
         },
-        extraButtonBottom = {
-            TextTooltipBox(textRid = R.string.create_task_detail) {
-                IconButton(
-                    onClick = { detail = !detail },
-                    colors = if (detailData.detailType() != null) {
-                        IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
-                    } else IconButtonDefaults.iconButtonColors()
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.attach),
-                        contentDescription = stringResource(R.string.create_task_detail)
-                    )
-                }
-            }
-            if (reminderButton) {
-                val onReminderClick = {
-                    reminder = !reminder
-                    view.playSoundEffect(SoundEffectConstants.CLICK)
-                }
-                TextTooltipBox(textRid = R.string.create_with_reminder) {
-                    IconButton(onClick = onReminderClick) {
-                        Icon(
-                            painter = painterResource(if (reminder) R.drawable.timer_on else R.drawable.timer),
-                            contentDescription = stringResource(R.string.create_with_reminder)
-                        )
-                    }
-                }
-            }
+        confirm = {
+            confirm(it)
+            TaskDetailData.instance().releaseMemory()
         },
-        title = stringResource(R.string.create_task),
-        confirmText = stringResource(if (!reminder) R.string.add else R.string.next),
-        doneImeAction = true
-    )
-    if (detail) TaskDetailDialog(
-        onDismissRequest = { onDismissClick ->
-            if (onDismissClick != null && onDismissClick) {
-                detailData.releaseMemory(view.context)
-            }
-            detail = false
-        },
-        confirm = { type, string, bitmap ->
-            detailData.setter(type, string, bitmap)
-            detail = false
-        },
-        title = stringResource(R.string.create_task_detail),
-        detailData = detailData,
+        onDismissRequest = onDismissRequest,
         view = view
     )
 }

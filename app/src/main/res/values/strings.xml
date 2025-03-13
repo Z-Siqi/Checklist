@@ -55,6 +55,7 @@
     <string name="detail">Detail Content</string>
     <string name="add_detail">Add a Detail Content</string>
     <string name="create_task_detail">Create Task Detail</string>
+    <string name="edit_task_detail">Edit Task Detail</string>
     <string name="click_select_detail_type">Click to select a detail type</string>
     <string name="invalid_url">Invalid URL!</string>
     <string name="select_detail_type">Please select a detail type first!</string>

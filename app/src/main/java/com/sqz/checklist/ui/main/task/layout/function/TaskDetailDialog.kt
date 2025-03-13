@@ -1,7 +1,7 @@
 package com.sqz.checklist.ui.main.task.layout.function
 
-import android.content.Context
 import android.net.Uri
+import android.util.Log
 import android.util.Patterns
 import android.view.View
 import android.widget.Toast
@@ -25,7 +25,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sqz.checklist.R
-import com.sqz.checklist.cache.deleteCacheFileByName
+import com.sqz.checklist.database.TaskDetail
 import com.sqz.checklist.database.TaskDetailType
 import com.sqz.checklist.ui.material.ApplicationList
 import com.sqz.checklist.ui.material.media.PictureSelector
@@ -135,14 +135,18 @@ fun TaskDetailDialog(
 
 class TaskDetailData private constructor() {
     companion object {
-        //private val data = TaskDetailData()
-        fun instance(): TaskDetailData = TaskDetailData()
+        @Volatile
+        private var instance: TaskDetailData? = null
+        fun instance(): TaskDetailData = instance ?: synchronized(this) {
+            instance ?: TaskDetailData().also { instance = it }
+        }
     }
+
+    private var output by mutableStateOf<TaskDetail?>(null)
 
     private var detailType by mutableStateOf<TaskDetailType?>(null)
     private var detailString by mutableStateOf("")
     private var uri by mutableStateOf<Uri?>(null)
-    private var cacheString by mutableStateOf<String?>(null)
 
     fun detailType(): TaskDetailType? = this.detailType
     fun detailType(setter: TaskDetailType?) {
@@ -159,26 +163,34 @@ class TaskDetailData private constructor() {
         this.detailString = setter
     }
 
-    /*fun cacheString(): String? = this.cacheString
-    fun cacheString(setter: String) {
-        this.cacheString = setter
-    }*/
-
     fun setter(detailType: TaskDetailType, detailString: String, detailUri: Uri? = null) {
         this.detailType = detailType
         this.detailString = detailString
         this.uri = detailUri
     }
 
-    private fun releaseMemory() {
+    private fun output(): TaskDetail? = this.output
+    fun output(toByteArray: ByteArray?) {
+        this.detailType?.let {
+            this.output = TaskDetail(0, this.detailType!!, this.detailString, toByteArray)
+        }
+    }
+
+    fun outputAsFinal(): TaskDetail? {
+        this.releaseTemporaryMemory()
+        return this.output()
+    }
+
+    private fun releaseTemporaryMemory() {
         this.detailType = null
         this.detailString = ""
         this.uri = null
     }
 
-    fun releaseMemory(context: Context) {
-        this.cacheString?.let { deleteCacheFileByName(context, it.substringAfterLast("/")) }
-        this.releaseMemory()
+    fun releaseMemory() {
+        this.releaseTemporaryMemory()
+        this.output = null
+        Log.d("TaskDetailData", "Release memory is called")
     }
 }
 

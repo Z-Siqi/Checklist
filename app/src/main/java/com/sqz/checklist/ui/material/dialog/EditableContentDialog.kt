@@ -53,7 +53,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
-fun TaskChangeContentDialog(
+fun EditableContentDialog(
     onDismissRequest: () -> Unit,
     confirm: () -> Unit,
     title: String,
@@ -166,11 +166,11 @@ fun TaskChangeContentDialog(
 
 @Preview
 @Composable
-private fun TaskChangeContentCardPreview() {
+private fun EditableContentDialogPreview() {
     @Composable
     fun icon() = Icon(painter = painterResource(id = R.drawable.close), contentDescription = null)
     val state = rememberTextFieldState()
-    TaskChangeContentDialog(
+    EditableContentDialog(
         {}, {}, "TEST", "TEST", state, Modifier, { icon() }, { icon() },
         singleLine = false
     )
