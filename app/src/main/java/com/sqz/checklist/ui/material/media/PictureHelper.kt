@@ -225,8 +225,10 @@ fun insertPicture(context: Context, uri: Uri, compression: Int): Uri? {
     val mediaDir = File(context.filesDir, "media/picture/")
     if (!mediaDir.exists()) mediaDir.mkdirs()
     val toCompression = compression in 1..100
-    val fileName = if (!toCompression) "IMG_${System.currentTimeMillis()}" else {
-        "IMG_${System.currentTimeMillis()}.jpg"
+    val fileName = when {
+        uri.path?.endsWith(".jpg") ?: false -> "IMG_${System.currentTimeMillis()}.jpg"
+        toCompression -> "IMG_${System.currentTimeMillis()}.jpg"
+        else -> "IMG_${System.currentTimeMillis()}"
     }
     val file = File(mediaDir, fileName)
     return try {
@@ -257,14 +259,15 @@ fun insertPicture(context: Context, uri: Uri, compression: Int): Uri? {
 }
 
 @Composable
-fun insertPicture(context: Context, uri: Uri): Uri? {
+fun insertPicture(context: Context, uri: Uri, ignoreCompressSettings: Boolean = false): Uri? {
     val coroutineScope = rememberCoroutineScope()
     var rememberUri by rememberSaveable { mutableStateOf<Uri?>(null) }
     val preference = PrimaryPreferences(context)
+    val compression = if (ignoreCompressSettings) 0 else preference.pictureCompressionRate()
     if (rememberUri == null) {
         ProcessingDialog {
             coroutineScope.launch(Dispatchers.IO) {
-                rememberUri = insertPicture(context, uri, preference.pictureCompressionRate())
+                rememberUri = insertPicture(context, uri, compression)
             }
         }
     }

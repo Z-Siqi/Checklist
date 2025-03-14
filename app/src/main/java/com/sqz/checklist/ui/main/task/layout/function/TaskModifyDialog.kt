@@ -34,6 +34,7 @@ import com.sqz.checklist.ui.material.dialog.EditableContentDialog
 import com.sqz.checklist.ui.material.media.errUri
 import com.sqz.checklist.ui.material.media.insertPicture
 import kotlinx.coroutines.launch
+import java.io.File
 
 /** Add task dialog **/
 @Composable
@@ -164,7 +165,9 @@ private fun TaskModifyDialog(
     if (confirmState != 0) {
         if (state.text.toString() != "") {
             val uriToByteArray = if (detailData.detailType() == TaskDetailType.Picture) {
-                val insertPicture = insertPicture(view.context, detailData.detailUri()!!)
+                val insertPicture = insertPicture(
+                    view.context, detailData.detailUri()!!, isExists(detailData)
+                )
                 val picture = insertPicture?.toByteArray()
                 if (insertPicture != null) confirmState = 2
                 if (insertPicture != errUri) picture else {
@@ -212,6 +215,12 @@ private fun TaskModifyDialog(
         extraButtonTop = parameter.extraButtonTop,
         doneImeAction = true
     )
+}
+
+private fun isExists(detailData: TaskDetailData): Boolean {
+    return detailData.detailUri()!!.path?.toByteArray()?.toUri(MainActivity.appDir)!!.path?.let {
+        File(it).exists()
+    } == true
 }
 
 private data class EditableContentDialog(
