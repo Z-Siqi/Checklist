@@ -74,6 +74,7 @@ import com.sqz.checklist.ui.material.dialog.InfoAlertDialog
 import com.sqz.checklist.ui.material.dialog.InfoDialogWithURL
 import com.sqz.checklist.ui.material.dialog.OpenExternalAppDialog
 import com.sqz.checklist.ui.material.media.PictureViewDialog
+import com.sqz.checklist.ui.material.media.VideoViewDialog
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -202,6 +203,12 @@ private fun TaskDetailInfoDialog(onDismissRequest: () -> Unit, detail: TaskDetai
             onDismissRequest = onDismissRequest,
             byteArray = detail.dataByte!!, imageName = detail.dataString,
             title = stringResource(R.string.picture)
+        )
+
+        TaskDetailType.Video -> VideoViewDialog(
+            onDismissRequest = onDismissRequest,
+            byteArray = detail.dataByte!!, videoName = detail.dataString,
+            title = "Video"
         )
     }
 }

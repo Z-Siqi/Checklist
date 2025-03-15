@@ -13,6 +13,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -30,6 +31,11 @@ import com.sqz.checklist.database.TaskDetailType
 import com.sqz.checklist.ui.material.ApplicationList
 import com.sqz.checklist.ui.material.media.PictureSelector
 import com.sqz.checklist.ui.material.dialog.DialogWithMenu
+import com.sqz.checklist.ui.material.media.VideoSelector
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 
 @Composable
 fun TaskDetailDialog(
@@ -39,18 +45,21 @@ fun TaskDetailDialog(
     detailData: TaskDetailData,
     view: View
 ) {
+    val detailDataUri by detailData.detailUri().collectAsState()
+    val detailDataString by detailData.detailString().collectAsState()
+    val detailDataType by detailData.detailType().collectAsState()
     val detailTextState = rememberTextFieldState()
     val noDoNothing = stringResource(R.string.no_do_nothing)
     var remember by rememberSaveable { mutableStateOf(false) }
     if (!remember) LaunchedEffect(Unit) {
         detailTextState.clearText()
-        detailTextState.edit { insert(0, detailData.detailString()) }
+        detailTextState.edit { insert(0, detailDataString) }
         remember = true
     }
     DialogWithMenu(
         onDismissRequest = onDismissRequest,
         confirm = {
-            if (detailTextState.text.toString() != "" && it != null || detailData.detailString() != "") {
+            if (detailTextState.text.toString() != "" && it != null || detailDataString != "") {
                 val notURL = view.context.getString(R.string.invalid_url)
                 if (it == TaskDetailType.URL &&
                     !Patterns.WEB_URL.matcher(detailTextState.text.toString()).matches()
@@ -60,12 +69,13 @@ fun TaskDetailDialog(
                         TaskDetailType.URL -> TaskDetailType.URL
                         TaskDetailType.Application -> TaskDetailType.Application
                         TaskDetailType.Picture -> TaskDetailType.Picture
+                        TaskDetailType.Video -> TaskDetailType.Video
                         else -> null
                     }
-                    detailData.detailType(detailType)
                     val detailString = when {
-                        it == TaskDetailType.Application -> detailData.detailString()
-                        it == TaskDetailType.Picture -> detailData.detailString()
+                        it == TaskDetailType.Application -> detailDataString
+                        it == TaskDetailType.Picture -> detailDataString
+                        it == TaskDetailType.Video -> detailDataString
                         it == TaskDetailType.URL && !detailTextState.text.toString()
                             .startsWith("http") -> {
                             detailTextState.edit { insert(0, "http://") }
@@ -74,12 +84,12 @@ fun TaskDetailDialog(
 
                         else -> detailTextState.text.toString()
                     }
-                    confirm(detailData.detailType()!!, detailString, detailData.detailUri())
+                    confirm(detailData.detailType(detailType)!!, detailString, detailDataUri)
                 }
             } else Toast.makeText(view.context, noDoNothing, Toast.LENGTH_SHORT).show()
         },
         confirmText = stringResource(R.string.confirm),
-        dismissText = stringResource(if (detailData.detailType() == null) R.string.dismiss else R.string.delete),
+        dismissText = stringResource(if (detailDataType == null) R.string.dismiss else R.string.delete),
         title = title,
         menuListGetter = TaskDetailType.entries.toTypedArray(),
         menuText = {
@@ -88,6 +98,7 @@ fun TaskDetailDialog(
                 TaskDetailType.URL -> view.context.getString(R.string.url)
                 TaskDetailType.Application -> view.context.getString(R.string.application)
                 TaskDetailType.Picture -> view.context.getString(R.string.picture)
+                TaskDetailType.Video -> view.context.getString(R.string.video)
                 else -> view.context.getString(R.string.click_select_detail_type)
             }
         },
@@ -97,12 +108,10 @@ fun TaskDetailDialog(
                 TaskDetailType.URL -> false
                 TaskDetailType.Application -> ApplicationList({ name ->
                     detailData.detailString(name)
-                }, detailData.detailString(), view.context) == Unit
+                }, detailDataString, view.context) == Unit
 
-                TaskDetailType.Picture -> PictureSelector({ title, uri ->
-                    if (title != null) detailData.detailString(title)
-                    if (uri != null) detailData.detailUri(uri)
-                }, view, getUri = detailData.detailUri()) == Unit
+                TaskDetailType.Picture -> PictureSelector(detailData, view) == Unit
+                TaskDetailType.Video -> VideoSelector(detailData, view) == Unit
 
                 else -> Text(
                     stringResource(R.string.select_detail_type),
@@ -110,11 +119,12 @@ fun TaskDetailDialog(
                 ) == Unit
             }
         },
-        defaultType = detailData.detailType(),
+        defaultType = detailDataType,
         currentMenuSelection = {
-            if (it != null && detailData.detailType() != it) {
+            if (it != null && detailDataType != it) {
                 detailData.detailString("")
                 detailData.detailUri(null)
+                detailData.inPreviewState(false)
                 detailTextState.clearText()
             }
         },
@@ -126,6 +136,7 @@ fun TaskDetailDialog(
                 TaskDetailType.URL -> KeyboardType.Uri
                 TaskDetailType.Application -> KeyboardType.Unspecified
                 TaskDetailType.Picture -> KeyboardType.Unspecified
+                TaskDetailType.Video -> KeyboardType.Unspecified
                 else -> KeyboardType.Unspecified
             }
         },
@@ -144,35 +155,44 @@ class TaskDetailData private constructor() {
 
     private var output by mutableStateOf<TaskDetail?>(null)
 
-    private var detailType by mutableStateOf<TaskDetailType?>(null)
-    private var detailString by mutableStateOf("")
-    private var uri by mutableStateOf<Uri?>(null)
+    private val detailType = MutableStateFlow<TaskDetailType?>(null)
+    private val detailString = MutableStateFlow("")
+    private val uri = MutableStateFlow<Uri?>(null)
+    private val inPreviewState = MutableStateFlow<Boolean?>(null)
 
-    fun detailType(): TaskDetailType? = this.detailType
-    fun detailType(setter: TaskDetailType?) {
-        this.detailType = setter
+    fun inPreviewState(): StateFlow<Boolean?> = this.inPreviewState.asStateFlow()
+    fun inPreviewState(setter: Boolean) {
+        if (setter) this.inPreviewState.update { true }
+        else this.inPreviewState.update { null }
     }
 
-    fun detailUri(): Uri? = this.uri
+    fun detailType(): StateFlow<TaskDetailType?> = this.detailType.asStateFlow()
+    fun detailType(setter: TaskDetailType?): TaskDetailType? {
+        this.detailType.update { setter }
+        return this.detailType.value
+    }
+
+    fun detailUri(): StateFlow<Uri?> = this.uri.asStateFlow()
     fun detailUri(setter: Uri?) {
-        this.uri = setter
+        this.uri.update { setter }
     }
 
-    fun detailString(): String = this.detailString
+    fun detailString(): StateFlow<String> = this.detailString.asStateFlow()
     fun detailString(setter: String) {
-        this.detailString = setter
+        this.detailString.update { setter }
     }
 
     fun setter(detailType: TaskDetailType, detailString: String, detailUri: Uri? = null) {
-        this.detailType = detailType
-        this.detailString = detailString
-        this.uri = detailUri
+        this.detailType.update { detailType }
+        this.detailString.update { detailString }
+        this.uri.update { detailUri }
     }
 
     private fun output(): TaskDetail? = this.output
     fun output(toByteArray: ByteArray?) {
-        this.detailType?.let {
-            this.output = TaskDetail(0, this.detailType!!, this.detailString, toByteArray)
+        this.detailType.value?.let {
+            this.output =
+                TaskDetail(0, this.detailType.value!!, this.detailString.value, toByteArray)
         }
     }
 
@@ -182,9 +202,10 @@ class TaskDetailData private constructor() {
     }
 
     private fun releaseTemporaryMemory() {
-        this.detailType = null
-        this.detailString = ""
-        this.uri = null
+        this.detailType.value = null
+        this.detailString.value = ""
+        this.uri.value = null
+        this.inPreviewState.value = null
     }
 
     fun releaseMemory() {

@@ -56,5 +56,5 @@ data class TaskDetail(
 }
 
 enum class TaskDetailType { // some part not implemented
-    Text, URL, Application, Picture //, Video, ChildList
+    Text, URL, Application, Picture, Video //, ChildList
 }

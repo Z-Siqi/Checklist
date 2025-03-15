@@ -71,6 +71,10 @@
     <string name="picture_size_limit">Picture size cannot more than 50MB!</string>
     <string name="detail_file_not_found">Failed to add detail to task due to file not found!</string>
     <string name="failed_add_picture">Failed to add picture!</string>
+    <string name="video_size_limit">Video size cannot more than 350MB!</string>
+    <string name="play_video">Play Video</string>
+    <string name="click_select_video">Click to select a video</string>
+    <string name="video">Video</string>
 
     <!-- Notification -->
     <string name="task_reminder">Task Reminder</string>

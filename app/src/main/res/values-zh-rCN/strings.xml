@@ -72,6 +72,10 @@
     <string name="picture_size_limit">图片大小不能超过 50MB!</string>
     <string name="detail_file_not_found">由于文件未找到，无法将详细信息添加到任务!</string>
     <string name="failed_add_picture">添加图片失败!</string>
+    <string name="video_size_limit">视频大小不能超过 350MB!</string>
+    <string name="play_video">播放视频</string>
+    <string name="click_select_video">点击选择视频</string>
+    <string name="video">视频</string>
 
     <!-- Notification -->
     <string name="task_reminder">任务提醒</string>

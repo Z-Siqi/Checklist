@@ -1,6 +1,7 @@
 package com.sqz.checklist.ui.main.task.layout.function
 
 import android.content.Context
+import android.net.Uri
 import android.view.SoundEffectConstants
 import android.view.View
 import android.widget.Toast
@@ -13,6 +14,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -33,6 +35,7 @@ import com.sqz.checklist.ui.material.TextTooltipBox
 import com.sqz.checklist.ui.material.dialog.EditableContentDialog
 import com.sqz.checklist.ui.material.media.errUri
 import com.sqz.checklist.ui.material.media.insertPicture
+import com.sqz.checklist.ui.material.media.insertVideo
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -45,6 +48,7 @@ fun TaskModifyDialog(
     view: View,
 ) {
     val detailData = TaskDetailData.instance()
+    val detailDataType by detailData.detailType().collectAsState()
     var reminder by rememberSaveable { mutableStateOf(false) }
     var pin by rememberSaveable { mutableStateOf(false) }
 
@@ -66,7 +70,7 @@ fun TaskModifyDialog(
         TaskDetailIcon(
             textRid = R.string.create_task_detail,
             onClick = { run(it) },
-            selected = detailData.detailType() != null
+            selected = detailDataType != null
         )
         if (reminderButton) {
             val onReminderClick = {
@@ -109,6 +113,7 @@ fun TaskModifyDialog(
     view: View,
 ) {
     val detailData = TaskDetailData.instance()
+    val detailDataType by detailData.detailType().collectAsState()
     var remember by rememberSaveable { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
     val textFieldState: (TextFieldState) -> TextFieldState = {
@@ -130,7 +135,7 @@ fun TaskModifyDialog(
         TaskDetailIcon(
             textRid = R.string.edit_task_detail,
             onClick = { run(it) },
-            selected = detailData.detailType() != null
+            selected = detailDataType != null
         )
     }
     TaskModifyDialog(
@@ -159,24 +164,40 @@ private fun TaskModifyDialog(
     parameter: EditableContentDialog,
     view: View,
 ) {
+    val detailDataUri by detailData.detailUri().collectAsState()
     val state = parameter.textFieldState(rememberTextFieldState())
+    val detailDataType by detailData.detailType().collectAsState()
     var confirmState by rememberSaveable { mutableIntStateOf(0) }
     var detailDialog by rememberSaveable { mutableStateOf(false) }
     if (confirmState != 0) {
         if (state.text.toString() != "") {
-            val uriToByteArray = if (detailData.detailType() == TaskDetailType.Picture) {
-                val insertPicture = insertPicture(
-                    view.context, detailData.detailUri()!!, isExists(detailData)
-                )
-                val picture = insertPicture?.toByteArray()
-                if (insertPicture != null) confirmState = 2
-                if (insertPicture != errUri) picture else {
-                    detailData.detailType(TaskDetailType.Text)
-                    null
+            val uriToByteArray = when (detailDataType) {
+                TaskDetailType.Picture -> {
+                    val insertPicture = insertPicture(
+                        view.context, detailDataUri!!, isExists(detailDataUri!!)
+                    )
+                    val picture = insertPicture?.toByteArray()
+                    if (insertPicture != null) confirmState = 2
+                    if (insertPicture != errUri) picture else {
+                        detailData.detailType(TaskDetailType.Text)
+                        null
+                    }
                 }
-            } else {
-                confirmState = 2
-                detailData.detailUri()?.toByteArray()
+
+                TaskDetailType.Video -> {
+                    val insertVideo = insertVideo(view.context, detailDataUri!!)
+                    val video = insertVideo?.toByteArray()
+                    if (insertVideo != null) confirmState = 2
+                    if (insertVideo != errUri) video else {
+                        detailData.detailType(TaskDetailType.Text)
+                        null
+                    }
+                }
+
+                else -> {
+                    confirmState = 2
+                    detailDataUri?.toByteArray()
+                }
             }
             if (confirmState == 2) {
                 detailData.output(uriToByteArray)
@@ -188,21 +209,6 @@ private fun TaskModifyDialog(
             confirmState = 0
         }
     }
-    if (detailDialog) TaskDetailDialog(
-        onDismissRequest = { onDismissClick ->
-            if (onDismissClick != null && onDismissClick) {
-                detailData.releaseMemory()
-            }
-            detailDialog = false
-        },
-        confirm = { type, string, bitmap ->
-            detailData.setter(type, string, bitmap)
-            detailDialog = false
-        },
-        title = parameter.detailTitle,
-        detailData = detailData,
-        view = view
-    )
     EditableContentDialog(
         onDismissRequest = { onDismissRequest().also { detailData.releaseMemory() } },
         confirm = { confirmState = 1 },
@@ -215,10 +221,25 @@ private fun TaskModifyDialog(
         extraButtonTop = parameter.extraButtonTop,
         doneImeAction = true
     )
+    if (detailDialog) TaskDetailDialog(
+        onDismissRequest = { onDismissClick ->
+            if (onDismissClick != null && onDismissClick) {
+                detailData.releaseMemory()
+            }
+            detailDialog = false
+        },
+        confirm = { type, string, uri ->
+            detailData.setter(type, string, uri)
+            detailDialog = false
+        },
+        title = parameter.detailTitle,
+        detailData = detailData,
+        view = view
+    )
 }
 
-private fun isExists(detailData: TaskDetailData): Boolean {
-    return detailData.detailUri()!!.path?.toByteArray()?.toUri(MainActivity.appDir)!!.path?.let {
+private fun isExists(uri: Uri): Boolean {
+    return uri.path?.toByteArray()?.toUri(MainActivity.appDir)!!.path?.let {
         File(it).exists()
     } == true
 }
