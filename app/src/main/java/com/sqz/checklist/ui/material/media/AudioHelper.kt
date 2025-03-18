@@ -2,6 +2,9 @@ package com.sqz.checklist.ui.material.media
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.util.Log
@@ -10,6 +13,7 @@ import android.view.View
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,20 +24,26 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -41,6 +51,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
@@ -49,6 +60,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.FileProvider
+import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.media3.exoplayer.ExoPlayer
 import com.sqz.checklist.MainActivity
 import com.sqz.checklist.R
 import com.sqz.checklist.cache.deleteCacheFileByName
@@ -56,11 +70,8 @@ import com.sqz.checklist.preferences.PreferencesInCache
 import com.sqz.checklist.ui.main.task.layout.function.TaskDetailData
 import com.sqz.checklist.ui.main.task.layout.function.toUri
 import com.sqz.checklist.ui.material.TextTooltipBox
-import io.sanghun.compose.video.RepeatMode
-import io.sanghun.compose.video.VideoPlayer
-import io.sanghun.compose.video.controller.VideoPlayerControllerConfig
-import io.sanghun.compose.video.uri.VideoPlayerMediaItem
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileInputStream
@@ -68,7 +79,7 @@ import java.io.FileNotFoundException
 import java.io.FileOutputStream
 
 @Composable
-fun VideoSelector(
+fun AudioSelector(
     detailData: TaskDetailData,
     view: View,
     modifier: Modifier = Modifier,
@@ -94,13 +105,13 @@ fun VideoSelector(
                 }
             } catch (e: Exception) {
                 detailData.releaseMemory()
-                Log.e("VideoHelper", "Failed to select a video: $e")
+                Log.e("AudioHelper", "Failed to select a audio: $e")
                 Toast.makeText(
-                    view.context, view.context.getString(R.string.failed_large_file_size, "350"),
+                    view.context, view.context.getString(R.string.failed_large_file_size, "55"),
                     Toast.LENGTH_LONG
                 ).show()
                 Toast.makeText(
-                    view.context, view.context.getString(R.string.report_normal_file_size, "350"),
+                    view.context, view.context.getString(R.string.report_normal_file_size, "55"),
                     Toast.LENGTH_SHORT
                 ).show()
             }
@@ -110,7 +121,7 @@ fun VideoSelector(
             .fillMaxSize()
             .clickable {
                 view.playSoundEffect(SoundEffectConstants.CLICK)
-                launcher.launch("video/*")
+                launcher.launch("audio/*")
             },
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
@@ -122,21 +133,18 @@ fun VideoSelector(
                 modifier = modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                VideoPlayer(
-                    mediaItems = listOf(VideoPlayerMediaItem.StorageMediaItem(it)),
-                    repeatMode = RepeatMode.ALL, usePlayerController = false, volume = 0f
-                )
+                AlbumArtCard(it, view.context)
                 Button(modifier = Modifier
                     .align(Alignment.BottomStart)
                     .padding(8.dp), onClick = { detailData.inPreviewState(true) }) {
-                    Text(stringResource(R.string.play_video))
+                    Text(stringResource(R.string.play_audio))
                 }
-            } else VideoViewDialog(
+            } else AudioViewDialog(
                 onDismissRequest = { detailData.inPreviewState(false) },
-                videoName = detailDataString, videoUri = it, title = detailDataString
+                audioName = detailDataString, audioUri = it, title = detailDataString
             )
         } else Text(
-            stringResource(R.string.click_select_video), color = MaterialTheme.colorScheme.outline
+            stringResource(R.string.click_select_audio), color = MaterialTheme.colorScheme.outline
         )
     }
     if (checkSize != null) {
@@ -144,7 +152,7 @@ fun VideoSelector(
         if ((size / 1024 / 1024) > 350) {
             detailData.releaseMemory()
             Toast.makeText(
-                view.context, stringResource(R.string.video_size_limit), Toast.LENGTH_SHORT
+                view.context, stringResource(R.string.audio_size_limit), Toast.LENGTH_SHORT
             ).show()
         }
         checkSize = null
@@ -152,10 +160,108 @@ fun VideoSelector(
 }
 
 @Composable
-fun VideoViewDialog(
+private fun AlbumArtCard(
+    uri: Uri, context: Context, modifier: Modifier = Modifier, size: Int = 80
+) {
+    var albumArt by remember { mutableStateOf<Bitmap?>(null) }
+    LaunchedEffect(uri) {
+        val retriever = MediaMetadataRetriever()
+        try {
+            retriever.setDataSource(context, uri)
+            val artBytes = retriever.embeddedPicture
+            albumArt = if (artBytes != null) BitmapFactory.decodeByteArray(
+                artBytes, 0, artBytes.size
+            ) else null
+        } catch (e: Exception) {
+            albumArt = null
+            e.printStackTrace()
+        } finally {
+            retriever.release()
+        }
+    }
+    val contentDescription = stringResource(R.string.album_art)
+    Card(modifier.size(size.dp, size.dp)) {
+        if (albumArt != null) Image(
+            albumArt!!.asImageBitmap(), contentDescription
+        ) else Image(
+            painterResource(R.drawable.music_note), modifier = Modifier.fillMaxSize(),
+            contentDescription = contentDescription
+        )
+    }
+}
+
+@Composable
+private fun AudioPlayer(uri: Uri, context: Context) = Row {
+    val config = LocalConfiguration.current
+    val isLandScape = config.screenWidthDp > config.screenHeightDp && config.screenWidthDp > 400
+    val exoPlayer = remember(uri) {
+        ExoPlayer.Builder(context).build().apply {
+            val mediaItem = MediaItem.fromUri(uri)
+            setMediaItem(mediaItem)
+            prepare()
+        }
+    }
+    var isPlaying by remember { mutableStateOf(false) }
+    var currentPosition by remember { mutableLongStateOf(0L) }
+    var duration by remember { mutableLongStateOf(0L) }
+    LaunchedEffect(isPlaying) {
+        while (isPlaying) {
+            currentPosition = exoPlayer.currentPosition
+            delay(500L)
+        }
+    }
+    DisposableEffect(exoPlayer) {
+        val listener = object : Player.Listener {
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                if (playbackState == Player.STATE_READY) duration = exoPlayer.duration
+            }
+        }
+        exoPlayer.addListener(listener)
+        onDispose {
+            exoPlayer.removeListener(listener)
+            exoPlayer.release()
+        }
+    }
+    fun Long.toMinute(): Long = this / 1000 / 60
+    fun Long.toSecond(): Long = (this / 1000).let {
+        fun second(second: Long): Long = if (second > 59) second(second - 60) else second
+        second(it)
+    }
+    if (isLandScape) AlbumArtCard(uri, context, Modifier.padding(16.dp))
+    Column(modifier = Modifier.padding(16.dp)) {
+        if (!isLandScape) AlbumArtCard(uri, context, Modifier.align(Alignment.CenterHorizontally))
+        Slider(value = currentPosition.toFloat(), onValueChange = { value ->
+            currentPosition = value.toLong()
+            exoPlayer.seekTo(currentPosition)
+        }, valueRange = 0f..duration.toFloat(), modifier = Modifier.fillMaxWidth())
+        Spacer(modifier = Modifier.height(16.dp))
+        Row {
+            fun Long.toStringSecond(): String {
+                val second = this.toSecond()
+                return if (second < 10) "0$second" else "$second"
+            }
+            Text("${currentPosition.toMinute()}:${currentPosition.toStringSecond()} / ${duration.toMinute()}:${duration.toStringSecond()}")
+            Spacer(Modifier.weight(1f))
+            Button(
+                onClick = {
+                    if (exoPlayer.isPlaying) {
+                        exoPlayer.pause()
+                        isPlaying = false
+                    } else {
+                        exoPlayer.play()
+                        isPlaying = true
+                    }
+                }
+            ) { Text(if (exoPlayer.isPlaying) stringResource(R.string.pause) else stringResource(R.string.play)) }
+        }
+    }
+}
+
+@Composable
+fun AudioViewDialog(
     onDismissRequest: () -> Unit,
-    videoName: String,
-    videoUri: Uri,
+    audioName: String,
+    audioUri: Uri,
     title: String,
     modifier: Modifier = Modifier,
     openBySystem: Boolean = false,
@@ -171,7 +277,7 @@ fun VideoViewDialog(
     var openVideoBySystem by rememberSaveable { mutableStateOf(false) }
     if (openVideoBySystem) ProcessingDialog {
         coroutineScope.launch(Dispatchers.IO) {
-            openVideoBySystem(videoName, videoUri, view.context)
+            openAudioBySystem(audioName, audioUri, view.context)
             openVideoBySystem = false
         }
     }
@@ -199,23 +305,9 @@ fun VideoViewDialog(
                 OutlinedCard(
                     modifier = modifier.fillMaxWidth() then modifier.height(height.dp),
                     colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh)
-                ) {
-                    VideoPlayer(
-                        modifier = modifier.fillMaxSize(),
-                        mediaItems = listOf(VideoPlayerMediaItem.StorageMediaItem(videoUri)),
-                        autoPlay = false,
-                        controllerConfig = VideoPlayerControllerConfig(
-                            showSpeedAndPitchOverlay = true, showSubtitleButton = false,
-                            showCurrentTimeAndTotalTime = true, showBufferingProgress = false,
-                            showForwardIncrementButton = true, showBackwardIncrementButton = true,
-                            showBackTrackButton = false, showNextTrackButton = false,
-                            showRepeatModeButton = false, controllerShowTimeMilliSeconds = 5_000,
-                            controllerAutoShow = true, showFullScreenButton = false,
-                        ),
-                    )
-                }
+                ) { AudioPlayer(audioUri, view.context) }
                 if (openBySystem) Text(
-                    videoName, modifier.align(Alignment.End) then modifier.padding(end = 10.dp)
+                    audioName, modifier.align(Alignment.End) then modifier.padding(end = 10.dp)
                 )
             }
         }, title = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
@@ -225,26 +317,42 @@ fun VideoViewDialog(
 }
 
 @Composable
-fun VideoViewDialog(
+fun AudioViewDialog(
     onDismissRequest: () -> Unit,
     byteArray: ByteArray,
-    videoName: String,
+    audioName: String,
     title: String,
 ) {
     if (byteArray.size <= 1) throw IllegalStateException("Invalid byteArray data!")
-    VideoViewDialog(
+    AudioViewDialog(
         onDismissRequest = onDismissRequest,
-        videoName = videoName,
-        videoUri = byteArray.toUri(MainActivity.appDir),
+        audioName = audioName,
+        audioUri = byteArray.toUri(MainActivity.appDir),
         title = title,
         openBySystem = true
     )
 }
 
-fun openVideoBySystem(videoName: String, uri: Uri, context: Context) {
-    val name = if (videoName == "") "unknown_name" else {
-        if (uri.path.toString().endsWith("mp4")
-        ) videoName.replace(videoName.substringAfterLast('.', ""), "mp4") else videoName
+@Composable
+private fun ProcessingDialog(run: () -> Unit) {
+    AlertDialog(onDismissRequest = {}, confirmButton = {}, text = {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.padding(8.dp))
+            CircularProgressIndicator()
+            Spacer(modifier = Modifier.padding(5.dp))
+            Text(stringResource(R.string.processing))
+        }
+    })
+    run()
+}
+
+fun openAudioBySystem(audioName: String, uri: Uri, context: Context) {
+    val name = if (audioName == "") "unknown_name" else {
+        if (uri.path.toString().endsWith("mp3")
+        ) audioName.replace(audioName.substringAfterLast('.', ""), "mp3") else audioName
     }
     val cache = PreferencesInCache(context)
     val getCacheName = cache.waitingDeletedCacheName()
@@ -267,7 +375,7 @@ fun openVideoBySystem(videoName: String, uri: Uri, context: Context) {
         }
 
         val intent = Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(uri(file), "video/*")
+            setDataAndType(uri(file), "audio/*")
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
@@ -280,10 +388,10 @@ fun openVideoBySystem(videoName: String, uri: Uri, context: Context) {
     }
 }
 
-fun insertVideo(context: Context, uri: Uri, filesDir: String): Uri {
-    val mediaDir = File(filesDir, "media/video/")
+fun insertAudio(context: Context, uri: Uri, filesDir: String): Uri {
+    val mediaDir = File(filesDir, "media/audio/")
     if (!mediaDir.exists()) mediaDir.mkdirs()
-    val fileName = "VIDEO_${System.currentTimeMillis()}"
+    val fileName = "AUDIO_${System.currentTimeMillis()}"
     val file = File(mediaDir, fileName)
     return try {
         val inputStream = context.contentResolver.openInputStream(uri)
@@ -304,7 +412,7 @@ fun insertVideo(context: Context, uri: Uri, filesDir: String): Uri {
 }
 
 @Composable
-fun insertVideo(context: Context, uri: Uri): Uri? {
+fun insertAudio(context: Context, uri: Uri): Uri? {
     val coroutineScope = rememberCoroutineScope()
     var rememberUri by rememberSaveable { mutableStateOf<Uri?>(null) }
     if (rememberUri == null) {
@@ -313,7 +421,7 @@ fun insertVideo(context: Context, uri: Uri): Uri? {
             if (!run) {
                 run = true
                 coroutineScope.launch(Dispatchers.IO) {
-                    rememberUri = insertVideo(context, uri, MainActivity.appDir)
+                    rememberUri = insertAudio(context, uri, MainActivity.appDir)
                 }
             }
         }
@@ -322,20 +430,4 @@ fun insertVideo(context: Context, uri: Uri): Uri? {
         context, stringResource(R.string.failed_add_picture), Toast.LENGTH_LONG
     ).show()
     return rememberUri
-}
-
-@Composable
-private fun ProcessingDialog(run: () -> Unit) {
-    AlertDialog(onDismissRequest = {}, confirmButton = {}, text = {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Spacer(modifier = Modifier.padding(8.dp))
-            CircularProgressIndicator()
-            Spacer(modifier = Modifier.padding(5.dp))
-            Text(stringResource(R.string.processing))
-        }
-    })
-    run()
 }

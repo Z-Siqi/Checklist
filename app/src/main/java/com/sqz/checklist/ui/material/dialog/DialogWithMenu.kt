@@ -60,6 +60,10 @@ import com.sqz.checklist.ui.material.verticalColumnScrollbar
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+/**
+ * DialogWithMenu
+ * @param functionalType Do NOT use rememberSavable or long-term data hold param into here
+ */
 @Composable
 fun DialogWithMenu(
     onDismissRequest: (onDismissClick: Boolean?) -> Unit,

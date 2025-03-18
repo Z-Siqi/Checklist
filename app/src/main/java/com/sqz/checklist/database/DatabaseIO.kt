@@ -189,6 +189,7 @@ class DatabaseIO private constructor(application: Application) : AndroidViewMode
                         while (zipIn.nextEntry.also { entry = it } != null) {
                             val entryName = entry!!.name
                             val outputFile = if (entryName == "$taskDatabaseName.db") {
+                                setLoading(55)
                                 File(dbPath)
                             } else {
                                 File(mediaDir, entryName.removePrefix("media/"))

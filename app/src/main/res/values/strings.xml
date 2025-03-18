@@ -75,6 +75,13 @@
     <string name="play_video">Play Video</string>
     <string name="click_select_video">Click to select a video</string>
     <string name="video">Video</string>
+    <string name="play">Play</string>
+    <string name="pause">Pause</string>
+    <string name="album_art">Album Art</string>
+    <string name="play_audio">Play audio</string>
+    <string name="audio_size_limit">Video size cannot more than 55MB!</string>
+    <string name="audio">Audio</string>
+    <string name="click_select_audio">Click to select a audio</string>
 
     <!-- Notification -->
     <string name="task_reminder">Task Reminder</string>

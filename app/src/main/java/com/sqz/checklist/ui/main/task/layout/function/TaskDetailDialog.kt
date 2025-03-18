@@ -31,6 +31,7 @@ import com.sqz.checklist.database.TaskDetailType
 import com.sqz.checklist.ui.material.ApplicationList
 import com.sqz.checklist.ui.material.media.PictureSelector
 import com.sqz.checklist.ui.material.dialog.DialogWithMenu
+import com.sqz.checklist.ui.material.media.AudioSelector
 import com.sqz.checklist.ui.material.media.VideoSelector
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -64,18 +65,11 @@ fun TaskDetailDialog(
                 if (it == TaskDetailType.URL &&
                     !Patterns.WEB_URL.matcher(detailTextState.text.toString()).matches()
                 ) Toast.makeText(view.context, notURL, Toast.LENGTH_SHORT).show() else {
-                    val detailType = when (it) {
-                        TaskDetailType.Text -> TaskDetailType.Text
-                        TaskDetailType.URL -> TaskDetailType.URL
-                        TaskDetailType.Application -> TaskDetailType.Application
-                        TaskDetailType.Picture -> TaskDetailType.Picture
-                        TaskDetailType.Video -> TaskDetailType.Video
-                        else -> null
-                    }
                     val detailString = when {
                         it == TaskDetailType.Application -> detailDataString
                         it == TaskDetailType.Picture -> detailDataString
                         it == TaskDetailType.Video -> detailDataString
+                        it == TaskDetailType.Audio -> detailDataString
                         it == TaskDetailType.URL && !detailTextState.text.toString()
                             .startsWith("http") -> {
                             detailTextState.edit { insert(0, "http://") }
@@ -84,7 +78,7 @@ fun TaskDetailDialog(
 
                         else -> detailTextState.text.toString()
                     }
-                    confirm(detailData.detailType(detailType)!!, detailString, detailDataUri)
+                    confirm(detailData.detailType(it?.toTaskDetailType())!!, detailString, detailDataUri)
                 }
             } else Toast.makeText(view.context, noDoNothing, Toast.LENGTH_SHORT).show()
         },
@@ -99,6 +93,7 @@ fun TaskDetailDialog(
                 TaskDetailType.Application -> view.context.getString(R.string.application)
                 TaskDetailType.Picture -> view.context.getString(R.string.picture)
                 TaskDetailType.Video -> view.context.getString(R.string.video)
+                TaskDetailType.Audio -> view.context.getString(R.string.audio)
                 else -> view.context.getString(R.string.click_select_detail_type)
             }
         },
@@ -112,6 +107,7 @@ fun TaskDetailDialog(
 
                 TaskDetailType.Picture -> PictureSelector(detailData, view) == Unit
                 TaskDetailType.Video -> VideoSelector(detailData, view) == Unit
+                TaskDetailType.Audio -> AudioSelector(detailData, view) == Unit
 
                 else -> Text(
                     stringResource(R.string.select_detail_type),
@@ -137,11 +133,24 @@ fun TaskDetailDialog(
                 TaskDetailType.Application -> KeyboardType.Unspecified
                 TaskDetailType.Picture -> KeyboardType.Unspecified
                 TaskDetailType.Video -> KeyboardType.Unspecified
+                TaskDetailType.Audio -> KeyboardType.Unspecified
                 else -> KeyboardType.Unspecified
             }
         },
         state = detailTextState
     )
+}
+
+private fun Any.toTaskDetailType(): TaskDetailType {
+    return when (this) {
+        TaskDetailType.Text -> TaskDetailType.Text
+        TaskDetailType.URL -> TaskDetailType.URL
+        TaskDetailType.Application -> TaskDetailType.Application
+        TaskDetailType.Picture -> TaskDetailType.Picture
+        TaskDetailType.Video -> TaskDetailType.Video
+        TaskDetailType.Audio -> TaskDetailType.Audio
+        else -> throw TypeCastException("Failed to convert as TaskDetailType!")
+    }
 }
 
 class TaskDetailData private constructor() {

@@ -34,6 +34,7 @@ import com.sqz.checklist.database.TaskDetailType
 import com.sqz.checklist.ui.material.TextTooltipBox
 import com.sqz.checklist.ui.material.dialog.EditableContentDialog
 import com.sqz.checklist.ui.material.media.errUri
+import com.sqz.checklist.ui.material.media.insertAudio
 import com.sqz.checklist.ui.material.media.insertPicture
 import com.sqz.checklist.ui.material.media.insertVideo
 import kotlinx.coroutines.launch
@@ -169,6 +170,18 @@ private fun TaskModifyDialog(
     val detailDataType by detailData.detailType().collectAsState()
     var confirmState by rememberSaveable { mutableIntStateOf(0) }
     var detailDialog by rememberSaveable { mutableStateOf(false) }
+    EditableContentDialog(
+        onDismissRequest = { onDismissRequest().also { detailData.releaseMemory() } },
+        confirm = { confirmState = 1 },
+        title = parameter.title,
+        confirmText = parameter.confirmText,
+        state = state,
+        extraButtonBottom = {
+            parameter.extraButtonBottom { detailDialog = true }
+        },
+        extraButtonTop = parameter.extraButtonTop,
+        doneImeAction = true
+    )
     if (confirmState != 0) {
         if (state.text.toString() != "") {
             val uriToByteArray = when (detailDataType) {
@@ -194,6 +207,16 @@ private fun TaskModifyDialog(
                     }
                 }
 
+                TaskDetailType.Audio -> {
+                    val insertAudio = insertAudio(view.context, detailDataUri!!)
+                    val audio = insertAudio?.toByteArray()
+                    if (insertAudio != null)confirmState = 2
+                    if (insertAudio != errUri) audio else {
+                        detailData.detailType(TaskDetailType.Text)
+                        null
+                    }
+                }
+
                 else -> {
                     confirmState = 2
                     detailDataUri?.toByteArray()
@@ -209,23 +232,9 @@ private fun TaskModifyDialog(
             confirmState = 0
         }
     }
-    EditableContentDialog(
-        onDismissRequest = { onDismissRequest().also { detailData.releaseMemory() } },
-        confirm = { confirmState = 1 },
-        title = parameter.title,
-        confirmText = parameter.confirmText,
-        state = state,
-        extraButtonBottom = {
-            parameter.extraButtonBottom { detailDialog = true }
-        },
-        extraButtonTop = parameter.extraButtonTop,
-        doneImeAction = true
-    )
     if (detailDialog) TaskDetailDialog(
         onDismissRequest = { onDismissClick ->
-            if (onDismissClick != null && onDismissClick) {
-                detailData.releaseMemory()
-            }
+            if (onDismissClick != null && onDismissClick) detailData.releaseMemory()
             detailDialog = false
         },
         confirm = { type, string, uri ->

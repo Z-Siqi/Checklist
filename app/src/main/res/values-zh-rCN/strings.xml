@@ -76,6 +76,13 @@
     <string name="play_video">播放视频</string>
     <string name="click_select_video">点击选择视频</string>
     <string name="video">视频</string>
+    <string name="play">播放</string>
+    <string name="pause">暂停</string>
+    <string name="album_art">专辑封面</string>
+    <string name="play_audio">播放音频</string>
+    <string name="audio_size_limit">音频大小不能超过55MB!</string>
+    <string name="audio">音频</string>
+    <string name="click_select_audio">点击选择音频</string>
 
     <!-- Notification -->
     <string name="task_reminder">任务提醒</string>

@@ -76,6 +76,13 @@
     <string name="play_video">播放影片</string>
     <string name="click_select_video">點擊選擇視頻</string>
     <string name="video">影片</string>
+    <string name="play">播放</string>
+    <string name="pause">暫停</string>
+    <string name="album_art">專輯封面</string>
+    <string name="play_audio">播放音訊</string>
+    <string name="audio_size_limit">音訊大小不能超過55MB!</string>
+    <string name="audio">音訊</string>
+    <string name="click_select_audio">點選選擇音訊</string>
 
     <!-- Notification -->
     <string name="task_reminder">提醒</string>

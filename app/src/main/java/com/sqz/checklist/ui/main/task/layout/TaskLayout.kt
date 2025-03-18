@@ -73,6 +73,7 @@ import com.sqz.checklist.ui.main.task.layout.item.ListData
 import com.sqz.checklist.ui.material.dialog.InfoAlertDialog
 import com.sqz.checklist.ui.material.dialog.InfoDialogWithURL
 import com.sqz.checklist.ui.material.dialog.OpenExternalAppDialog
+import com.sqz.checklist.ui.material.media.AudioViewDialog
 import com.sqz.checklist.ui.material.media.PictureViewDialog
 import com.sqz.checklist.ui.material.media.VideoViewDialog
 import kotlinx.coroutines.delay
@@ -208,7 +209,13 @@ private fun TaskDetailInfoDialog(onDismissRequest: () -> Unit, detail: TaskDetai
         TaskDetailType.Video -> VideoViewDialog(
             onDismissRequest = onDismissRequest,
             byteArray = detail.dataByte!!, videoName = detail.dataString,
-            title = "Video"
+            title = stringResource(R.string.video)
+        )
+
+        TaskDetailType.Audio -> AudioViewDialog(
+            onDismissRequest = onDismissRequest,
+            byteArray = detail.dataByte!!, audioName = detail.dataString,
+            title = stringResource(R.string.audio)
         )
     }
 }
