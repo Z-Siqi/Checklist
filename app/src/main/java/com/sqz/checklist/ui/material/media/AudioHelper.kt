@@ -149,7 +149,7 @@ fun AudioSelector(
     }
     if (checkSize != null) {
         val size = checkSize ?: 1
-        if ((size / 1024 / 1024) > 350) {
+        if ((size / 1024 / 1024) > 55) {
             detailData.releaseMemory()
             Toast.makeText(
                 view.context, stringResource(R.string.audio_size_limit), Toast.LENGTH_SHORT

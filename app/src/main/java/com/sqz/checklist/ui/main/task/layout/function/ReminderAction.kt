@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
 import com.sqz.checklist.R
 import com.sqz.checklist.notification.PermissionState
+import com.sqz.checklist.preferences.PreferencesInCache
 import com.sqz.checklist.preferences.PrimaryPreferences
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
 import com.sqz.checklist.ui.material.dialog.WarningAlertDialog
@@ -60,11 +61,16 @@ fun ReminderAction(
         if (!ignoreSetAndGetTimeData(0L)) taskState.resetTaskData()
         view.playSoundEffect(SoundEffectConstants.CLICK)
     }
+    val cachePreferences = PreferencesInCache(view.context)
     var requestPermission by rememberSaveable { mutableStateOf(false) }
     when (reminder.set) {
         ReminderActionType.Set -> {
             when (taskState.notificationInitState(context)) {
                 PermissionState.Null -> if (!requestPermission) {
+                    if (!cachePreferences.checkBackgroundManageApp()) {
+                        checkInstalledApp(view.context)
+                        cachePreferences.checkBackgroundManageApp(true)
+                    }
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         if (requestNotificationPermission(context) {
                                 requestPermission = true
@@ -261,4 +267,21 @@ private fun requestNotificationPermission(
         requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
     return actionFinished
+}
+
+/** To check some manager app that may block reminder **/
+@Suppress("SpellCheckingInspection")
+fun checkInstalledApp(context: Context) {
+    val packageManager = context.packageManager
+    try { packageManager.getPackageInfo("me.piebridge.brevent", 0)
+        Toast.makeText(
+            context, context.getString(R.string.note_brevent), Toast.LENGTH_LONG
+        ).show()
+    } catch (_: PackageManager.NameNotFoundException) {}
+    try {
+        packageManager.getPackageInfo("github.tornaco.android.thanos.pro", 0)
+        Toast.makeText(
+            context, context.getString(R.string.note_thanox), Toast.LENGTH_LONG
+        ).show()
+    } catch (_: PackageManager.NameNotFoundException) {}
 }

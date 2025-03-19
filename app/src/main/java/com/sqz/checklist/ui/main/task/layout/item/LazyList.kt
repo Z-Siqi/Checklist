@@ -181,7 +181,7 @@ private fun RemindedItem(
         colors = CardDefaults.cardColors(MaterialTheme.colorScheme.tertiaryContainer)
     ) {
         Text(
-            text = stringResource(R.string.just_reminded),
+            text = stringResource(R.string.recently_reminded),
             fontSize = 15.sp,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.tertiary,

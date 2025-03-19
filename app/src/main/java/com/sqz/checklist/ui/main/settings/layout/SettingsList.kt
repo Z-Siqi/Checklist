@@ -192,7 +192,6 @@ fun settingsList(
                         )
                     }
                     val scrollState = rememberScrollState()
-                    val canScroll = scrollState.canScrollBackward || scrollState.canScrollForward
                     val screenHeight = LocalConfiguration.current.screenHeightDp
                     DropdownMenu(expanded = expanded,
                         modifier = Modifier
@@ -202,7 +201,7 @@ fun settingsList(
                                 scrollState = scrollState,
                                 width = 5.dp,
                                 scrollBarCornerRadius = 25f,
-                                showScrollBar = canScroll,
+                                showScrollBar = scrollState.canScrollBackward || scrollState.canScrollForward,
                                 scrollBarTrackColor = Color.Transparent,
                                 scrollBarColor = MaterialTheme.colorScheme.outline,
                                 endPadding = 25f,

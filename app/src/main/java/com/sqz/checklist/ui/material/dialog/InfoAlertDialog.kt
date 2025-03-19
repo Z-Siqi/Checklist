@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
 import com.sqz.checklist.R
+import com.sqz.checklist.ui.material.verticalColumnScrollbar
 
 @Composable
 fun InfoAlertDialog(
@@ -71,7 +72,12 @@ fun InfoAlertDialog(
             ) {
                 Column(modifier.padding(8.dp)) {
                     SelectionContainer(
-                        modifier = modifier.verticalScroll(scrollState)
+                        modifier = modifier.verticalColumnScrollbar(
+                            scrollState = scrollState, endPadding = 0f, scrollBarCornerRadius = 12f,
+                            scrollBarTrackColor = MaterialTheme.colorScheme.outlineVariant,
+                            scrollBarColor = MaterialTheme.colorScheme.outline,
+                            showScrollBar = scrollState.canScrollBackward || scrollState.canScrollForward
+                        ) then modifier.verticalScroll(scrollState)
                     ) {
                         Text(
                             text = text,

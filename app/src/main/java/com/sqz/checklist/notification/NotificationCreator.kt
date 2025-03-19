@@ -10,7 +10,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Log
-import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -62,29 +61,7 @@ class NotificationCreator(private val context: Context) {
             if (ActivityCompat.checkSelfPermission(
                     context, Manifest.permission.POST_NOTIFICATIONS
                 ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                val packageManager = context.packageManager
-                val checkApp1 = try {
-                    packageManager.getPackageInfo("me.piebridge.brevent", 0)
-                    true
-                } catch (e: PackageManager.NameNotFoundException) {
-                    false
-                }
-                val checkApp2 = try {
-                    packageManager.getPackageInfo("github.tornaco.android.thanos.pro", 0)
-                    true
-                } catch (e: PackageManager.NameNotFoundException) {
-                    false
-                }
-                if (checkApp1) Toast.makeText(
-                    context, context.getString(R.string.note_brevent), Toast.LENGTH_SHORT
-                ).show()
-                if (checkApp2) Toast.makeText(
-                    context, context.getString(R.string.note_thanox), Toast.LENGTH_SHORT
-                ).show()
-
-                Log.e("ERROR", "Failed: Permission denied!")
-            }
+            ) { Log.e("ERROR", "Failed: Permission denied!") }
             this.notify(notifyId, builder.build())
         }
     }

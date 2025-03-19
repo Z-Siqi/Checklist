@@ -45,7 +45,7 @@
     <string name="select_date">Select a date</string>
     <string name="pick">Pick</string>
     <string name="input">Input</string>
-    <string name="just_reminded">The task just reminded</string>
+    <string name="recently_reminded">Recently reminded</string>
     <string name="task_reminded_time">Task has reminded \nat: %1$s</string>
     <string name="cancel_highlight">Cancel highlight</string>
     <string name="search">Search</string>

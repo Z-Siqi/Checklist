@@ -46,7 +46,7 @@
     <string name="select_date">選擇日期</string>
     <string name="pick">選擇</string>
     <string name="input">輸入</string>
-    <string name="just_reminded">任務剛剛提醒</string>
+    <string name="recently_reminded">最近提醒的任務</string>
     <string name="task_reminded_time">任務已提醒於: %1$s</string>
     <string name="cancel_highlight">取消突出顯示</string>
     <string name="search">搜索</string>

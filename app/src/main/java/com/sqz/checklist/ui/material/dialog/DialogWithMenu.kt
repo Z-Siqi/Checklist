@@ -19,7 +19,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.rememberTextFieldState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -163,6 +162,7 @@ fun DialogWithMenu(
             modifier = modifier.fillMaxWidth() then modifier.height(height.dp),
             colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainer)
         ) {
+            val scrollState = rememberScrollState()
             if (!functionalType(type)) {
                 val focus = LocalFocusManager.current
                 if (clearFocus) LaunchedEffect(true) {
@@ -173,7 +173,12 @@ fun DialogWithMenu(
                     modifier = modifier
                         .fillMaxSize()
                         .padding(8.dp)
-                        .verticalScroll(rememberScrollState()),
+                        .verticalColumnScrollbar(
+                            scrollState = scrollState, endPadding = 0f, scrollBarCornerRadius = 12f,
+                            scrollBarTrackColor = MaterialTheme.colorScheme.outlineVariant,
+                            scrollBarColor = MaterialTheme.colorScheme.outline,
+                            showScrollBar = scrollState.canScrollBackward || scrollState.canScrollForward
+                        ),
                     state = state,
                     textStyle = TextStyle(
                         fontSize = 19.sp, color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -188,6 +193,7 @@ fun DialogWithMenu(
                     ),
                     onKeyboardAction = { if (doneImeAction(type)) clearFocus = true },
                     lineLimits = lineLimits,
+                    scrollState = scrollState
                 )
             }
         }

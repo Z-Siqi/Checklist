@@ -15,7 +15,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.rememberTextFieldState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
@@ -49,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
 import com.sqz.checklist.R
+import com.sqz.checklist.ui.material.verticalColumnScrollbar
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -142,7 +142,12 @@ fun EditableContentDialog(
                     modifier = modifier
                         .fillMaxSize()
                         .padding(8.dp)
-                        .verticalScroll(scrollState),
+                        .verticalColumnScrollbar(
+                            scrollState = scrollState, endPadding = 0f, scrollBarCornerRadius = 12f,
+                            scrollBarTrackColor = MaterialTheme.colorScheme.outlineVariant,
+                            scrollBarColor = MaterialTheme.colorScheme.outline,
+                            showScrollBar = scrollState.canScrollBackward || scrollState.canScrollForward
+                        ),
                     state = state,
                     textStyle = TextStyle(
                         fontSize = 19.sp, color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -157,6 +162,7 @@ fun EditableContentDialog(
                     ),
                     onKeyboardAction = { if (doneImeAction) clearFocus = true },
                     lineLimits = lineLimits,
+                    scrollState = scrollState
                 )
             }
         },
