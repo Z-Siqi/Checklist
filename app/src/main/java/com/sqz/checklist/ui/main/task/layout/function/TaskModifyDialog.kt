@@ -94,7 +94,7 @@ fun TaskModifyDialog(
             confirm(CreateTask(it.text.toString(), pin, reminder, detailData.outputAsFinal()))
         },
         detailData = detailData,
-        parameter = EditableContentDialog(
+        parameter = TaskModifyDialog(
             title = stringResource(R.string.create_task),
             confirmText = stringResource(if (!reminder) R.string.add else R.string.next),
             detailTitle = stringResource(R.string.create_task_detail),
@@ -145,7 +145,7 @@ fun TaskModifyDialog(
             confirm(EditTask(editTask.id, it.text.toString(), detailData.outputAsFinal()))
         },
         detailData = TaskDetailData.instance(),
-        parameter = EditableContentDialog(
+        parameter = TaskModifyDialog(
             title = stringResource(R.string.edit_task),
             confirmText = stringResource(R.string.edit),
             detailTitle = stringResource(R.string.edit_task_detail),
@@ -162,7 +162,7 @@ private fun TaskModifyDialog(
     onDismissRequest: () -> Unit,
     confirm: (TextFieldState) -> Unit,
     detailData: TaskDetailData,
-    parameter: EditableContentDialog,
+    parameter: TaskModifyDialog,
     view: View,
 ) {
     val detailDataUri by detailData.detailUri().collectAsState()
@@ -176,10 +176,10 @@ private fun TaskModifyDialog(
         title = parameter.title,
         confirmText = parameter.confirmText,
         state = state,
-        extraButtonBottom = {
-            parameter.extraButtonBottom { detailDialog = true }
-        },
-        extraButtonTop = parameter.extraButtonTop,
+        contentProperties = EditableContentDialog(
+            extraButtonBottom = { parameter.extraButtonBottom { detailDialog = true } },
+            extraButtonTop = parameter.extraButtonTop,
+        ),
         doneImeAction = true
     )
     if (confirmState != 0) {
@@ -253,7 +253,7 @@ private fun isExists(uri: Uri): Boolean {
     } == true
 }
 
-private data class EditableContentDialog(
+private data class TaskModifyDialog(
     val title: String,
     val confirmText: String,
     val detailTitle: String,
@@ -301,7 +301,7 @@ private fun TaskDetailIcon(textRid: Int, onClick: () -> Unit, selected: Boolean)
 private fun TaskModifyDialogPreview() {
     TaskModifyDialog(
         onDismissRequest = {}, confirm = {}, detailData = TaskDetailData.instance(),
-        parameter = EditableContentDialog(
+        parameter = TaskModifyDialog(
             title = stringResource(R.string.create_task),
             confirmText = stringResource(R.string.add),
             detailTitle = stringResource(R.string.create_task_detail),

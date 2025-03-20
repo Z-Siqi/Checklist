@@ -53,8 +53,8 @@ fun CheckTaskAction(
         }) else LaunchedEffect(true) { // processing after checked
         delay(100)
         if (preferences != 21) taskState.autoDeleteHistoryTask(preferences)
-        taskState.remindedState(autoDel = true) // delete reminder info which 12h ago
-        Log.d("TaskLayout", "Auto del history tasks & del reminder info that 12h ago")
+        taskState.remindedState(context = context, autoDel = true) // delete reminder info which 12h ago
+        Log.d("TaskLayout", "Auto del history tasks & del reminder info")
     }
     if (!isWindowFocused && undo.undoButtonState) {
         taskState.cancelReminder(reminder = null, context = context, cancelHistory = true)

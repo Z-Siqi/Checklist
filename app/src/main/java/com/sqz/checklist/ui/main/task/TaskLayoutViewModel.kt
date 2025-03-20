@@ -296,7 +296,7 @@ class TaskLayoutViewModel : ViewModel() {
                 } catch (e: Exception) {
                     Log.w("RemoveShowedNotify", "Exception: $e")
                 }
-                remindedState(id = task.id)
+                remindedState(id = task.id, context)
             }
 
             CardClickType.Reminder -> reminderActionCaller(
@@ -341,7 +341,8 @@ class TaskLayoutViewModel : ViewModel() {
     }
 
     /** Remind task. autoDel and id (del reminder info) **/
-    fun remindedState(id: Long = -1L, autoDel: Boolean = false) {
+    fun remindedState(id: Long = -1L, context: Context, autoDel: Boolean = false) {
+        val primaryPreferences = PrimaryPreferences(context)
         viewModelScope.launch {
             if (id != -1L) try {
                 database().deleteReminderData(id)
@@ -350,7 +351,8 @@ class TaskLayoutViewModel : ViewModel() {
                         if (data.reminder != null) database().getReminderData(data.reminder)?.reminderTime
                             ?: -1L
                         else -1L
-                    val delReminderTime = timeMillisData < System.currentTimeMillis() - 43200000
+                    val delReminderTime =
+                        timeMillisData < System.currentTimeMillis() - primaryPreferences.recentlyRemindedKeepTime()
                     if (timeMillisData != -1L && delReminderTime) {
                         database().deleteReminderData(data.id)
                     }

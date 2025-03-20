@@ -140,5 +140,6 @@
     <string name="original">原始</string>
     <string name="in_0_to_100_only">僅允許使用 0 到 100 之間的整數!</string>
     <string name="custom">客製化</string>
+    <string name="recently_reminded_keep_time">最近提醒任務保留時間</string>
 
 </resources>

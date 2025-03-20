@@ -1,6 +1,7 @@
 package com.sqz.checklist.ui.material.dialog
 
 import android.view.SoundEffectConstants
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,7 +19,6 @@ import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.ShapeDefaults
@@ -37,7 +37,6 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
@@ -60,8 +59,7 @@ fun EditableContentDialog(
     confirmText: String,
     state: TextFieldState,
     modifier: Modifier = Modifier,
-    extraButtonTop: @Composable () -> Unit = {},
-    extraButtonBottom: @Composable () -> Unit = {},
+    contentProperties: EditableContentDialog = EditableContentDialog(),
     singleLine: Boolean = false,
     lineLimits: TextFieldLineLimits = if (singleLine) TextFieldLineLimits.SingleLine else TextFieldLineLimits.MultiLine(),
     doneImeAction: Boolean = singleLine,
@@ -86,7 +84,7 @@ fun EditableContentDialog(
         onDismissRequest = { releaseFocusAndDismiss() },
         confirmButton = {
             Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                extraButtonBottom()
+                contentProperties.extraButtonBottom()
                 Spacer(modifier = modifier.weight(1f))
                 TextButton(onClick = {
                     releaseFocusAndDismiss()
@@ -113,71 +111,81 @@ fun EditableContentDialog(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(text = title, fontSize = 22.sp)
                 Spacer(modifier = modifier.weight(1f))
-                extraButtonTop()
+                contentProperties.extraButtonTop()
             }
         },
         text = {
-            val screenHeightDp = LocalConfiguration.current.screenHeightDp
-            val height = when {
-                singleLine -> 100
-                screenHeightDp >= 700 -> (screenHeightDp / 5.8).toInt()
-                screenHeightDp < (LocalConfiguration.current.screenWidthDp / 1.2) -> (screenHeightDp / 3.2).toInt()
-                else -> (screenHeightDp / 5.1).toInt()
-            }
-            OutlinedCard(
-                modifier = modifier
-                    .fillMaxWidth()
-                    .height(height.dp) then if (singleLine)
-                    modifier.padding(top = 16.dp, bottom = 16.dp)
-                else modifier,
-                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainer),
-                shape = if (singleLine) ShapeDefaults.Small else CardDefaults.outlinedShape
-            ) {
-                val focus = LocalFocusManager.current
-                if (clearFocus) LaunchedEffect(true) {
-                    focus.clearFocus()
-                    clearFocus = false
+            Column {
+                contentProperties.extraContentTop()
+                val screenHeightDp = LocalConfiguration.current.screenHeightDp
+                val height = when {
+                    singleLine -> 100
+                    screenHeightDp >= 700 -> (screenHeightDp / 5.8).toInt()
+                    screenHeightDp < (LocalConfiguration.current.screenWidthDp / 1.2) -> (screenHeightDp / 3.2).toInt()
+                    else -> (screenHeightDp / 5.1).toInt()
                 }
-                BasicTextField(
+                OutlinedCard(
                     modifier = modifier
-                        .fillMaxSize()
-                        .padding(8.dp)
-                        .verticalColumnScrollbar(
-                            scrollState = scrollState, endPadding = 0f, scrollBarCornerRadius = 12f,
-                            scrollBarTrackColor = MaterialTheme.colorScheme.outlineVariant,
-                            scrollBarColor = MaterialTheme.colorScheme.outline,
-                            showScrollBar = scrollState.canScrollBackward || scrollState.canScrollForward
+                        .fillMaxWidth()
+                        .height(height.dp) then if (singleLine)
+                        modifier.padding(top = 16.dp, bottom = 16.dp)
+                    else modifier,
+                    colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainer),
+                    shape = if (singleLine) ShapeDefaults.Small else CardDefaults.outlinedShape
+                ) {
+                    val focus = LocalFocusManager.current
+                    if (clearFocus) LaunchedEffect(true) {
+                        focus.clearFocus()
+                        clearFocus = false
+                    }
+                    BasicTextField(
+                        modifier = modifier
+                            .fillMaxSize()
+                            .padding(8.dp)
+                            .verticalColumnScrollbar(
+                                scrollState = scrollState, endPadding = 0f,
+                                scrollBarCornerRadius = 12f,
+                                scrollBarTrackColor = MaterialTheme.colorScheme.outlineVariant,
+                                scrollBarColor = MaterialTheme.colorScheme.outline,
+                                showScrollBar = scrollState.canScrollBackward || scrollState.canScrollForward
+                            ),
+                        state = state,
+                        textStyle = TextStyle(
+                            fontSize = 19.sp, color = MaterialTheme.colorScheme.onSurfaceVariant
                         ),
-                    state = state,
-                    textStyle = TextStyle(
-                        fontSize = 19.sp, color = MaterialTheme.colorScheme.onSurfaceVariant
-                    ),
-                    cursorBrush = SolidColor(MaterialTheme.colorScheme.onSurfaceVariant),
-                    keyboardOptions = KeyboardOptions(
-                        capitalization = KeyboardCapitalization.Sentences,
-                        imeAction = if (doneImeAction) {
-                            ImeAction.Done
-                        } else ImeAction.Default,
-                        keyboardType = if (numberOnly) KeyboardType.Number else KeyboardType.Unspecified
-                    ),
-                    onKeyboardAction = { if (doneImeAction) clearFocus = true },
-                    lineLimits = lineLimits,
-                    scrollState = scrollState
-                )
+                        cursorBrush = SolidColor(MaterialTheme.colorScheme.onSurfaceVariant),
+                        keyboardOptions = KeyboardOptions(
+                            capitalization = KeyboardCapitalization.Sentences,
+                            imeAction = if (doneImeAction) {
+                                ImeAction.Done
+                            } else ImeAction.Default,
+                            keyboardType = if (numberOnly) KeyboardType.Number else KeyboardType.Unspecified
+                        ),
+                        onKeyboardAction = { if (doneImeAction) clearFocus = true },
+                        lineLimits = lineLimits,
+                        scrollState = scrollState
+                    )
+                }
+                contentProperties.extraContentBottom()
             }
         },
         properties = DialogProperties(usePlatformDefaultWidth = false)
     )
 }
 
+data class EditableContentDialog(
+    val extraButtonTop: @Composable () -> Unit = {},
+    val extraButtonBottom: @Composable () -> Unit = {},
+    val extraContentTop: @Composable () -> Unit = {},
+    val extraContentBottom: @Composable () -> Unit = {},
+)
+
 @Preview
 @Composable
 private fun EditableContentDialogPreview() {
-    @Composable
-    fun icon() = Icon(painter = painterResource(id = R.drawable.close), contentDescription = null)
     val state = rememberTextFieldState()
     EditableContentDialog(
-        {}, {}, "TEST", "TEST", state, Modifier, { icon() }, { icon() },
+        {}, {}, "TEST", "TEST", state, Modifier, EditableContentDialog(),
         singleLine = false
     )
 }

@@ -73,7 +73,8 @@ fun SwipeAbleTaskCard(
     context: Context,
     itemState: SwipeToDismissBoxState,
     mode: ItemMode,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isPreview: Boolean = false
 ) { // Process card action
     val remindTime = @Composable { // The text of reminder time
         val getTimeInLong =
@@ -129,7 +130,7 @@ fun SwipeAbleTaskCard(
                 }
             }
         ) { // front of card
-            val reminderState = reminderState(task.reminder)
+            val reminderState = if (!isPreview) reminderState(task.reminder) else false
             TaskCardContent(
                 description = task.description,
                 dateText = if (mode == ItemMode.RemindedTask) {
@@ -254,6 +255,7 @@ private fun Preview() {
     )
     SwipeAbleTaskCard(
         Task(0, "The quick brown fox jumps over the lazy dog.", LocalDate.now()),
-        { _, _, _, _ -> }, {}, false, LocalContext.current, state, ItemMode.NormalTask
+        { _, _, _, _ -> }, {}, false, LocalContext.current, state, ItemMode.NormalTask,
+        isPreview = true
     )
 }

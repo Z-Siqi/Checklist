@@ -79,6 +79,7 @@ fun LazyList(
                         context = context,
                         taskState = taskState,
                         modifier = modifier,
+                        isPreview = isPreview
                     )
                 }
             }
@@ -90,6 +91,7 @@ fun LazyList(
                         context = context,
                         taskState = taskState,
                         modifier = modifier,
+                        isPreview = isPreview
                     )
                 }
             }
@@ -102,6 +104,7 @@ fun LazyList(
                     context = context,
                     taskState = taskState,
                     modifier = modifier,
+                    isPreview = isPreview
                 )
             }
         } else {
@@ -114,6 +117,7 @@ fun LazyList(
                     context = context,
                     taskState = taskState,
                     modifier = modifier,
+                    isPreview = isPreview
                 )
             }
         }
@@ -144,6 +148,7 @@ private fun MainListItem(
     context: Context,
     taskState: TaskLayoutViewModel,
     modifier: Modifier = Modifier,
+    isPreview: Boolean = false
 ) {
     val state = rememberSwipeToDismissBoxState(
         positionalThreshold = { screenWidthPx * 0.35f },
@@ -155,7 +160,8 @@ private fun MainListItem(
         getIsHistory = taskState.getIsHistory(task.id),
         context = context, itemState = state,
         mode = ItemMode.NormalTask,
-        modifier = modifier
+        modifier = modifier,
+        isPreview = isPreview
     )
     undoTask(state)
 }
@@ -166,7 +172,8 @@ private fun RemindedItem(
     isRemindedItem: List<Task>,
     screenWidthPx: Float, context: Context,
     modifier: Modifier = Modifier,
-    taskState: TaskLayoutViewModel
+    taskState: TaskLayoutViewModel,
+    isPreview: Boolean = false
 ) {
     val remindedHeight = (39 + (CardHeight * isRemindedItem.size)).dp
     val animatedRemindedHeight by animateDpAsState(
@@ -199,7 +206,8 @@ private fun RemindedItem(
                     getIsHistory = taskState.getIsHistory(task.id),
                     context = context,
                     itemState = state,
-                    mode = ItemMode.RemindedTask
+                    mode = ItemMode.RemindedTask,
+                    isPreview = isPreview
                 )
             }
         }
@@ -212,7 +220,8 @@ private fun PinnedItem(
     pinnedItem: List<Task>,
     screenWidthPx: Float, context: Context,
     modifier: Modifier = Modifier,
-    taskState: TaskLayoutViewModel
+    taskState: TaskLayoutViewModel,
+    isPreview: Boolean = false
 ) {
     val pinnedHeight = (39 + (CardHeight * pinnedItem.size)).dp
     val animatedPinnedHeight by animateDpAsState(
@@ -245,7 +254,8 @@ private fun PinnedItem(
                     getIsHistory = taskState.getIsHistory(task.id),
                     context = context,
                     itemState = state,
-                    mode = ItemMode.PinnedTask
+                    mode = ItemMode.PinnedTask,
+                    isPreview = isPreview
                 )
             }
         }

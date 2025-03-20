@@ -24,6 +24,12 @@ class PrimaryPreferences(context: Context) : PreferencesAccess(context) {
         return readPreferencesState(preferences, false)
     }
 
+    fun recentlyRemindedKeepTime(setter: Long? = null): Long {
+        val preferences = "recently_reminded_keep_time"
+        if (setter != null) writePreferencesState(preferences, setter)
+        return readPreferencesState(preferences, 43200000L)
+    }
+
     fun pictureCompressionRate(setter: Int? = null): Int {
         val preferences = "picture_compression_rate"
         if (setter != null) writePreferencesState(preferences, setter)

@@ -53,4 +53,20 @@ open class PreferencesAccess(private val context: Context) {
         editor.putString(name, state)
         editor.apply()
     }
+
+    /** Long getter. default: if no data was set **/
+    fun readPreferencesState(name: String, default: Long = 1): Long {
+        val sharedPreferences =
+            context.getSharedPreferences(this.preferencesFileName(), Context.MODE_PRIVATE)
+        return sharedPreferences.getLong(name, default)
+    }
+
+    /** Long setter **/
+    fun writePreferencesState(name: String, state: Long) {
+        val sharedPreferences =
+            context.getSharedPreferences(this.preferencesFileName(), Context.MODE_PRIVATE)
+        val editor = sharedPreferences.edit()
+        editor.putLong(name, state)
+        editor.apply()
+    }
 }

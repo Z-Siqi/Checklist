@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
 import com.sqz.checklist.R
 import com.sqz.checklist.ui.material.UrlText
+import com.sqz.checklist.ui.material.verticalColumnScrollbar
 
 @Composable
 fun InfoDialogWithURL(
@@ -73,11 +74,14 @@ fun InfoDialogWithURL(
             ) {
                 Column(modifier.padding(8.dp)) {
                     SelectionContainer(
-                        modifier = modifier.verticalScroll(scrollState)
+                        modifier = modifier.verticalColumnScrollbar(
+                            scrollState = scrollState, endPadding = 0f, scrollBarCornerRadius = 12f,
+                            scrollBarTrackColor = MaterialTheme.colorScheme.outlineVariant,
+                            scrollBarColor = MaterialTheme.colorScheme.outline,
+                            showScrollBar = scrollState.canScrollBackward || scrollState.canScrollForward
+                        ) then modifier.verticalScroll(scrollState)
                     ) {
-                        UrlText(
-                            url, text = urlTitle ?: url, view = view, fontSize = 19.sp
-                        )
+                        UrlText(url, text = urlTitle ?: url, view = view, fontSize = 19.sp)
                     }
                 }
             }
