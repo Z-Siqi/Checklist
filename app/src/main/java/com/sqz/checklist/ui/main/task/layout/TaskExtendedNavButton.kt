@@ -101,9 +101,7 @@ fun taskExtendedNavButton(
                     it.description, it.pin,
                     it.detail?.type, it.detail?.dataString, it.detail?.dataByte
                 ).let { taskId ->
-                    if (it.reminder) viewModel.reminderActionCaller(
-                        taskId, null, true, it.description
-                    ).also {
+                    if (it.reminder) viewModel.reminderHandler.requestReminder(taskId).also {
                         Toast.makeText(
                             view.context,
                             view.context.getString(R.string.task_is_created),
@@ -115,7 +113,7 @@ fun taskExtendedNavButton(
                 taskAddCard = false
             }
         },
-        permissionState = viewModel.notificationInitState(view.context),
+        permissionState = viewModel.reminderHandler.notificationInitState(view.context),
         view = view,
     )
 

@@ -42,6 +42,7 @@ import com.sqz.checklist.R
 import com.sqz.checklist.database.Task
 import com.sqz.checklist.ui.main.task.CardHeight
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
+import com.sqz.checklist.ui.main.task.TaskLayoutViewModelPreview
 import java.time.LocalDate
 
 /**
@@ -78,8 +79,7 @@ fun LazyList(
                         screenWidthPx = screenWidthPx,
                         context = context,
                         taskState = taskState,
-                        modifier = modifier,
-                        isPreview = isPreview
+                        modifier = modifier
                     )
                 }
             }
@@ -90,8 +90,7 @@ fun LazyList(
                         screenWidthPx = screenWidthPx,
                         context = context,
                         taskState = taskState,
-                        modifier = modifier,
-                        isPreview = isPreview
+                        modifier = modifier
                     )
                 }
             }
@@ -103,8 +102,7 @@ fun LazyList(
                     undoTask = undoTask,
                     context = context,
                     taskState = taskState,
-                    modifier = modifier,
-                    isPreview = isPreview
+                    modifier = modifier
                 )
             }
         } else {
@@ -116,8 +114,7 @@ fun LazyList(
                     undoTask = undoTask,
                     context = context,
                     taskState = taskState,
-                    modifier = modifier,
-                    isPreview = isPreview
+                    modifier = modifier
                 )
             }
         }
@@ -127,7 +124,7 @@ fun LazyList(
     // Auto update list when reminded
     var rememberValue by rememberSaveable { mutableIntStateOf(0) }
     val value by if (isPreview) remember { mutableIntStateOf(0) } else {
-        taskState.getIsRemindedNum().collectAsState(initial = 0)
+        taskState.reminderHandler.getIsRemindedNum()!!.collectAsState(initial = 0)
     }
     LaunchedEffect(value, rememberValue) {
         if (value != rememberValue) {
@@ -148,7 +145,6 @@ private fun MainListItem(
     context: Context,
     taskState: TaskLayoutViewModel,
     modifier: Modifier = Modifier,
-    isPreview: Boolean = false
 ) {
     val state = rememberSwipeToDismissBoxState(
         positionalThreshold = { screenWidthPx * 0.35f },
@@ -161,7 +157,7 @@ private fun MainListItem(
         context = context, itemState = state,
         mode = ItemMode.NormalTask,
         modifier = modifier,
-        isPreview = isPreview
+        databaseRepository = taskState.database()
     )
     undoTask(state)
 }
@@ -172,8 +168,7 @@ private fun RemindedItem(
     isRemindedItem: List<Task>,
     screenWidthPx: Float, context: Context,
     modifier: Modifier = Modifier,
-    taskState: TaskLayoutViewModel,
-    isPreview: Boolean = false
+    taskState: TaskLayoutViewModel
 ) {
     val remindedHeight = (39 + (CardHeight * isRemindedItem.size)).dp
     val animatedRemindedHeight by animateDpAsState(
@@ -207,7 +202,7 @@ private fun RemindedItem(
                     context = context,
                     itemState = state,
                     mode = ItemMode.RemindedTask,
-                    isPreview = isPreview
+                    databaseRepository = taskState.database()
                 )
             }
         }
@@ -220,8 +215,7 @@ private fun PinnedItem(
     pinnedItem: List<Task>,
     screenWidthPx: Float, context: Context,
     modifier: Modifier = Modifier,
-    taskState: TaskLayoutViewModel,
-    isPreview: Boolean = false
+    taskState: TaskLayoutViewModel
 ) {
     val pinnedHeight = (39 + (CardHeight * pinnedItem.size)).dp
     val animatedPinnedHeight by animateDpAsState(
@@ -255,12 +249,14 @@ private fun PinnedItem(
                     context = context,
                     itemState = state,
                     mode = ItemMode.PinnedTask,
-                    isPreview = isPreview
+                    databaseRepository = taskState.database()
                 )
             }
         }
     }
 }
+
+
 
 @Preview(showBackground = true)
 @Composable
@@ -269,6 +265,6 @@ private fun Preview() {
     val context = LocalContext.current
     LazyList(
         ListData(false, item, item, item), rememberLazyListState(), {}, { false },
-        context, Modifier, TaskLayoutViewModel(), isPreview = true
+        context, Modifier, TaskLayoutViewModelPreview(), isPreview = true
     )
 }

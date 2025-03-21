@@ -16,6 +16,7 @@ import androidx.annotation.RequiresApi
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -29,7 +30,7 @@ import com.sqz.checklist.R
 import com.sqz.checklist.notification.PermissionState
 import com.sqz.checklist.preferences.PreferencesInCache
 import com.sqz.checklist.preferences.PrimaryPreferences
-import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
+import com.sqz.checklist.ui.main.task.handler.ReminderHandler
 import com.sqz.checklist.ui.material.dialog.WarningAlertDialog
 import com.sqz.checklist.ui.material.dialog.TimeSelectDialog
 import kotlinx.coroutines.CoroutineScope
@@ -40,32 +41,25 @@ import java.util.concurrent.TimeUnit
 
 enum class ReminderActionType { Set, Cancel, None }
 
-data class ReminderData(
-    val id: Long = 0,
-    val reminderInfo: Int? = null,
-    val set: ReminderActionType = ReminderActionType.None,
-    val description: String = "",
-)
-
 /** Processing set and cancel reminder **/
 @Composable
-fun ReminderAction(
-    reminder: ReminderData,
+fun ReminderHandlerListener(
+    reminderHandler: ReminderHandler,
     context: Context,
     view: View,
-    taskState: TaskLayoutViewModel,
     coroutineScope: CoroutineScope,
     ignoreSetAndGetTimeData: (timeInMilli: Long) -> Boolean = { false }
 ) {
+    val reminderActionType by reminderHandler.reminderActionType.collectAsState()
     val resetState = {
-        if (!ignoreSetAndGetTimeData(0L)) taskState.resetTaskData()
+        reminderHandler.resetRequest()
         view.playSoundEffect(SoundEffectConstants.CLICK)
     }
     val cachePreferences = PreferencesInCache(view.context)
     var requestPermission by rememberSaveable { mutableStateOf(false) }
-    when (reminder.set) {
+    when (reminderActionType) {
         ReminderActionType.Set -> {
-            when (taskState.notificationInitState(context)) {
+            when (reminderHandler.notificationInitState(context)) {
                 PermissionState.Null -> if (!requestPermission) {
                     if (!cachePreferences.checkBackgroundManageApp()) {
                         checkInstalledApp(view.context)
@@ -75,7 +69,7 @@ fun ReminderAction(
                         if (requestNotificationPermission(context) {
                                 requestPermission = true
                                 view.playSoundEffect(SoundEffectConstants.CLICK)
-                            } && taskState.notificationInitState(context) == PermissionState.Null
+                            } && reminderHandler.notificationInitState(context) == PermissionState.Null
                         ) NoPermissionDialog(onDismissRequest = {
                             resetState()
                             view.playSoundEffect(SoundEffectConstants.CLICK)
@@ -116,18 +110,14 @@ fun ReminderAction(
                         onConfirmClick = { timeInMilli ->
                             val preferences =
                                 PrimaryPreferences(context).disableNoScheduleExactAlarmNotice()
-                            if (!taskState.isAlarmPermission() && !preferences) Toast.makeText(
+                            if (!reminderHandler.isAlarmPermission() && !preferences) Toast.makeText(
                                 context, context.getString(
                                     R.string.no_SCHEDULE_EXACT_ALARM_permission_explain
                                 ), Toast.LENGTH_SHORT
                             ).show()
                             if (ignoreSetAndGetTimeData(timeInMilli)) resetState() else coroutineScope.launch {
-                                taskState.setReminder(
-                                    timeInMilli,
-                                    TimeUnit.MILLISECONDS,
-                                    reminder.id,
-                                    reminder.description,
-                                    context
+                                reminderHandler.setReminder(
+                                    timeInMilli, TimeUnit.MILLISECONDS, context
                                 )
                                 resetState()
                             }
@@ -142,15 +132,15 @@ fun ReminderAction(
         ReminderActionType.Cancel -> WarningAlertDialog(
             onDismissRequest = { resetState() },
             onConfirmButtonClick = {
-                taskState.cancelReminder(reminder.id, reminder.reminderInfo, context)
+                reminderHandler.cancelReminder(context = context)
                 resetState()
             },
             onDismissButtonClick = { resetState() },
             text = {
                 var data by rememberSaveable { mutableLongStateOf(-1L) }
                 LaunchedEffect(Unit) {
-                    if (reminder.reminderInfo != null) {
-                        data = taskState.getReminderData(reminder.reminderInfo).reminderTime
+                    reminderHandler.getReminderData()?.let {
+                        data = it.reminderTime
                     }
                 }
                 Text(
@@ -163,14 +153,14 @@ fun ReminderAction(
                     text = if (data != -1L) stringResource(
                         R.string.remind_at,
                         formatter.format(data)
-                    ) else "ERROR",
+                    ) else stringResource(R.string.loading),
                     fontSize = 15.sp
                 )
             }
         )
 
         ReminderActionType.None -> if (!requestPermission) {
-            val state = taskState.notificationInitState(context, true)
+            val state = reminderHandler.notificationInitState(context, true)
             if (state != PermissionState.Null) requestPermission = false
         }
     }
@@ -273,15 +263,18 @@ private fun requestNotificationPermission(
 @Suppress("SpellCheckingInspection")
 fun checkInstalledApp(context: Context) {
     val packageManager = context.packageManager
-    try { packageManager.getPackageInfo("me.piebridge.brevent", 0)
+    try {
+        packageManager.getPackageInfo("me.piebridge.brevent", 0)
         Toast.makeText(
             context, context.getString(R.string.note_brevent), Toast.LENGTH_LONG
         ).show()
-    } catch (_: PackageManager.NameNotFoundException) {}
+    } catch (_: PackageManager.NameNotFoundException) {
+    }
     try {
         packageManager.getPackageInfo("github.tornaco.android.thanos.pro", 0)
         Toast.makeText(
             context, context.getString(R.string.note_thanox), Toast.LENGTH_LONG
         ).show()
-    } catch (_: PackageManager.NameNotFoundException) {}
+    } catch (_: PackageManager.NameNotFoundException) {
+    }
 }

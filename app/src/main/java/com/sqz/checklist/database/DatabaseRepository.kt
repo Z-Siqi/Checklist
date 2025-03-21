@@ -110,11 +110,18 @@ class DatabaseRepository(
                 val data = taskDao.getTaskDetail(taskId).dataByte?.toUri(MainActivity.appDir)
                 val file = File(data?.path!!)
                 if (file.exists()) file.delete()
-            } catch (_: Exception) {}
+            } catch (_: Exception) {
+            }
             taskDao.delete(
                 TaskDetail(taskId, TaskDetailType.Text, "")
             )
         }
+    }
+
+    suspend fun getTask(taskId: Long): Task? = try {
+        databaseInstance!!.taskDao().getAll(taskId)
+    } catch (e: Exception) {
+        null
     }
 
     suspend fun getDetailData(detailId: Long): TaskDetail? {
@@ -137,9 +144,13 @@ class DatabaseRepository(
         return this.databaseInstance!!.taskReminderDao().getAll()
     }
 
-    fun getIsRemindedNum(isReminded: Boolean): Flow<Int> {
-        return if (isReminded) this.databaseInstance!!.taskReminderDao().getIsRemindedNum(1)
-        else this.databaseInstance!!.taskReminderDao().getIsRemindedNum(0)
+    fun getIsRemindedNum(isReminded: Boolean): Flow<Int>? {
+        return try {
+            if (isReminded) this.databaseInstance!!.taskReminderDao().getIsRemindedNum(1)
+            else this.databaseInstance!!.taskReminderDao().getIsRemindedNum(0)
+        } catch (e: Exception) {
+            null
+        }
     }
 
     suspend fun getModeNumWithNoReminded(modeType: ReminderModeType): Int {

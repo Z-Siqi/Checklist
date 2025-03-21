@@ -66,7 +66,7 @@ import java.util.Locale
 fun SwipeAbleTaskCard(
     task: Task,
     onTaskItemClick: (
-        task: Task, type: CardClickType, reminderState: Boolean, context: Context
+        task: Task, type: CardClickType, context: Context
     ) -> Unit,
     checked: (id: Long) -> Unit,
     getIsHistory: Boolean,
@@ -74,7 +74,7 @@ fun SwipeAbleTaskCard(
     itemState: SwipeToDismissBoxState,
     mode: ItemMode,
     modifier: Modifier = Modifier,
-    isPreview: Boolean = false
+    databaseRepository: DatabaseRepository
 ) { // Process card action
     val remindTime = @Composable { // The text of reminder time
         val getTimeInLong =
@@ -130,7 +130,7 @@ fun SwipeAbleTaskCard(
                 }
             }
         ) { // front of card
-            val reminderState = if (!isPreview) reminderState(task.reminder) else false
+            val reminderState = reminderState(task.reminder, databaseRepository)
             TaskCardContent(
                 description = task.description,
                 dateText = if (mode == ItemMode.RemindedTask) {
@@ -141,7 +141,7 @@ fun SwipeAbleTaskCard(
                         task.createDate.format(formatter)
                     )
                 },
-                onClick = { type -> onTaskItemClick(task, type, reminderState, context) },
+                onClick = { type -> onTaskItemClick(task, type, context) },
                 timerIconState = reminderState,
                 pinIconState = task.isPin,
                 tooltipRemindText = if (reminderState) remindTime() else null,
@@ -182,8 +182,7 @@ private fun swipeToDismissControl(
 
 /** check the reminder is set or not **/
 @Composable
-private fun reminderState(reminder: Int?): Boolean {
-    val databaseRepository = DatabaseRepository(MainActivity.taskDatabase)
+private fun reminderState(reminder: Int?, databaseRepository: DatabaseRepository): Boolean {
     var state by remember { mutableStateOf(false) }
     LaunchedEffect(databaseRepository.getIsRemindedNum(true)) {
         if (reminder != 0 && reminder != null) {
@@ -255,7 +254,7 @@ private fun Preview() {
     )
     SwipeAbleTaskCard(
         Task(0, "The quick brown fox jumps over the lazy dog.", LocalDate.now()),
-        { _, _, _, _ -> }, {}, false, LocalContext.current, state, ItemMode.NormalTask,
-        isPreview = true
+        { _, _, _ -> }, {}, false, LocalContext.current, state, ItemMode.NormalTask,
+        databaseRepository = DatabaseRepository(null)
     )
 }

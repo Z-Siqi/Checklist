@@ -1,4 +1,4 @@
-package com.sqz.checklist.ui.main.task.history
+package com.sqz.checklist.ui.main.history.task
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

@@ -40,10 +40,10 @@ import com.sqz.checklist.ui.main.settings.SettingsLayoutViewModel
 import com.sqz.checklist.ui.main.settings.SettingsTopBar
 import com.sqz.checklist.ui.main.settings.settingsExtendedNavButton
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
-import com.sqz.checklist.ui.main.task.history.HistoryTopBar
-import com.sqz.checklist.ui.main.task.history.TaskHistory
-import com.sqz.checklist.ui.main.task.history.TaskHistoryNavBar
-import com.sqz.checklist.ui.main.task.history.TaskHistoryViewModel
+import com.sqz.checklist.ui.main.history.task.HistoryTopBar
+import com.sqz.checklist.ui.main.history.task.TaskHistory
+import com.sqz.checklist.ui.main.history.task.TaskHistoryNavBar
+import com.sqz.checklist.ui.main.history.task.TaskHistoryViewModel
 import com.sqz.checklist.ui.main.task.layout.TaskLayout
 import com.sqz.checklist.ui.main.task.layout.TaskLayoutTopBar
 import com.sqz.checklist.ui.main.task.layout.taskExtendedNavButton

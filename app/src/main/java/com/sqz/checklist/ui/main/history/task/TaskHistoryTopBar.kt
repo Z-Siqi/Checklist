@@ -1,4 +1,4 @@
-package com.sqz.checklist.ui.main.task.history
+package com.sqz.checklist.ui.main.history.task
 
 import android.os.Build
 import androidx.compose.foundation.layout.WindowInsets

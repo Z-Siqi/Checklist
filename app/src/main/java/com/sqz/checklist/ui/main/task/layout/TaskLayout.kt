@@ -63,9 +63,10 @@ import com.sqz.checklist.database.Task
 import com.sqz.checklist.database.TaskDetail
 import com.sqz.checklist.database.TaskDetailType
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
+import com.sqz.checklist.ui.main.task.TaskLayoutViewModelPreview
 import com.sqz.checklist.ui.main.task.layout.function.CheckTaskAction
 import com.sqz.checklist.ui.main.task.layout.function.EditTask
-import com.sqz.checklist.ui.main.task.layout.function.ReminderAction
+import com.sqz.checklist.ui.main.task.layout.function.ReminderHandlerListener
 import com.sqz.checklist.ui.main.task.layout.function.TaskDetailData
 import com.sqz.checklist.ui.main.task.layout.function.TaskModifyDialog
 import com.sqz.checklist.ui.main.task.layout.item.LazyList
@@ -169,11 +170,10 @@ fun TaskLayout(
             view = view
         )
     }
-    if (!isPreview) ReminderAction(
-        reminder = taskState.taskData.collectAsState().value.reminder,
+    if (!isPreview) ReminderHandlerListener(
+        reminderHandler = taskState.reminderHandler,
         context = context,
         view = view,
-        taskState = taskState,
         coroutineScope = coroutineScope
     )
     TaskDetailInfoDialog(
@@ -338,6 +338,6 @@ private fun Preview() {
     TaskLayout(
         TopAppBarDefaults.exitUntilCollapsedScrollBehavior(),
         LocalContext.current, LocalView.current, listState = ListData(false, item, item, item),
-        taskState = TaskLayoutViewModel(), isPreview = true
+        taskState = TaskLayoutViewModelPreview(), isPreview = true
     )
 }
