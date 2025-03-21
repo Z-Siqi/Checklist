@@ -73,7 +73,8 @@ open class TaskLayoutViewModel : ViewModel() {
         viewModelScope.launch {
             _listState.update { lists ->
                 val remindedList = MainActivity.taskDatabase.taskDao().getIsRemindedList().filter {
-                    if (it.reminder != null) database().getReminderData(it.reminder)!!.isReminded
+                    if (it.reminder != null) database().getReminderData(it.reminder)?.isReminded
+                        ?: false
                     else false
                 }
                 lists.copy(
