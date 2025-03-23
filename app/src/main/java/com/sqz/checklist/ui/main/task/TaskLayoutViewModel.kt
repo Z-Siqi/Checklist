@@ -222,7 +222,7 @@ open class TaskLayoutViewModel : ViewModel() {
     fun autoDeleteRemindedTaskInfo(context: Context) {
         viewModelScope.launch(Dispatchers.IO) {
             val primaryPreferences = PrimaryPreferences(context)
-            try {
+            if (primaryPreferences.recentlyRemindedKeepTime() > 0L) try {
                 for (data in _listState.value.isRemindedItem) {
                     val timeMillisData =
                         if (data.reminder != null) database().getReminderData(data.reminder)?.reminderTime
