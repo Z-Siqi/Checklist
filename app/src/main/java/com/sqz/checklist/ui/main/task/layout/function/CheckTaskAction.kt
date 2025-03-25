@@ -44,7 +44,11 @@ fun CheckTaskAction(
     val isWindowFocused = LocalWindowInfo.current.isWindowFocused
     if (taskState.undoTimeout(lazyState, context)) UndoButton(
         onClick = {
-            taskState.modifyHandler.onTaskUndoChecked(undo.undoActionId)
+            taskState.modifyHandler.onTaskUndoChecked(undo.undoActionId).let {
+                if (it.isActive) {
+                    taskState.resetUndo(context)
+                }
+            }
             whenUndo()
         }) else LaunchedEffect(true) { // processing after checked
         delay(100)

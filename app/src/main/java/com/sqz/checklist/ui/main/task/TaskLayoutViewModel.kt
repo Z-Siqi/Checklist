@@ -119,7 +119,7 @@ open class TaskLayoutViewModel : ViewModel() {
 
     private val _undo = MutableStateFlow(CheckDataState())
     val undo: MutableStateFlow<CheckDataState> = _undo
-    private fun resetUndo(context: Context) { // reset undo state
+    fun resetUndo(context: Context) { // reset undo state
         reminderHandler.cancelHistoryReminder(context = context)
         _undo.value = CheckDataState()
     }
