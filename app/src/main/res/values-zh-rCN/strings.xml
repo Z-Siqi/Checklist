@@ -141,5 +141,6 @@
     <string name="in_0_to_100_only">仅允许使用 0 到 100 之间的整数!</string>
     <string name="custom">自定义</string>
     <string name="recently_reminded_keep_time">最近提醒任务保留时间</string>
+    <string name="remove_notice_in_auto_del_reminded">当最近提醒任务自动移除时删除通知</string>
 
 </resources>

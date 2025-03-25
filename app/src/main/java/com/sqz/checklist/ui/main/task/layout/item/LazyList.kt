@@ -6,6 +6,7 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
@@ -72,7 +73,7 @@ fun LazyList(
         state = lazyState
     ) {
         if (!inSearch) {
-            if (listState.isRemindedItem.isNotEmpty()) {
+            if (listState.item.isNotEmpty()) {
                 item {
                     RemindedItem(
                         isRemindedItem = listState.isRemindedItem,
@@ -83,7 +84,7 @@ fun LazyList(
                     )
                 }
             }
-            if (listState.pinnedItem.isNotEmpty()) {
+            if (listState.item.isNotEmpty()) {
                 item {
                     PinnedItem(
                         pinnedItem = listState.pinnedItem,
@@ -170,15 +171,16 @@ private fun RemindedItem(
     modifier: Modifier = Modifier,
     taskState: TaskLayoutViewModel
 ) {
-    val remindedHeight = (39 + (CardHeight * isRemindedItem.size)).dp
+    val notEmpty = isRemindedItem.isNotEmpty()
+    val remindedHeight = if (notEmpty) (50 + (CardHeight * isRemindedItem.size)).dp else 0.dp
     val animatedRemindedHeight by animateDpAsState(
         targetValue = remindedHeight, label = "Reminded Height"
     )
-    Spacer(modifier = modifier.height(10.dp))
     OutlinedCard(
         modifier = modifier
             .height(animatedRemindedHeight)
-            .padding(start = 8.dp, end = 8.dp),
+            .fillMaxWidth()
+            .padding(start = 8.dp, end = 8.dp, top = 10.dp),
         shape = ShapeDefaults.Large,
         colors = CardDefaults.cardColors(MaterialTheme.colorScheme.tertiaryContainer)
     ) {
@@ -217,15 +219,16 @@ private fun PinnedItem(
     modifier: Modifier = Modifier,
     taskState: TaskLayoutViewModel
 ) {
-    val pinnedHeight = (39 + (CardHeight * pinnedItem.size)).dp
+    val notEmpty = pinnedItem.isNotEmpty()
+    val pinnedHeight = if (notEmpty) (50 + (CardHeight * pinnedItem.size)).dp else 0.dp
     val animatedPinnedHeight by animateDpAsState(
         targetValue = pinnedHeight, label = "Pinned Height"
     )
-    Spacer(modifier = modifier.height(10.dp))
     OutlinedCard(
         modifier = modifier
             .height(animatedPinnedHeight)
-            .padding(start = 8.dp, end = 8.dp),
+            .fillMaxWidth()
+            .padding(start = 8.dp, end = 8.dp, top = 10.dp),
         shape = ShapeDefaults.Large,
         colors = CardDefaults.cardColors(MaterialTheme.colorScheme.background)
     ) {

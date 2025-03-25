@@ -1,6 +1,7 @@
 package com.sqz.checklist.ui.material.dialog
 
 import android.view.SoundEffectConstants
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -33,7 +34,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalView
@@ -138,8 +142,18 @@ fun EditableContentDialog(
                         focus.clearFocus()
                         clearFocus = false
                     }
+                    val fontSize = if (!singleLine) 19.sp else 23.sp
+                    val focusRequester = FocusRequester()
+                    if (singleLine) Spacer(modifier
+                        .fillMaxWidth()
+                        .pointerInput(Unit) { detectTapGestures { focusRequester.requestFocus() } }
+                        .weight(0.2f))
+                    val showScrollBar =
+                        scrollState.canScrollBackward || scrollState.canScrollForward
                     BasicTextField(
                         modifier = modifier
+                            .weight(1f)
+                            .focusRequester(focusRequester)
                             .fillMaxSize()
                             .padding(8.dp)
                             .verticalColumnScrollbar(
@@ -147,11 +161,11 @@ fun EditableContentDialog(
                                 scrollBarCornerRadius = 12f,
                                 scrollBarTrackColor = MaterialTheme.colorScheme.outlineVariant,
                                 scrollBarColor = MaterialTheme.colorScheme.outline,
-                                showScrollBar = scrollState.canScrollBackward || scrollState.canScrollForward
+                                showScrollBar = showScrollBar && !singleLine
                             ),
                         state = state,
                         textStyle = TextStyle(
-                            fontSize = 19.sp, color = MaterialTheme.colorScheme.onSurfaceVariant
+                            fontSize = fontSize, color = MaterialTheme.colorScheme.onSurfaceVariant
                         ),
                         cursorBrush = SolidColor(MaterialTheme.colorScheme.onSurfaceVariant),
                         keyboardOptions = KeyboardOptions(

@@ -84,6 +84,7 @@ fun settingsList(
         disableRemoveNotifyInReminded(primaryPreferences, view),
         disableNoScheduleExactAlarmNotice(primaryPreferences, view),
         recentlyRemindedKeepTime(primaryPreferences, view),
+        removeNoticeInAutoDelReminded(primaryPreferences, view),
         // History
         allowedNumberOfHistory(primaryPreferences, view),
         // General
@@ -265,7 +266,7 @@ private fun recentlyRemindedKeepTime(preferences: PrimaryPreferences, view: View
         }
     }
     return SettingsItem(
-        SettingsType.Notification, 64, stringResource(R.string.recently_reminded_keep_time)
+        SettingsType.Notification, 60, stringResource(R.string.recently_reminded_keep_time)
     ) {
         var expanded by remember { mutableStateOf(false) }
         Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -316,6 +317,28 @@ private fun recentlyRemindedKeepTime(preferences: PrimaryPreferences, view: View
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun removeNoticeInAutoDelReminded(
+    preferences: PrimaryPreferences, view: View
+): SettingsItem {
+    var setting by remember { mutableStateOf(preferences.removeNoticeInAutoDelReminded()) }
+    return SettingsItem(
+        SettingsType.Notification, 60,
+        stringResource(R.string.remove_notice_in_auto_del_reminded)
+    ) {
+        Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            OptionText(it, 60)
+            Spacer(modifier = Modifier.weight(1f))
+            Switch(
+                checked = setting, onCheckedChange = {
+                    setting = preferences.removeNoticeInAutoDelReminded(it)
+                    view.playSoundEffect(SoundEffectConstants.CLICK)
+                }
+            )
         }
     }
 }

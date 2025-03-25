@@ -58,6 +58,11 @@ class DatabaseRepository(
         taskDao.editTask(taskId, edit, detailType != null && detailDataString != null)
     }
 
+    suspend fun taskPin(id: Long, setter: Boolean) {
+        fun Boolean.toInt(): Int = if (this) 1 else 0
+        this.databaseInstance!!.taskDao().editTaskPin(id, setter.toInt())
+    }
+
     suspend fun deleteReminderData(taskId: Long) {
         val reminderId = this.databaseInstance!!.taskDao().getAll(taskId).reminder
         val reminderDao = this.databaseInstance.taskReminderDao()
@@ -90,10 +95,11 @@ class DatabaseRepository(
         }
     }
 
-    suspend fun deleteTask(taskId: Long) {
+    suspend fun deleteTask(taskId: Long, arrangeHistoryId: Boolean = false) {
         val taskDao = this.databaseInstance!!.taskDao()
         this.deleteDetail(taskId, taskDao)
         taskDao.delete(Task(id = taskId, description = "", createDate = LocalDate.MIN))
+        if (arrangeHistoryId) this.arrangeHistoryId()
     }
 
     suspend fun deleteAllHistory() {
@@ -160,6 +166,17 @@ class DatabaseRepository(
     suspend fun setIsReminded(reminderId: Int, state: Boolean) {
         if (state) this.databaseInstance!!.taskReminderDao().setIsReminded(reminderId, 1)
         else this.databaseInstance!!.taskReminderDao().setIsReminded(reminderId, 0)
+    }
+
+    suspend fun isHistoryIdToHistory(id: Long) {
+        val dbInstance = this.databaseInstance!!.taskDao()
+        val maxId = dbInstance.getIsHistoryIdTop()
+        dbInstance.setHistoryId((maxId + 1), id)
+    }
+
+    suspend fun isHistoryIdToMain(id: Long) {
+        this.databaseInstance!!.taskDao().setHistoryId(0, id)
+        this.arrangeHistoryId()
     }
 
     private suspend fun arrangeHistoryId() {

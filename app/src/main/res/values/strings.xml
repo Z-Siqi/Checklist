@@ -140,5 +140,6 @@
     <string name="in_0_to_100_only">Only integers between 0 and 100 are allowed!</string>
     <string name="custom">Custom</string>
     <string name="recently_reminded_keep_time">Recently reminded task keep time</string>
+    <string name="remove_notice_in_auto_del_reminded">Delete notification when reminded task is automatically removed</string>
 
 </resources>

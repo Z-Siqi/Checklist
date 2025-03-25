@@ -83,17 +83,14 @@ class TaskHistoryViewModel: ViewModel() {
     /** Delete action **/
     private suspend fun deleteTask(id: Long) {
         // Actions
-        database().deleteTask(id)
-        arrangeHistoryId()
+        database().deleteTask(id, true)
         // Update to LazyColumn
         updateTaskHistoryData()
     }
 
     /** Undo to history **/
     private suspend fun changeTaskVisibilityAsUndo(id: Long) {
-        // Actions
-        MainActivity.taskDatabase.taskDao().setHistoryId(0, id)
-        arrangeHistoryId()
+        database().isHistoryIdToMain(id)
         // Update to LazyColumn
         updateTaskHistoryData()
     }

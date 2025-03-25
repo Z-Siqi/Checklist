@@ -44,11 +44,7 @@ fun CheckTaskAction(
     val isWindowFocused = LocalWindowInfo.current.isWindowFocused
     if (taskState.undoTimeout(lazyState, context)) UndoButton(
         onClick = {
-            taskState.changeTaskVisibility(
-                undo.undoActionId,
-                undoToHistory = true,
-                context = context
-            )
+            taskState.modifyHandler.onTaskUndoChecked(undo.undoActionId)
             whenUndo()
         }) else LaunchedEffect(true) { // processing after checked
         delay(100)

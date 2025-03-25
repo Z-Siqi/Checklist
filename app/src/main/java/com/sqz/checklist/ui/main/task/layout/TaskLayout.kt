@@ -155,18 +155,19 @@ fun TaskLayout(
             context = context
         )
     }
-    taskState.taskData.collectAsState().value.editState.let { // Edit Task
-        if (it.state) TaskModifyDialog(
-            editTask = EditTask(it.task.id, it.task.description, it.detail),
+    taskState.modifyHandler.inModifyTask.collectAsState().value.let { // Edit Task
+        if (it != null) TaskModifyDialog(
+            editTask = EditTask(
+                it.inModifyTask!!.id, it.inModifyTask.description, it.inModifyDetail
+            ),
             confirm = { confirm ->
-                taskState.editTask(
-                    confirm.id, confirm.description,
-                    confirm.detail?.type, confirm.detail?.dataString, confirm.detail?.dataByte,
-                    view.context
+                taskState.modifyHandler.editTask(
+                    confirm.description, confirm.detail?.type, confirm.detail?.dataString,
+                    confirm.detail?.dataByte, view.context
                 )
                 TaskDetailData.instance().releaseMemory()
             },
-            onDismissRequest = { taskState.resetTaskData() },
+            onDismissRequest = { taskState.modifyHandler.requestEditTask(null) },
             view = view
         )
     }

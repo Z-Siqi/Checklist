@@ -97,7 +97,7 @@ fun taskExtendedNavButton(
         onDismissRequest = { taskAddCard = false },
         confirm = {
             coroutineScope.launch {
-                viewModel.insertTask(
+                viewModel.modifyHandler.insertTask(
                     it.description, it.pin,
                     it.detail?.type, it.detail?.dataString, it.detail?.dataByte
                 ).let { taskId ->
@@ -109,7 +109,7 @@ fun taskExtendedNavButton(
                         ).show()
                     }
                 }
-                viewModel.taskDetailDataSaver().releaseMemory()
+                viewModel.modifyHandler.taskDetailDataSaver().releaseMemory()
                 taskAddCard = false
             }
         },

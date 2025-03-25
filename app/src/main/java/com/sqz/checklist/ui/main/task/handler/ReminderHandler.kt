@@ -3,6 +3,7 @@ package com.sqz.checklist.ui.main.task.handler
 import android.content.Context
 import android.util.Log
 import android.widget.Toast
+import androidx.lifecycle.viewModelScope
 import com.sqz.checklist.MainActivity
 import com.sqz.checklist.R
 import com.sqz.checklist.database.DatabaseRepository
@@ -10,6 +11,7 @@ import com.sqz.checklist.database.ReminderModeType
 import com.sqz.checklist.database.TaskReminder
 import com.sqz.checklist.notification.NotifyManager
 import com.sqz.checklist.notification.PermissionState
+import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
 import com.sqz.checklist.ui.main.task.layout.function.ReminderActionType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -23,11 +25,19 @@ import java.util.Calendar
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 
-class ReminderHandler(
+class ReminderHandler private constructor(
     private val coroutineScope: CoroutineScope,
     private val requestUpdate: MutableStateFlow<Boolean>
 ) {
-    fun database(): DatabaseRepository = DatabaseRepository(
+    companion object {
+        fun instance(
+            viewModel: TaskLayoutViewModel, requestUpdate: MutableStateFlow<Boolean>
+        ): ReminderHandler = ReminderHandler(
+            coroutineScope = viewModel.viewModelScope, requestUpdate = requestUpdate
+        )
+    }
+
+    private fun database(): DatabaseRepository = DatabaseRepository(
         MainActivity.taskDatabase
     )
     private val _notificationManager = MutableStateFlow(NotifyManager())

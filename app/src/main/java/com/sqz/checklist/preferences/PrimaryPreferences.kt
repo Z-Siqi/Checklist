@@ -35,4 +35,10 @@ class PrimaryPreferences(context: Context) : PreferencesAccess(context) {
         if (setter != null) writePreferencesState(preferences, setter)
         return readPreferencesState(preferences, 20)
     }
+
+    fun removeNoticeInAutoDelReminded(setter: Boolean? = null): Boolean {
+        val preferences = "remove_notice_in_auto_del_reminded"
+        if (setter != null) writePreferencesState(preferences, setter)
+        return readPreferencesState(preferences, false)
+    }
 }
