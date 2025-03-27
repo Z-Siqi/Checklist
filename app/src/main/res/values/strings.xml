@@ -82,6 +82,8 @@
     <string name="audio_size_limit">Video size cannot more than 55MB!</string>
     <string name="audio">Audio</string>
     <string name="click_select_audio">Click to select a audio</string>
+    <string name="video_compression_rate">Video compression rate of task detail</string>
+    <string name="failed_add_video">Failed to add video!</string>
 
     <!-- Notification -->
     <string name="task_reminder">Task Reminder</string>
@@ -141,5 +143,7 @@
     <string name="custom">Custom</string>
     <string name="recently_reminded_keep_time">Recently reminded task keep time</string>
     <string name="remove_notice_in_auto_del_reminded">Delete notification when reminded task is automatically removed</string>
+    <string name="sponsor_me">Sponsor Me</string>
+    <string name="donate_describe">If you like my work, please consider supporting me with a donation!</string>
 
 </resources>

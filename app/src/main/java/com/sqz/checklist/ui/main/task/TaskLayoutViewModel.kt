@@ -14,6 +14,7 @@ import com.sqz.checklist.database.DatabaseRepository
 import com.sqz.checklist.database.Task
 import com.sqz.checklist.database.TaskDetail
 import com.sqz.checklist.database.TaskDetailType
+import com.sqz.checklist.preferences.PreferencesInCache
 import com.sqz.checklist.preferences.PrimaryPreferences
 import com.sqz.checklist.ui.main.task.handler.ModifyHandler
 import com.sqz.checklist.ui.main.task.handler.ReminderHandler
@@ -22,6 +23,9 @@ import com.sqz.checklist.ui.main.task.layout.TopBarMenuClickType
 import com.sqz.checklist.ui.main.task.layout.function.CheckDataState
 import com.sqz.checklist.ui.main.task.layout.item.CardClickType
 import com.sqz.checklist.ui.main.task.layout.item.ListData
+import com.sqz.checklist.ui.material.media.audioMediaPath
+import com.sqz.checklist.ui.material.media.pictureMediaPath
+import com.sqz.checklist.ui.material.media.videoMediaPath
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,6 +33,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
 
 open class TaskLayoutViewModel : ViewModel() {
@@ -216,10 +221,24 @@ open class TaskLayoutViewModel : ViewModel() {
                         database().deleteReminderData(data.id)
                     }
                 }
+                if (_init) _init = false.also { removeInvalidFile(context) }
             } catch (e: NoSuchFieldException) {
                 Log.w("DeleteReminderData", "Noting need to delete")
             }
             updateListState()
+        }
+    }
+
+    /** Remove invalid media file from error **/
+    private fun removeInvalidFile(context: Context) = viewModelScope.launch(Dispatchers.IO) {
+        val cache = PreferencesInCache(context)
+        val list = listOf(pictureMediaPath, videoMediaPath, audioMediaPath)
+        if (cache.errFileNameSaver() != null) cache.errFileNameSaver()?.let {
+            for (data in list) {
+                val mediaDir = File(context.filesDir, data)
+                val file = File(mediaDir, it)
+                if (file.exists()) file.delete().also { cache.errFileNameSaver(null) }
+            }
         }
     }
 

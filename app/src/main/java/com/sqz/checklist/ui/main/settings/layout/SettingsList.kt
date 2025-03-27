@@ -89,8 +89,10 @@ fun settingsList(
         allowedNumberOfHistory(primaryPreferences, view),
         // General
         pictureCompressionRate(primaryPreferences, view),
+        videoCompressionRate(primaryPreferences, view),
         language(view),
-        about(view)
+        about(view),
+        donate(view)
     )
     if (heightDp == 0) LaunchedEffect(Unit) {
         if (type == null) list.forEach { heightDp += it.heightDp } else {
@@ -402,7 +404,8 @@ private fun pictureCompressionRate(preferences: PrimaryPreferences, view: View):
             CompressionItem(stringResource(R.string.custom), -1),
         )
         var expanded by remember { mutableStateOf(false) }
-        Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        val height = Modifier.height(60.dp)
+        Row(Modifier.padding(8.dp) then height, verticalAlignment = Alignment.CenterVertically) {
             var parentWidthDp by remember { mutableStateOf(0.dp) }
             val density = LocalDensity.current
             Column {
@@ -499,6 +502,116 @@ private fun pictureCompressionRate(preferences: PrimaryPreferences, view: View):
 }
 
 @Composable
+private fun videoCompressionRate(preferences: PrimaryPreferences, view: View): SettingsItem {
+    return SettingsItem(
+        SettingsType.General, 70, stringResource(R.string.video_compression_rate)
+    ) {
+        var setting by remember { mutableIntStateOf(preferences.videoCompressionRate()) }
+        val list = listOf(
+            CompressionItem("100", 100), CompressionItem("90", 90),
+            CompressionItem("80", 80), CompressionItem("70", 70),
+            CompressionItem("60", 60), CompressionItem("50", 50),
+            CompressionItem("40", 40), CompressionItem("30", 30),
+            CompressionItem("20", 20), CompressionItem("10", 10),
+            CompressionItem(stringResource(R.string.original), 0),
+            CompressionItem(stringResource(R.string.custom), -1),
+        )
+        var expanded by remember { mutableStateOf(false) }
+        val height = Modifier.height(60.dp)
+        Row(Modifier.padding(8.dp) then height, verticalAlignment = Alignment.CenterVertically) {
+            var parentWidthDp by remember { mutableStateOf(0.dp) }
+            val density = LocalDensity.current
+            Column {
+                OptionText(it, 20)
+                OptionText(
+                    stringResource(R.string.compression_rate_describe), 50,
+                    miniTitle = true, textColor = MaterialTheme.colorScheme.outline
+                )
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            OutlinedCard(
+                modifier = Modifier
+                    .size(85.dp, 40.dp) then Modifier.onGloballyPositioned { coordinates ->
+                    val widthPx = coordinates.size.width
+                    parentWidthDp = with(density) { widthPx.toDp() }
+                },
+                shape = ShapeDefaults.ExtraSmall,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                onClick = {
+                    expanded = !expanded
+                    view.playSoundEffect(SoundEffectConstants.CLICK)
+                }
+            ) {
+                var custom by remember { mutableStateOf(false) }
+                Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center) {
+                    Text(
+                        text = list.find { it.value == setting }?.name ?: setting.toString(),
+                        modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.secondary,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                val scrollState = rememberScrollState()
+                val screenHeight = LocalConfiguration.current.screenHeightDp
+                DropdownMenu(expanded = expanded,
+                    modifier = Modifier
+                        .width(parentWidthDp)
+                        .heightIn(min = 200.dp, max = (screenHeight / 2.1).dp)
+                        .verticalColumnScrollbar(
+                            scrollState = scrollState, width = 5.dp, scrollBarCornerRadius = 25f,
+                            showScrollBar = scrollState.canScrollBackward || scrollState.canScrollForward,
+                            scrollBarTrackColor = Color.Transparent,
+                            scrollBarColor = MaterialTheme.colorScheme.outline,
+                            endPadding = 25f, topBottomPadding = 25f
+                        ),
+                    scrollState = scrollState, onDismissRequest = { expanded = false }) {
+                    list.forEach {
+                        DropdownMenuItem(text = { Text(it.name) }, onClick = {
+                            view.playSoundEffect(SoundEffectConstants.CLICK)
+                            if (it.value != -1) {
+                                setting = preferences.videoCompressionRate(it.value)
+                            } else custom = true
+                            expanded = false
+                        })
+                    }
+                }
+                if (custom) {
+                    val state = rememberTextFieldState()
+                    var isNumeric by remember { mutableStateOf(true) }
+                    EditableContentDialog(
+                        onDismissRequest = { custom = false },
+                        confirm = {
+                            setting = preferences.videoCompressionRate(
+                                state.text.toString().toInt()
+                            )
+                            custom = false
+                        },
+                        title = stringResource(R.string.custom),
+                        confirmText = stringResource(R.string.confirm),
+                        state = state,
+                        singleLine = true, numberOnly = true,
+                        disableConform = isNumeric,
+                        onDisableConformClick = {
+                            Toast.makeText(
+                                view.context, view.context.getString(R.string.in_0_to_100_only),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    )
+                    LaunchedEffect(state.text.toString()) {
+                        isNumeric = try {
+                            state.text.toString().toInt() !in 0..100
+                        } catch (e: NumberFormatException) {
+                            true
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun language(view: View): SettingsItem {
     val supportState = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
     return SettingsItem(
@@ -545,10 +658,11 @@ private fun language(view: View): SettingsItem {
 @Composable
 private fun about(view: View): SettingsItem {
     return SettingsItem(
-        SettingsType.General, 64, stringResource(R.string.about)
+        SettingsType.General, 68, stringResource(R.string.about)
     ) {
         val url = "https://github.com/Z-Siqi"
-        Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        val height = Modifier.height(50.dp)
+        Row(Modifier.padding(8.dp) then height, verticalAlignment = Alignment.CenterVertically) {
             Column {
                 OptionText(it, 34)
                 Row {
@@ -571,6 +685,38 @@ private fun about(view: View): SettingsItem {
                     painterResource(R.drawable.github_mark), "Github",
                     tint = MaterialTheme.colorScheme.primary
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun donate(view: View): SettingsItem {
+    val url = "https://github.com/sponsors/Z-Siqi"
+    return SettingsItem(
+        SettingsType.General, 80, stringResource(R.string.sponsor_me)
+    ) {
+        Card(
+            colors = CardDefaults.cardColors(Color.Transparent),
+            onClick = {
+                view.playSoundEffect(SoundEffectConstants.CLICK)
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                view.context.startActivity(intent)
+            },
+            modifier = Modifier.fillMaxWidth() then Modifier.height(78.dp)
+        ) {
+            Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column {
+                    OptionText(it, 20)
+                    OptionText(
+                        stringResource(R.string.donate_describe), 50,
+                        miniTitle = true, textColor = MaterialTheme.colorScheme.outline
+                    )
+                }
+                Spacer(Modifier.weight(1f))
+                Icon(painterResource(R.drawable.heart), it, Modifier.padding(end = 12.dp))
             }
         }
     }

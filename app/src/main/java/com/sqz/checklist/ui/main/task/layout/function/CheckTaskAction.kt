@@ -45,7 +45,7 @@ fun CheckTaskAction(
     if (taskState.undoTimeout(lazyState, context)) UndoButton(
         onClick = {
             taskState.modifyHandler.onTaskUndoChecked(undo.undoActionId).let {
-                if (it.isActive) {
+                if (it.isActive || it.isCompleted || it.isCancelled) {
                     taskState.resetUndo(context)
                 }
             }

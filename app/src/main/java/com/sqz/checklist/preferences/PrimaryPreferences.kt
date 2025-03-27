@@ -1,6 +1,7 @@
 package com.sqz.checklist.preferences
 
 import android.content.Context
+import androidx.annotation.IntRange
 
 class PrimaryPreferences(context: Context) : PreferencesAccess(context) {
     private val preferencesFileName = "primary_preferences"
@@ -30,10 +31,16 @@ class PrimaryPreferences(context: Context) : PreferencesAccess(context) {
         return readPreferencesState(preferences, 43200000L)
     }
 
-    fun pictureCompressionRate(setter: Int? = null): Int {
+    fun pictureCompressionRate(@IntRange(0, 100) setter: Int? = null): Int {
         val preferences = "picture_compression_rate"
         if (setter != null) writePreferencesState(preferences, setter)
         return readPreferencesState(preferences, 20)
+    }
+
+    fun videoCompressionRate(@IntRange(0, 100) setter: Int? = null): Int {
+        val preferences = "video_compression_rate"
+        if (setter != null) writePreferencesState(preferences, setter)
+        return readPreferencesState(preferences, 0)
     }
 
     fun removeNoticeInAutoDelReminded(setter: Boolean? = null): Boolean {

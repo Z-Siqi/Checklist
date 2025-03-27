@@ -2,6 +2,7 @@ package com.sqz.checklist.ui.material.media
 
 import android.content.Context
 import android.content.Intent
+import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.util.Log
@@ -10,6 +11,7 @@ import android.view.View
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.IntRange
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -49,10 +51,16 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.FileProvider
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.coroutineScope
+import com.otaliastudios.transcoder.Transcoder
+import com.otaliastudios.transcoder.TranscoderListener
+import com.otaliastudios.transcoder.strategy.DefaultVideoStrategy
 import com.sqz.checklist.MainActivity
 import com.sqz.checklist.R
 import com.sqz.checklist.cache.deleteCacheFileByName
 import com.sqz.checklist.preferences.PreferencesInCache
+import com.sqz.checklist.preferences.PrimaryPreferences
 import com.sqz.checklist.ui.main.task.layout.function.TaskDetailData
 import com.sqz.checklist.ui.main.task.layout.function.toUri
 import com.sqz.checklist.ui.material.TextTooltipBox
@@ -280,52 +288,133 @@ fun openVideoBySystem(videoName: String, uri: Uri, context: Context) {
     }
 }
 
-fun insertVideo(context: Context, uri: Uri, filesDir: String): Uri {
-    val mediaDir = File(filesDir, "media/video/")
+private fun insertVideo(
+    context: Context, uri: Uri, @IntRange(0, 100) compressionRate: Int,
+    onComplete: (Uri) -> Unit, loading: (Double) -> Unit, time: Long?
+) {
+    val mediaDir = File(context.filesDir, videoMediaPath)
     if (!mediaDir.exists()) mediaDir.mkdirs()
-    val fileName = "VIDEO_${System.currentTimeMillis()}"
+    val fileName = when {
+        uri.path?.endsWith(".mp4") ?: false -> "VIDEO_${time}.mp4"
+        else -> "VIDEO_${time}"
+    }
+    val cache = PreferencesInCache(context)
+    fun errFileNameSaver(name: String?) { // clear invalid file
+        cache.errFileNameSaver()?.let {
+            val file = File(mediaDir, it)
+            if (file.exists()) file.delete()
+        }
+        cache.errFileNameSaver(name)
+    }
+    errFileNameSaver(fileName)
     val file = File(mediaDir, fileName)
-    return try {
-        val inputStream = context.contentResolver.openInputStream(uri)
-        val outputStream = FileOutputStream(file)
-        inputStream?.copyTo(outputStream)
-        inputStream?.close()
-        outputStream.close()
-        Uri.fromFile(file)
+    try { // insert action
+        if (compressionRate == 0) { // just copy
+            val inputStream = context.contentResolver.openInputStream(uri)
+            val outputStream = FileOutputStream(file)
+            inputStream?.copyTo(outputStream)
+            inputStream?.close()
+            outputStream.close()
+            cache.errFileNameSaver(null)
+            onComplete(Uri.fromFile(file))
+        } else { // with compression
+            val defaultBitrate = try {
+                val retriever = MediaMetadataRetriever()
+                retriever.setDataSource(context, uri)
+                retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE)!!.toLong()
+                    .let {
+                        Log.d("VideoBitrate", "$it")
+                        it
+                    }
+            } catch (e: Exception) {
+                Log.d("VideoBitrate", "Failed to get! Use default: 5800000L")
+                5800000L
+            }
+            fun targetBitrate(bitrate: Long, rate: Int): Long {
+                val recursion = (rate / 1.5).toInt()
+                return if (recursion > 1) targetBitrate(
+                    (bitrate * (100 - rate) / 100), recursion
+                ) else bitrate
+            }
+            Transcoder.into(file.absolutePath).apply {
+                addDataSource(context, uri)
+                setVideoTrackStrategy(
+                    DefaultVideoStrategy.Builder()
+                        .bitRate(targetBitrate(defaultBitrate, compressionRate))
+                        .build()
+                )
+                setListener(object : TranscoderListener {
+                    override fun onTranscodeProgress(progress: Double) {
+                        loading(progress * 100)
+                    }
+
+                    override fun onTranscodeCompleted(successCode: Int) {
+                        cache.errFileNameSaver(null)
+                        onComplete(Uri.fromFile(file))
+                    }
+
+                    override fun onTranscodeCanceled() {
+                        errFileNameSaver(null)
+                        onComplete(errUri)
+                    }
+
+                    override fun onTranscodeFailed(exception: Throwable) {
+                        errFileNameSaver(null)
+                        onComplete(errUri)
+                        Log.e("insertVideo", "$exception")
+                    }
+                })
+                transcode()
+            }
+        }
     } catch (e: FileNotFoundException) {
         Toast.makeText(
             context, context.getString(R.string.detail_file_not_found), Toast.LENGTH_LONG
         ).show()
-        errUri
+        errFileNameSaver(null)
+        onComplete(errUri)
     } catch (e: Exception) {
         e.printStackTrace()
-        errUri
+        errFileNameSaver(null)
+        onComplete(errUri)
     }
-}
+} //TODO: ERR process (file) / program close within process will make invalid file
 
 @Composable
-fun insertVideo(context: Context, uri: Uri): Uri? {
-    val coroutineScope = rememberCoroutineScope()
+fun insertVideo(context: Context, uri: Uri, ignoreCompressSettings: Boolean = false): Uri? {
+    val lifecycleOwner = LocalLifecycleOwner.current
     var rememberUri by rememberSaveable { mutableStateOf<Uri?>(null) }
+    var rememberLoading by rememberSaveable { mutableStateOf<Int?>(null) }
+    val preference = PrimaryPreferences(context)
+    val compression = when {
+        ignoreCompressSettings -> 0
+        preference.videoCompressionRate() > 100 -> 100
+        preference.videoCompressionRate() <= 0 -> 0
+        else -> preference.videoCompressionRate()
+    }
     if (rememberUri == null) {
-        var run by remember { mutableStateOf(false) }
-        ProcessingDialog {
-            if (!run) {
-                run = true
-                coroutineScope.launch(Dispatchers.IO) {
-                    rememberUri = insertVideo(context, uri, MainActivity.appDir)
+        var timeState by rememberSaveable { mutableStateOf<Long?>(null) }
+        var run by rememberSaveable { mutableStateOf(false) }
+        ProcessingDialog(rememberLoading) {
+            lifecycleOwner.lifecycle.coroutineScope.launch(Dispatchers.IO) {
+                if (!run) {
+                    run = true
+                    timeState = System.currentTimeMillis()
+                    insertVideo(context, uri, compression, onComplete = {
+                        rememberUri = it
+                    }, loading = { rememberLoading = it.toInt() }, time = timeState)
                 }
             }
         }
     }
     if (rememberUri == errUri) Toast.makeText(
-        context, stringResource(R.string.failed_add_picture), Toast.LENGTH_LONG
+        context, stringResource(R.string.failed_add_video), Toast.LENGTH_LONG
     ).show()
     return rememberUri
 }
 
 @Composable
-private fun ProcessingDialog(run: () -> Unit) {
+private fun ProcessingDialog(loading: Int? = null, run: () -> Unit) {
     AlertDialog(onDismissRequest = {}, confirmButton = {}, text = {
         Column(
             modifier = Modifier.fillMaxWidth(),
@@ -334,6 +423,9 @@ private fun ProcessingDialog(run: () -> Unit) {
             Spacer(modifier = Modifier.padding(8.dp))
             CircularProgressIndicator()
             Spacer(modifier = Modifier.padding(5.dp))
+            if (loading != null) {
+                Text("$loading %")
+            }
             Text(stringResource(R.string.processing))
         }
     })

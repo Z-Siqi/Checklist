@@ -43,7 +43,6 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
-import androidx.core.net.toUri
 import coil.compose.rememberAsyncImagePainter
 import com.sqz.checklist.MainActivity
 import com.sqz.checklist.R
@@ -215,10 +214,8 @@ fun openImageBySystem(imageName: String, byteArray: ByteArray, context: Context)
     }
 }
 
-val errUri = "ERROR".toUri()
-
-fun insertPicture(context: Context, uri: Uri, compression: Int): Uri? {
-    val mediaDir = File(context.filesDir, "media/picture/")
+private fun insertPicture(context: Context, uri: Uri, compression: Int): Uri? {
+    val mediaDir = File(context.filesDir, pictureMediaPath)
     if (!mediaDir.exists()) mediaDir.mkdirs()
     val toCompression = compression in 1..100
     val fileName = when {
@@ -226,6 +223,15 @@ fun insertPicture(context: Context, uri: Uri, compression: Int): Uri? {
         toCompression -> "IMG_${System.currentTimeMillis()}.jpg"
         else -> "IMG_${System.currentTimeMillis()}"
     }
+    val cache = PreferencesInCache(context)
+    fun errFileNameSaver(name: String?) { // clear invalid file
+        cache.errFileNameSaver()?.let {
+            val file = File(mediaDir, it)
+            if (file.exists()) file.delete()
+        }
+        cache.errFileNameSaver(name)
+    }
+    errFileNameSaver(fileName)
     val file = File(mediaDir, fileName)
     return try {
         val inputStream = context.contentResolver.openInputStream(uri)
@@ -234,6 +240,7 @@ fun insertPicture(context: Context, uri: Uri, compression: Int): Uri? {
             inputStream?.copyTo(outputStream)
             inputStream?.close()
             outputStream.close()
+            cache.errFileNameSaver(null)
         } else {
             val quality = 100 - compression
             val bitmap = BitmapFactory.decodeStream(inputStream)
@@ -241,15 +248,18 @@ fun insertPicture(context: Context, uri: Uri, compression: Int): Uri? {
             bitmap?.compress(Bitmap.CompressFormat.JPEG, quality, outputStream)
             outputStream.flush()
             outputStream.close()
+            cache.errFileNameSaver(null)
         }
         Uri.fromFile(file)
     } catch (e: FileNotFoundException) {
         Toast.makeText(
             context, context.getString(R.string.detail_file_not_found), Toast.LENGTH_LONG
         ).show()
+        errFileNameSaver(null)
         errUri
     } catch (e: Exception) {
         e.printStackTrace()
+        errFileNameSaver(null)
         errUri
     }
 }

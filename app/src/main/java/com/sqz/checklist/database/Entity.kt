@@ -34,7 +34,7 @@ enum class ReminderModeType {
 }
 
 @Entity(tableName = "taskDetail")
-data class TaskDetail(
+data class TaskDetail( //TODO: Change id to auto
     @PrimaryKey val id: Long, // same as task id
     @ColumnInfo val type: TaskDetailType,
     @ColumnInfo val dataString: String,

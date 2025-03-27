@@ -198,7 +198,9 @@ private fun TaskModifyDialog(
                 }
 
                 TaskDetailType.Video -> {
-                    val insertVideo = insertVideo(view.context, detailDataUri!!)
+                    val insertVideo = insertVideo(
+                        view.context, detailDataUri!!, isExists(detailDataUri!!)
+                    )
                     val video = insertVideo?.toByteArray()
                     if (insertVideo != null) confirmState = 2
                     if (insertVideo != errUri) video else {
@@ -210,7 +212,7 @@ private fun TaskModifyDialog(
                 TaskDetailType.Audio -> {
                     val insertAudio = insertAudio(view.context, detailDataUri!!)
                     val audio = insertAudio?.toByteArray()
-                    if (insertAudio != null)confirmState = 2
+                    if (insertAudio != null) confirmState = 2
                     if (insertAudio != errUri) audio else {
                         detailData.detailType(TaskDetailType.Text)
                         null

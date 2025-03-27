@@ -127,9 +127,9 @@ fun AudioSelector(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         val inPreviewState by detailData.inPreviewState().collectAsState()
-        val inPreviewVideo = inPreviewState ?: false
+        val inPreviewAudio = inPreviewState ?: false
         if (detailDataUri != null) detailDataUri?.let {
-            if (!inPreviewVideo) Box(
+            if (!inPreviewAudio) Box(
                 modifier = modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
@@ -274,18 +274,18 @@ fun AudioViewDialog(
         else -> (screenHeightDp / 3.1).toInt()
     }
     val coroutineScope = rememberCoroutineScope()
-    var openVideoBySystem by rememberSaveable { mutableStateOf(false) }
-    if (openVideoBySystem) ProcessingDialog {
+    var openAudioBySystem by rememberSaveable { mutableStateOf(false) }
+    if (openAudioBySystem) ProcessingDialog {
         coroutineScope.launch(Dispatchers.IO) {
             openAudioBySystem(audioName, audioUri, view.context)
-            openVideoBySystem = false
+            openAudioBySystem = false
         }
     }
     AlertDialog(
         onDismissRequest = onDismissRequest, confirmButton = {
             Row {
                 if (openBySystem) TextTooltipBox(R.string.open_with) {
-                    IconButton(onClick = { openVideoBySystem = true }) {
+                    IconButton(onClick = { openAudioBySystem = true }) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(
                                 painterResource(R.drawable.open_in_new),
@@ -388,17 +388,27 @@ fun openAudioBySystem(audioName: String, uri: Uri, context: Context) {
     }
 }
 
-fun insertAudio(context: Context, uri: Uri, filesDir: String): Uri {
-    val mediaDir = File(filesDir, "media/audio/")
+private fun insertAudio(context: Context, uri: Uri, filesDir: String): Uri {
+    val mediaDir = File(filesDir, audioMediaPath)
     if (!mediaDir.exists()) mediaDir.mkdirs()
     val fileName = "AUDIO_${System.currentTimeMillis()}"
+    val cache = PreferencesInCache(context)
+    fun errFileNameSaver(name: String?) { // clear invalid file
+        cache.errFileNameSaver()?.let {
+            val file = File(mediaDir, it)
+            if (file.exists()) file.delete()
+        }
+        cache.errFileNameSaver(name)
+    }
+    errFileNameSaver(fileName)
     val file = File(mediaDir, fileName)
-    return try {
+    return try { // copy file
         val inputStream = context.contentResolver.openInputStream(uri)
         val outputStream = FileOutputStream(file)
         inputStream?.copyTo(outputStream)
         inputStream?.close()
         outputStream.close()
+        cache.errFileNameSaver(null)
         Uri.fromFile(file)
     } catch (e: FileNotFoundException) {
         Toast.makeText(
@@ -407,6 +417,7 @@ fun insertAudio(context: Context, uri: Uri, filesDir: String): Uri {
         errUri
     } catch (e: Exception) {
         e.printStackTrace()
+        errFileNameSaver(null)
         errUri
     }
 }

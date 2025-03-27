@@ -19,12 +19,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.core.content.FileProvider
+import androidx.core.net.toUri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
 import com.sqz.checklist.MainActivity.Companion.taskDatabase
 import com.sqz.checklist.R
 import com.sqz.checklist.notification.NotifyManager
+import com.sqz.checklist.ui.main.task.layout.function.toUri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
@@ -71,12 +73,41 @@ class DatabaseIO private constructor(application: Application) : AndroidViewMode
         return this._loadingState
     }
 
+    private suspend fun removeInvalidFile(context: Context) {
+        val mediaRoot = File(context.filesDir, "media")
+        if (!mediaRoot.exists() || !mediaRoot.isDirectory) return
+        val allFiles = mediaRoot.walk()
+            .filter { it.isFile }
+            .toList()
+        var dataList: List<Uri> = listOf()
+        for (data in taskDatabase.taskDao().getTaskDetail()) {
+            when (data.type) {
+                TaskDetailType.Text -> {}
+                TaskDetailType.URL -> {}
+                TaskDetailType.Application -> {}
+                else -> data.dataByte?.let {
+                    dataList = dataList + it.toUri(context.filesDir.absolutePath)
+                }
+            }
+        }
+        for (file in allFiles) {
+            if (file.toUri() !in dataList.toSet()) try {
+                file.delete()
+                Log.d("removeInvalidFile", "Deleted orphan file: ${file.absolutePath}")
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
     fun exportDatabase(
         uri: Uri?, context: Context
     ) = try {
         if (_loadingState.value == 0) viewModelScope.launch(Dispatchers.IO) {
             setIOdbState(IOdbState.Processing)
-            setLoading(1) // close database
+            setLoading(1) // remove invalid file
+            removeInvalidFile(context)
+            setLoading(3) // close database
             taskDatabase.close()
             setLoading(5) // merge database checkpoint ("PRAGMA wal_checkpoint(FULL)")
             mergeDatabaseCheckpoint(taskDatabase)
@@ -217,6 +248,8 @@ class DatabaseIO private constructor(application: Application) : AndroidViewMode
                     }
                     setLoading(90) // restore notification
                     restoreNotification(taskDatabase, context)
+                    setLoading(95) // remove invalid file
+                    removeInvalidFile(context)
                     setLoading(100) // finished
                     setIOdbState(IOdbState.Finished)
                     restoreJob?.cancel()

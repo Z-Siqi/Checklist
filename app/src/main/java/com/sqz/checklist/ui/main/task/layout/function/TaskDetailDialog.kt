@@ -60,7 +60,12 @@ fun TaskDetailDialog(
     DialogWithMenu(
         onDismissRequest = onDismissRequest,
         confirm = {
-            if (detailTextState.text.toString() != "" && it != null || detailDataString != "") {
+            val available = when (it?.toTaskDetailType()) {
+                TaskDetailType.Text -> detailTextState.text.toString() != ""
+                TaskDetailType.URL -> detailTextState.text.toString() != ""
+                else -> detailDataString != "" && detailDataUri != null
+            }
+            if (available) {
                 val notURL = view.context.getString(R.string.invalid_url)
                 if (it == TaskDetailType.URL &&
                     !Patterns.WEB_URL.matcher(detailTextState.text.toString()).matches()

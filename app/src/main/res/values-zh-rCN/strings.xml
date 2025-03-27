@@ -83,6 +83,8 @@
     <string name="audio_size_limit">音频大小不能超过55MB!</string>
     <string name="audio">音频</string>
     <string name="click_select_audio">点击选择音频</string>
+    <string name="video_compression_rate">任务详情视频压缩率</string>
+    <string name="failed_add_video">添加视频失败!</string>
 
     <!-- Notification -->
     <string name="task_reminder">任务提醒</string>
@@ -142,5 +144,7 @@
     <string name="custom">自定义</string>
     <string name="recently_reminded_keep_time">最近提醒任务保留时间</string>
     <string name="remove_notice_in_auto_del_reminded">当最近提醒任务自动移除时删除通知</string>
+    <string name="sponsor_me">向我赞助</string>
+    <string name="donate_describe">如果你喜欢我的作品，请考虑捐款支持我!</string>
 
 </resources>
