@@ -79,8 +79,8 @@ fun NavTooltipContent(
                 Spacer(modifier = modifier.height(2.dp))
                 Text(
                     text = stringResource(R.string.search),
-                    lineHeight = 12.sp,
-                    fontSize = 12.sp,
+                    lineHeight = 12.sp / view.context.resources.configuration.fontScale,
+                    fontSize = 12.sp / view.context.resources.configuration.fontScale,
                     fontWeight = FontWeight.W500,
                     textAlign = TextAlign.Center
                 )
@@ -94,8 +94,8 @@ fun NavTooltipContent(
             ) {
                 Text(
                     text = stringResource(if (!scrollUp) R.string.scroll_to_end else R.string.scroll_to_top),
-                    lineHeight = 12.sp,
-                    fontSize = 12.sp,
+                    lineHeight = 12.sp / view.context.resources.configuration.fontScale,
+                    fontSize = 12.sp / view.context.resources.configuration.fontScale,
                     fontWeight = FontWeight.W500,
                     textAlign = TextAlign.Center
                 )

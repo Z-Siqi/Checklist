@@ -26,9 +26,11 @@ import androidx.lifecycle.viewModelScope
 import com.sqz.checklist.MainActivity.Companion.taskDatabase
 import com.sqz.checklist.R
 import com.sqz.checklist.notification.NotifyManager
+import com.sqz.checklist.preferences.PreferencesInCache
 import com.sqz.checklist.ui.main.task.layout.function.toUri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
@@ -43,6 +45,7 @@ import java.util.concurrent.TimeUnit
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
+import kotlin.system.exitProcess
 
 class DatabaseIO private constructor(application: Application) : AndroidViewModel(application) {
     companion object {
@@ -105,6 +108,7 @@ class DatabaseIO private constructor(application: Application) : AndroidViewMode
     ) = try {
         if (_loadingState.value == 0) viewModelScope.launch(Dispatchers.IO) {
             setIOdbState(IOdbState.Processing)
+            val cache = PreferencesInCache(context)
             setLoading(1) // remove invalid file
             removeInvalidFile(context)
             setLoading(3) // close database
@@ -116,6 +120,7 @@ class DatabaseIO private constructor(application: Application) : AndroidViewMode
             setLoading(20) // start backup
             val dbPath = context.getDatabasePath(taskDatabaseName).absolutePath
             val mediaDir = File(context.filesDir, "media/")
+            val prefsDir = File(context.dataDir, "shared_prefs/")
             val zipFile = File(context.cacheDir, "backup.zip")
             ZipOutputStream(FileOutputStream(zipFile)).use { zipOut ->
                 setLoading(50) // backup database
@@ -123,6 +128,14 @@ class DatabaseIO private constructor(application: Application) : AndroidViewMode
                     zipOut.putNextEntry(ZipEntry("$taskDatabaseName.db"))
                     input.copyTo(zipOut)
                     zipOut.closeEntry()
+                }
+                if (cache.backupSettings()) {
+                    setLoading(68) // backup primary_preferences
+                    File(prefsDir, "primary_preferences.xml").inputStream().use { input ->
+                        zipOut.putNextEntry(ZipEntry("primary_preferences.xml"))
+                        input.copyTo(zipOut)
+                        zipOut.closeEntry()
+                    }
                 }
                 setLoading(70) // backup media files
                 if (mediaDir.exists()) {
@@ -186,7 +199,9 @@ class DatabaseIO private constructor(application: Application) : AndroidViewMode
     ) = try {
         if (restoreJob == null && _loadingState.value == 0) restoreJob =
             viewModelScope.launch(Dispatchers.IO) {
+                var foundSetting = false
                 setIOdbState(IOdbState.Processing)
+                val cache = PreferencesInCache(context)
                 setLoading(1) // checking backup file
                 if (!verifyImportZip(context, uri)) {
                     setIOdbState(IOdbState.Error)
@@ -222,6 +237,10 @@ class DatabaseIO private constructor(application: Application) : AndroidViewMode
                             val outputFile = if (entryName == "$taskDatabaseName.db") {
                                 setLoading(55)
                                 File(dbPath)
+                            } else if (entryName == "primary_preferences.xml" && cache.restoreSettings()) {
+                                setLoading(58)
+                                foundSetting = true
+                                File(context.dataDir, "shared_prefs/primary_preferences.xml")
                             } else {
                                 File(mediaDir, entryName.removePrefix("media/"))
                             }
@@ -250,6 +269,11 @@ class DatabaseIO private constructor(application: Application) : AndroidViewMode
                     restoreNotification(taskDatabase, context)
                     setLoading(95) // remove invalid file
                     removeInvalidFile(context)
+                    if (foundSetting && cache.restoreSettings()) {
+                        cache.restoreSettings(false)
+                        delay(500)
+                        exitProcess(0)
+                    }
                     setLoading(100) // finished
                     setIOdbState(IOdbState.Finished)
                     restoreJob?.cancel()
@@ -295,6 +319,7 @@ class DatabaseIO private constructor(application: Application) : AndroidViewMode
                 ZipInputStream(inputStream).use { zipIn ->
                     var entry: ZipEntry?
                     var hasDatabase = false
+                    var hasPreference = false
                     var rootFileCount = 0
                     var rootFolderCount = 0
                     while (zipIn.nextEntry.also { entry = it } != null) {
@@ -307,6 +332,10 @@ class DatabaseIO private constructor(application: Application) : AndroidViewMode
                         // check database file
                         if (entryName == "$taskDatabaseName.db") {
                             hasDatabase = true
+                        }
+                        // check preference
+                        if (entryName == "primary_preferences.xml") {
+                            hasPreference = true
                         }
                         // check directory
                         if (!entryName.contains("/")) {
@@ -325,7 +354,7 @@ class DatabaseIO private constructor(application: Application) : AndroidViewMode
                             false
                         }
 
-                        rootFolderCount > 1 || rootFileCount > 1 -> {
+                        rootFolderCount > 1 || rootFileCount > if (hasPreference) 2 else 1 -> {
                             val errText = "Zip type incorrect: $rootFolderCount, $rootFileCount"
                             Log.e("DatabaseIO", errText)
                             false

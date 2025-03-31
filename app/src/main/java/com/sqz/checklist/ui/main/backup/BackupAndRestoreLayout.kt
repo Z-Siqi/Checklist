@@ -13,6 +13,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -20,8 +21,10 @@ import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -36,6 +39,7 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -46,6 +50,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -62,6 +67,7 @@ import com.sqz.checklist.database.DatabaseIO
 import com.sqz.checklist.database.ExportTaskDatabase
 import com.sqz.checklist.database.IOdbState
 import com.sqz.checklist.database.ImportTaskDatabase
+import com.sqz.checklist.preferences.PreferencesInCache
 
 /**
  * Backup & Restore layout
@@ -73,6 +79,7 @@ fun BackupAndRestoreLayout(
     disableBackHandlerState: (Boolean) -> Unit = {}
 ) {
     val audioManager = view.context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+    val cache = PreferencesInCache(view.context)
 
     val localConfig = LocalConfiguration.current
     val screenIsWidth = localConfig.screenWidthDp > localConfig.screenHeightDp * 1.2
@@ -93,7 +100,7 @@ fun BackupAndRestoreLayout(
     var loadingState by rememberSaveable { mutableIntStateOf(0) }
 
     val backupCardLayout: @Composable ColumnScope.() -> Unit = {
-        var mode by rememberSaveable { mutableIntStateOf(0) }
+        var mode by remember { mutableIntStateOf(cache.backupOption()) }
         val list = listOf(
             ListData(0, stringResource(R.string.export_to_file)),
             ListData(1, stringResource(R.string.export_by_share))
@@ -108,22 +115,35 @@ fun BackupAndRestoreLayout(
         )
         SingleChoiceSegmentedButtonRow(
             modifier = Modifier
-                .height(42.dp)
                 .fillMaxWidth()
                 .padding(start = 16.dp, end = 16.dp)
         ) {
+            val density = LocalDensity.current
+            var parentHeight by remember { mutableStateOf(1.dp) }
             list.forEach { index ->
                 SegmentedButton(
                     selected = index.index == mode,
                     onClick = {
-                        mode = index.index
+                        mode = cache.backupOption(index.index)
                         view.playSoundEffect(SoundEffectConstants.CLICK)
                     },
                     shape = SegmentedButtonDefaults.itemShape(
                         index = index.index, count = list.size
                     ),
-                    modifier = Modifier.fillMaxSize()
-                ) { Text(text = index.string) }
+                    modifier = modifier.heightIn(min = 42.dp)
+                ) {
+                    Text(
+                        text = index.string,
+                        modifier.heightIn(
+                            min = parentHeight
+                        ) then modifier.onGloballyPositioned { layoutCoordinates ->
+                            val heightPx = layoutCoordinates.size.height
+                            (with(density) { heightPx.toDp() }).let {
+                                if (it > parentHeight) parentHeight = it
+                            }
+                        }
+                    )
+                }
             }
         }
         Spacer(modifier = Modifier.weight(1f))
@@ -145,6 +165,19 @@ fun BackupAndRestoreLayout(
         }
     }
 
+    val backupOption: @Composable ColumnScope.() -> Unit = {
+        var option by remember { mutableStateOf(cache.backupSettings()) }
+        Row(modifier.padding(8.dp)) {
+            Text(
+                stringResource(R.string.backup_app_settings),
+                modifier.align(Alignment.CenterVertically), fontWeight = FontWeight.Medium,
+                fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface,
+            )
+            Spacer(modifier.weight(1f))
+            Switch(checked = option, onCheckedChange = { option = cache.backupSettings(it) })
+        }
+    }
+
     val restoreCardLayout: @Composable ColumnScope.() -> Unit = {
         Text(
             text = stringResource(R.string.select_backup_file_restore),
@@ -161,7 +194,7 @@ fun BackupAndRestoreLayout(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(70.dp)
+                .heightIn(min = 70.dp)
                 .padding(start = 20.dp, end = 20.dp, top = 8.dp),
             colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh),
             onClick = {
@@ -233,6 +266,27 @@ fun BackupAndRestoreLayout(
         }
     }
 
+    val restoreOption: @Composable ColumnScope.() -> Unit = {
+        var option by remember { mutableStateOf(cache.restoreSettings()) }
+        Row(modifier.padding(8.dp)) {
+            Column(modifier.align(Alignment.CenterVertically)) {
+                Text(
+                    stringResource(R.string.restore_settings),
+                    fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Medium
+                )
+                Text(
+                    stringResource(R.string.restore_settings_describe),
+                    modifier.widthIn(max = (localConfig.screenWidthDp / 1.5).dp),
+                    fontSize = 12.sp, lineHeight = 14.sp, color = MaterialTheme.colorScheme.outline,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+            Spacer(modifier.weight(1f))
+            Switch(checked = option, onCheckedChange = { option = cache.restoreSettings(it) })
+        }
+    }
+
     val safeBottomForFullscreen =
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE && screenIsWidth
         ) (WindowInsets.navigationBars.getBottom(LocalDensity.current) / LocalDensity.current.density).dp else 10.dp
@@ -242,8 +296,8 @@ fun BackupAndRestoreLayout(
     ) {
         val cardModifier = Modifier
             .fillMaxWidth()
-            .height(220.dp)
-            .padding(top = 8.dp, bottom = 16.dp, start = 16.dp, end = 16.dp)
+            .heightIn(min = 220.dp)
+            .padding(top = 8.dp, bottom = 12.dp, start = 16.dp, end = 16.dp)
         Column(
             modifier = Modifier.verticalScroll(rememberScrollState()) then safePaddingForFullscreen,
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -257,6 +311,10 @@ fun BackupAndRestoreLayout(
                 modifier = cardModifier,
                 content = backupCardLayout
             )
+            OutlinedCard(
+                modifier = modifier.padding(16.dp, 1.dp, 16.dp, 24.dp),
+                content = backupOption
+            )
             HorizontalDivider(modifier = Modifier.padding(start = 16.dp, end = 16.dp))
             TitleText(
                 text = stringResource(R.string.restore),
@@ -265,6 +323,10 @@ fun BackupAndRestoreLayout(
             OutlinedCard(
                 modifier = cardModifier,
                 content = restoreCardLayout
+            )
+            OutlinedCard(
+                modifier = modifier.padding(16.dp, 1.dp, 16.dp, 16.dp),
+                content = restoreOption
             )
             Spacer(modifier = modifier.height(safeBottomForFullscreen))
         }

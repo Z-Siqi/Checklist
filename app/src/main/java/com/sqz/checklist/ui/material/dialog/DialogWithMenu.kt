@@ -103,14 +103,15 @@ fun DialogWithMenu(
     val isLandScape = config.screenWidthDp > config.screenHeightDp && config.screenWidthDp > 400
     val selectContent = @Composable {
         OutlinedCard(
-            modifier = modifier.height(47.dp) then if (isLandScape) modifier.width((config.screenWidthDp * 0.2).dp) else modifier.fillMaxWidth(),
+            modifier = modifier.heightIn(min = 47.dp) then if (isLandScape) modifier.width((config.screenWidthDp * 0.2).dp) else modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainer),
             shape = ShapeDefaults.Small
         ) {
             var parentWidthDp by remember { mutableStateOf(0.dp) }
             val density = LocalDensity.current
             Column(modifier = modifier
-                .fillMaxSize()
+                .heightIn(min = 47.dp)
+                .fillMaxWidth()
                 .clickable {
                     expanded = !expanded
                     view.playSoundEffect(SoundEffectConstants.CLICK)

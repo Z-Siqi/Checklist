@@ -41,9 +41,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sqz.checklist.R
 import com.sqz.checklist.database.Task
-import com.sqz.checklist.ui.main.task.CardHeight
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModelPreview
+import com.sqz.checklist.ui.main.task.cardHeight
 import java.time.LocalDate
 
 /**
@@ -172,7 +172,10 @@ private fun RemindedItem(
     taskState: TaskLayoutViewModel
 ) {
     val notEmpty = isRemindedItem.isNotEmpty()
-    val remindedHeight = if (notEmpty) (50 + (CardHeight * isRemindedItem.size)).dp else 0.dp
+    val density = LocalDensity.current
+    var textHeight by remember { mutableIntStateOf(25) }
+    val remindedHeight =
+        if (notEmpty) (25 + textHeight + (cardHeight(LocalContext.current) * isRemindedItem.size)).dp else 0.dp
     val animatedRemindedHeight by animateDpAsState(
         targetValue = remindedHeight, label = "Reminded Height"
     )
@@ -185,11 +188,10 @@ private fun RemindedItem(
         colors = CardDefaults.cardColors(MaterialTheme.colorScheme.tertiaryContainer)
     ) {
         Text(
-            text = stringResource(R.string.recently_reminded),
-            fontSize = 15.sp,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.tertiary,
-            modifier = Modifier.padding(start = 9.dp, top = 5.dp, bottom = 5.dp)
+            text = stringResource(R.string.recently_reminded), fontSize = 15.sp,
+            fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.tertiary,
+            modifier = Modifier.padding(start = 9.dp, top = 5.dp, bottom = 5.dp),
+            onTextLayout = { textHeight = with(density) { it.size.height.toDp() }.value.toInt() }
         )
         LazyColumn(userScrollEnabled = false) {
             items(isRemindedItem, key = { it.id }) { task ->
@@ -220,7 +222,9 @@ private fun PinnedItem(
     taskState: TaskLayoutViewModel
 ) {
     val notEmpty = pinnedItem.isNotEmpty()
-    val pinnedHeight = if (notEmpty) (50 + (CardHeight * pinnedItem.size)).dp else 0.dp
+    val density = LocalDensity.current
+    var textHeight by remember { mutableIntStateOf(25) }
+    val pinnedHeight = if (notEmpty) (25 + textHeight + (cardHeight(LocalContext.current) * pinnedItem.size)).dp else 0.dp
     val animatedPinnedHeight by animateDpAsState(
         targetValue = pinnedHeight, label = "Pinned Height"
     )
@@ -233,11 +237,10 @@ private fun PinnedItem(
         colors = CardDefaults.cardColors(MaterialTheme.colorScheme.background)
     ) {
         Text(
-            text = stringResource(R.string.pinned_task),
-            fontSize = 15.sp,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.outline,
-            modifier = Modifier.padding(start = 9.dp, top = 5.dp, bottom = 5.dp)
+            text = stringResource(R.string.pinned_task), fontSize = 15.sp,
+            fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.outline,
+            modifier = Modifier.padding(start = 9.dp, top = 5.dp, bottom = 5.dp),
+            onTextLayout = { textHeight = with(density) { it.size.height.toDp() }.value.toInt() }
         )
         LazyColumn(userScrollEnabled = false) {
             items(pinnedItem, key = { it.id }) { task ->
@@ -258,7 +261,6 @@ private fun PinnedItem(
         }
     }
 }
-
 
 
 @Preview(showBackground = true)

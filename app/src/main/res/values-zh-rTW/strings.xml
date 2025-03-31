@@ -122,6 +122,9 @@
     <string name="select_file_to_import">請選擇要匯入的文件!</string>
     <string name="failed_in_zip">失敗的！請確保 zip 有效！ （提示：查看日誌以了解更多詳細資訊）</string>
     <string name="finished">完成!</string>
+    <string name="restore_settings">恢復應用程式設定</string>
+    <string name="restore_settings_describe">完成後，應用程式可能會退出以應用該設定。完成後請重新開啟應用程式（如果已登出）。</string>
+    <string name="backup_app_settings">備份應用程式設定</string>
 
     <!-- Settings -->
     <string name="settings">設定</string>

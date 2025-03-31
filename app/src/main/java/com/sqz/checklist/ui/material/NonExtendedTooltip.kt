@@ -15,12 +15,15 @@ import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionOnScreen
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
@@ -31,17 +34,24 @@ import androidx.core.content.ContextCompat
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NonExtendedTooltip(text: String, view: View, widthSize: Int = 40) {
+fun NonExtendedTooltip(text: String, view: View) {
     var rememberPosition by remember { mutableStateOf(IntOffset.Zero) }
+    var rememberTextWidth by remember { mutableIntStateOf(0) }
+    var rememberTextHeight by remember { mutableIntStateOf(0) }
+    val density = LocalDensity.current
+    Text(text = text, color = Color.Transparent, onTextLayout = {
+        rememberTextHeight = with(density) { it.size.height.toDp() }.value.toInt()
+        rememberTextWidth = with(density) { it.size.width.toDp() }.value.toInt() + 10
+    })
     Spacer(modifier = Modifier
-        .size(widthSize.dp, 30.dp)
+        .size(rememberTextWidth.dp, rememberTextHeight.dp)
         .onGloballyPositioned { layoutCoordinates ->
             val position = layoutCoordinates.positionOnScreen()
             if (position.x < 2147483647L || position.y < 2147483647L) {
                 rememberPosition = IntOffset(position.x.toInt(), position.y.toInt())
             }
         })
-    TooltipBox(
+    if (rememberTextWidth != 0 && rememberTextHeight != 0) TooltipBox(
         positionProvider = object : PopupPositionProvider {
             override fun calculatePosition(
                 anchorBounds: IntRect, windowSize: IntSize, layoutDirection: LayoutDirection,

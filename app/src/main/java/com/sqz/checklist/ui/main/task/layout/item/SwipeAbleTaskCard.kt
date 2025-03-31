@@ -54,6 +54,7 @@ import com.sqz.checklist.MainActivity
 import com.sqz.checklist.R
 import com.sqz.checklist.database.DatabaseRepository
 import com.sqz.checklist.database.Task
+import com.sqz.checklist.ui.main.task.cardHeight
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -131,16 +132,22 @@ fun SwipeAbleTaskCard(
             }
         ) { // front of card
             val reminderState = reminderState(task.reminder, databaseRepository)
+            var overflowed by remember { mutableStateOf(false) }
+            val dateText = if (mode == ItemMode.RemindedTask) {
+                stringResource(R.string.task_reminded_time, remindTime().toString())
+            } else {
+                val taskTimeText = if (overflowed) "\n${task.createDate.format(formatter)}" else {
+                    task.createDate.format(formatter)
+                }
+                stringResource(R.string.task_creation_time, taskTimeText)
+            }
+            val localDateText: (Boolean) -> String = {
+                overflowed = it
+                dateText
+            }
             TaskCardContent(
                 description = task.description,
-                dateText = if (mode == ItemMode.RemindedTask) {
-                    stringResource(R.string.task_reminded_time, remindTime().toString())
-                } else {
-                    stringResource(
-                        R.string.task_creation_time,
-                        task.createDate.format(formatter)
-                    )
-                },
+                dateText = { localDateText(it) },
                 onClick = { type -> onTaskItemClick(task, type, context) },
                 timerIconState = reminderState,
                 pinIconState = task.isPin,
@@ -177,7 +184,7 @@ private fun swipeToDismissControl(
     } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
         Vibrate(context, itemState)
     }
-    return if (!isDismissed) 120.dp else 0.dp
+    return if (!isDismissed) cardHeight(context).dp else 0.dp
 }
 
 /** check the reminder is set or not **/

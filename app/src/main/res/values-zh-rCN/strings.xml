@@ -122,6 +122,9 @@
     <string name="select_file_to_import">请选择要导入的文件!</string>
     <string name="failed_in_zip">失败！请确保 zip 有效！（提示：查看日志以了解更多详细信息）</string>
     <string name="finished">完成!</string>
+    <string name="restore_settings">恢复应用程序设置</string>
+    <string name="restore_settings_describe">完成后，应用程序可能会退出以应用设置。完成后请重新打开应用程序（如果已退出）。</string>
+    <string name="backup_app_settings">备份应用程序设置</string>
 
     <!-- Settings -->
     <string name="settings">设置</string>

@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.Card
@@ -67,6 +68,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.sqz.checklist.R
 import com.sqz.checklist.preferences.PrimaryPreferences
+import com.sqz.checklist.ui.material.TextTooltipBox
 import com.sqz.checklist.ui.material.UrlText
 import com.sqz.checklist.ui.material.dialog.EditableContentDialog
 import com.sqz.checklist.ui.theme.unit.timeDisplay
@@ -116,17 +118,23 @@ private fun OptionText(
         miniTitle -> if (width >= 385) 14.sp else 11.sp
         else -> if (width >= 385) 15.sp else 12.sp
     }
-    if (url == null || view == null) Text(
-        text = text, fontSize = fontSize, fontWeight = FontWeight.SemiBold,
-        modifier = modifier.sizeIn(maxWidth = (width * 0.7).dp, maxHeight = maxHeight.dp),
-        lineHeight = (fontSize.value + 5.sp.value).sp, overflow = TextOverflow.Ellipsis,
-        color = textColor, textAlign = textAlign
-    ) else UrlText(
-        url = url, view = view, text = text, fontSize = fontSize, fontWeight = FontWeight.SemiBold,
-        modifier = modifier.sizeIn(maxWidth = (width * 0.7).dp, maxHeight = maxHeight.dp),
-        lineHeight = (fontSize.value + 5.sp.value).sp, overflow = TextOverflow.Ellipsis,
-        color = textColor, textAlign = textAlign
-    )
+    var overflow by remember { mutableStateOf(false) }
+    TextTooltipBox(text = text, enable = overflow) {
+        if (url == null || view == null) Text(
+            text = text, fontSize = fontSize, fontWeight = FontWeight.SemiBold,
+            modifier = modifier.sizeIn(maxWidth = (width * 0.7).dp, maxHeight = maxHeight.dp),
+            lineHeight = (fontSize.value + 5.sp.value).sp, overflow = TextOverflow.Ellipsis,
+            color = textColor, textAlign = textAlign, onTextLayout = {
+                overflow = it.hasVisualOverflow
+            }
+        ) else UrlText(
+            url = url, view = view, text = text, fontSize = fontSize,
+            fontWeight = FontWeight.SemiBold,
+            modifier = modifier.sizeIn(maxWidth = (width * 0.7).dp, maxHeight = maxHeight.dp),
+            lineHeight = (fontSize.value + 5.sp.value).sp, overflow = TextOverflow.Ellipsis,
+            color = textColor, textAlign = textAlign
+        )
+    }
 }
 
 @Composable
@@ -168,7 +176,7 @@ private fun disableRemoveNotifyInReminded(
     ) {
         Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
             var setting by remember { mutableStateOf(preferences.disableRemoveNotifyInReminded()) }
-            OptionText(it, 64)
+            OptionText(it, 48)
             Spacer(modifier = Modifier.weight(1f))
             Switch(
                 checked = setting, onCheckedChange = {
@@ -190,7 +198,7 @@ private fun disableNoScheduleExactAlarmNotice(
     ) {
         Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
             var setting by remember { mutableStateOf(preferences.disableNoScheduleExactAlarmNotice()) }
-            OptionText(it, 64)
+            OptionText(it, 48)
             Spacer(modifier = Modifier.weight(1f))
             Switch(
                 checked = setting, onCheckedChange = {
@@ -268,15 +276,20 @@ private fun recentlyRemindedKeepTime(preferences: PrimaryPreferences, view: View
         }
     }
     return SettingsItem(
-        SettingsType.Notification, 60, stringResource(R.string.recently_reminded_keep_time)
+        SettingsType.Notification, 80, stringResource(R.string.recently_reminded_keep_time)
     ) {
         var expanded by remember { mutableStateOf(false) }
-        Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            Modifier.padding(8.dp) then Modifier.heightIn(min = 55.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             var parentWidthDp by remember { mutableStateOf(0.dp) }
             val density = LocalDensity.current
-            OptionText(it, 30)
+            OptionText(it, 34)
             Spacer(modifier = Modifier.weight(1f))
-            OutlinedCard(modifier = Modifier.size(85.dp, 40.dp) then Modifier.onGloballyPositioned {
+            OutlinedCard(modifier = Modifier.sizeIn(
+                85.dp, 40.dp, maxHeight = 60.dp
+            ) then Modifier.onGloballyPositioned {
                 val widthPx = it.size.width
                 parentWidthDp = with(density) { widthPx.toDp() }
             }, shape = ShapeDefaults.ExtraSmall, border = BorderStroke(
@@ -285,11 +298,13 @@ private fun recentlyRemindedKeepTime(preferences: PrimaryPreferences, view: View
                 expanded = !expanded
                 view.playSoundEffect(SoundEffectConstants.CLICK)
             }) {
-                Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center) {
+                Column(
+                    Modifier.sizeIn(90.dp, 40.dp, 90.dp), verticalArrangement = Arrangement.Center
+                ) {
                     Text(
                         text = list.find { it.value == setting }?.name
-                            ?: timeDisplay((setting * 0.001).toLong(), true),
-                        modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center,
+                            ?: timeDisplay((setting * 0.001).toLong(), 3),
+                        modifier = Modifier.widthIn(min = 85.dp), textAlign = TextAlign.Center,
                         color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Medium,
                         lineHeight = 16.sp, fontSize = 15.sp
                     )
@@ -329,11 +344,11 @@ private fun removeNoticeInAutoDelReminded(
 ): SettingsItem {
     var setting by remember { mutableStateOf(preferences.removeNoticeInAutoDelReminded()) }
     return SettingsItem(
-        SettingsType.Notification, 60,
+        SettingsType.Notification, 61,
         stringResource(R.string.remove_notice_in_auto_del_reminded)
     ) {
         Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            OptionText(it, 60)
+            OptionText(it, 45)
             Spacer(modifier = Modifier.weight(1f))
             Switch(
                 checked = setting, onCheckedChange = {
@@ -347,9 +362,7 @@ private fun removeNoticeInAutoDelReminded(
 
 @Composable
 private fun allowedNumberOfHistory(references: PrimaryPreferences, view: View): SettingsItem {
-    return SettingsItem(
-        SettingsType.History, 90, stringResource(R.string.allowed_number_of_history)
-    ) {
+    val content: @Composable (String) -> Unit = {
         var sliderPosition by remember {
             mutableFloatStateOf(references.allowedNumberOfHistory().toFloat())
         }
@@ -359,14 +372,15 @@ private fun allowedNumberOfHistory(references: PrimaryPreferences, view: View): 
             vibrationEffect(view)
         }
         Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.Center) {
-            OptionText(it, 90)
+            OptionText(it, 34)
             val text = when (sliderPosition.toInt()) {
                 0 -> stringResource(R.string.disable)
                 21 -> stringResource(R.string.unlimited)
                 else -> sliderPosition.toInt().toString()
             }
+            Spacer(Modifier.weight(1f))
             OptionText(
-                text, 20, Modifier.fillMaxWidth(),
+                text, 34, Modifier.fillMaxWidth(),
                 textColor = MaterialTheme.colorScheme.primary, textAlign = TextAlign.Center
             )
             Slider(
@@ -382,7 +396,13 @@ private fun allowedNumberOfHistory(references: PrimaryPreferences, view: View): 
                     start = 15.dp, end = 15.dp
                 ), steps = 21, valueRange = 0f..21f
             )
+            Spacer(Modifier.weight(1f))
         }
+    }
+    return SettingsItem(
+        SettingsType.History, 100, stringResource(R.string.allowed_number_of_history)
+    ) {
+        Column(Modifier.heightIn(max = 100.dp)) { content(it) }
     }
 }
 
@@ -391,7 +411,7 @@ private data class CompressionItem(val name: String, val value: Int)
 @Composable
 private fun pictureCompressionRate(preferences: PrimaryPreferences, view: View): SettingsItem {
     return SettingsItem(
-        SettingsType.General, 70, stringResource(R.string.picture_compression_rate)
+        SettingsType.General, 100, stringResource(R.string.picture_compression_rate)
     ) {
         var setting by remember { mutableIntStateOf(preferences.pictureCompressionRate()) }
         val list = listOf(
@@ -404,12 +424,12 @@ private fun pictureCompressionRate(preferences: PrimaryPreferences, view: View):
             CompressionItem(stringResource(R.string.custom), -1),
         )
         var expanded by remember { mutableStateOf(false) }
-        val height = Modifier.height(60.dp)
+        val height = Modifier.height(80.dp)
         Row(Modifier.padding(8.dp) then height, verticalAlignment = Alignment.CenterVertically) {
             var parentWidthDp by remember { mutableStateOf(0.dp) }
             val density = LocalDensity.current
-            Column {
-                OptionText(it, 20)
+            Column(Modifier.heightIn(max = 70.dp)) {
+                OptionText(it, 34)
                 OptionText(
                     stringResource(R.string.compression_rate_describe), 50,
                     miniTitle = true, textColor = MaterialTheme.colorScheme.outline
@@ -418,7 +438,9 @@ private fun pictureCompressionRate(preferences: PrimaryPreferences, view: View):
             Spacer(modifier = Modifier.weight(1f))
             OutlinedCard(
                 modifier = Modifier
-                    .size(85.dp, 40.dp) then Modifier.onGloballyPositioned { coordinates ->
+                    .sizeIn(
+                        85.dp, 40.dp, maxHeight = 70.dp
+                    ) then Modifier.onGloballyPositioned { coordinates ->
                     val widthPx = coordinates.size.width
                     parentWidthDp = with(density) { widthPx.toDp() }
                 },
@@ -430,10 +452,10 @@ private fun pictureCompressionRate(preferences: PrimaryPreferences, view: View):
                 }
             ) {
                 var custom by remember { mutableStateOf(false) }
-                Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center) {
+                Column(Modifier.sizeIn(85.dp, 40.dp), verticalArrangement = Arrangement.Center) {
                     Text(
                         text = list.find { it.value == setting }?.name ?: setting.toString(),
-                        modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center,
+                        modifier = Modifier.widthIn(min = 85.dp), textAlign = TextAlign.Center,
                         color = MaterialTheme.colorScheme.secondary,
                         fontWeight = FontWeight.Medium
                     )
@@ -445,14 +467,11 @@ private fun pictureCompressionRate(preferences: PrimaryPreferences, view: View):
                         .width(parentWidthDp)
                         .heightIn(min = 200.dp, max = (screenHeight / 2.1).dp)
                         .verticalColumnScrollbar(
-                            scrollState = scrollState,
-                            width = 5.dp,
-                            scrollBarCornerRadius = 25f,
+                            scrollState = scrollState, width = 5.dp, scrollBarCornerRadius = 25f,
                             showScrollBar = scrollState.canScrollBackward || scrollState.canScrollForward,
                             scrollBarTrackColor = Color.Transparent,
                             scrollBarColor = MaterialTheme.colorScheme.outline,
-                            endPadding = 25f,
-                            topBottomPadding = 25f
+                            endPadding = 25f, topBottomPadding = 25f
                         ),
                     scrollState = scrollState, onDismissRequest = { expanded = false }) {
                     list.forEach {
@@ -504,7 +523,7 @@ private fun pictureCompressionRate(preferences: PrimaryPreferences, view: View):
 @Composable
 private fun videoCompressionRate(preferences: PrimaryPreferences, view: View): SettingsItem {
     return SettingsItem(
-        SettingsType.General, 70, stringResource(R.string.video_compression_rate)
+        SettingsType.General, 100, stringResource(R.string.video_compression_rate)
     ) {
         var setting by remember { mutableIntStateOf(preferences.videoCompressionRate()) }
         val list = listOf(
@@ -517,12 +536,12 @@ private fun videoCompressionRate(preferences: PrimaryPreferences, view: View): S
             CompressionItem(stringResource(R.string.custom), -1),
         )
         var expanded by remember { mutableStateOf(false) }
-        val height = Modifier.height(60.dp)
+        val height = Modifier.height(80.dp)
         Row(Modifier.padding(8.dp) then height, verticalAlignment = Alignment.CenterVertically) {
             var parentWidthDp by remember { mutableStateOf(0.dp) }
             val density = LocalDensity.current
             Column {
-                OptionText(it, 20)
+                OptionText(it, 34)
                 OptionText(
                     stringResource(R.string.compression_rate_describe), 50,
                     miniTitle = true, textColor = MaterialTheme.colorScheme.outline
@@ -614,8 +633,9 @@ private fun videoCompressionRate(preferences: PrimaryPreferences, view: View): S
 @Composable
 private fun language(view: View): SettingsItem {
     val supportState = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+    val height = if (supportState) 81 else 88
     return SettingsItem(
-        SettingsType.General, if (supportState) 60 else 64, stringResource(R.string.language)
+        SettingsType.General, height, stringResource(R.string.language)
     ) {
         Card(
             colors = CardDefaults.cardColors(Color.Transparent),
@@ -632,11 +652,14 @@ private fun language(view: View): SettingsItem {
                     Toast.LENGTH_SHORT
                 ).show()
             },
-            modifier = Modifier.fillMaxWidth() then Modifier.height(60.dp)
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                Modifier.padding(8.dp) then Modifier.height((height - 16).dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Column {
-                    OptionText(it, 20)
+                    OptionText(it, 33)
                     OptionText(
                         if (supportState) stringResource(R.string.click_select_language) else stringResource(
                             R.string.unsupported_api_must_higher_than_32
@@ -648,7 +671,7 @@ private fun language(view: View): SettingsItem {
                 val padding = Modifier.padding(end = 12.dp)
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(painterResource(R.drawable.language), it, padding)
-                    OptionText(stringResource(R.string.app_display_language), 18, padding, true)
+                    OptionText(stringResource(R.string.app_display_language), 28, padding, true)
                 }
             }
         }
@@ -658,18 +681,20 @@ private fun language(view: View): SettingsItem {
 @Composable
 private fun about(view: View): SettingsItem {
     return SettingsItem(
-        SettingsType.General, 68, stringResource(R.string.about)
+        SettingsType.General, 83, stringResource(R.string.about)
     ) {
         val url = "https://github.com/Z-Siqi"
-        val height = Modifier.height(50.dp)
+        val height = Modifier.height(67.dp)
         Row(Modifier.padding(8.dp) then height, verticalAlignment = Alignment.CenterVertically) {
             Column {
-                OptionText(it, 34)
+                OptionText(it, 35)
                 Row {
-                    OptionText(stringResource(R.string.developed_by), 30)
                     OptionText(
-                        "Z-Siqi", 30, url = url, view = view,
-                        textColor = MaterialTheme.colorScheme.primary
+                        stringResource(R.string.developed_by), 32, miniTitle = true
+                    )
+                    OptionText(
+                        "Z-Siqi", 32, url = url, view = view,
+                        textColor = MaterialTheme.colorScheme.primary, miniTitle = true
                     )
                 }
             }
@@ -705,11 +730,14 @@ private fun donate(view: View): SettingsItem {
                 }
                 view.context.startActivity(intent)
             },
-            modifier = Modifier.fillMaxWidth() then Modifier.height(78.dp)
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                Modifier.padding(8.dp) then Modifier.height(68.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Column {
-                    OptionText(it, 20)
+                    OptionText(it, 34)
                     OptionText(
                         stringResource(R.string.donate_describe), 50,
                         miniTitle = true, textColor = MaterialTheme.colorScheme.outline

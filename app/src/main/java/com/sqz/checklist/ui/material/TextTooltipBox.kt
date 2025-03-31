@@ -14,19 +14,34 @@ import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TextTooltipBox(
     textRid: Int,
     modifier: Modifier = Modifier,
     topLeftExtraPadding: Boolean = false,
     topRightExtraPadding: Boolean = false,
+    content: @Composable () -> Unit,
+) = TextTooltipBox(
+    text = stringResource(id = textRid),
+    modifier = modifier,
+    topLeftExtraPadding = topLeftExtraPadding,
+    topRightExtraPadding = topRightExtraPadding,
+    content = content
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TextTooltipBox(
+    text: String,
+    modifier: Modifier = Modifier,
+    topLeftExtraPadding: Boolean = false,
+    topRightExtraPadding: Boolean = false,
+    enable: Boolean = true,
     content: @Composable () -> Unit,
 ) = TooltipBox(
     positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
@@ -37,12 +52,11 @@ fun TextTooltipBox(
             modifier.padding(top = 25.dp, end = 20.dp)
         } else modifier
         PlainTooltip(modifier = extraPaddingValue) {
-            Text(text = stringResource(id = textRid))
-            val context = LocalContext.current
+            Text(text = text)
             val view = LocalView.current
             LaunchedEffect(true) { // click feedback
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) ContextCompat.getSystemService(
-                    context, Vibrator::class.java
+                    view.context, Vibrator::class.java
                 )?.vibrate(
                     VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK)
                 ) else view.playSoundEffect(SoundEffectConstants.CLICK)
@@ -50,5 +64,6 @@ fun TextTooltipBox(
         }
     },
     state = rememberTooltipState(),
+    enableUserInput = enable,
     content = content
 )

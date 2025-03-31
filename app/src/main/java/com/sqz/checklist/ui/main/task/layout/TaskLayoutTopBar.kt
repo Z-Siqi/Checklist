@@ -47,7 +47,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sqz.checklist.R
-import com.sqz.checklist.ui.main.task.CardHeight
+import com.sqz.checklist.ui.main.task.cardHeight
 import com.sqz.checklist.ui.material.TextTooltipBox
 import kotlinx.coroutines.delay
 import java.time.LocalDate
@@ -71,7 +71,7 @@ fun TaskLayoutTopBar(
 
     val localConfig = LocalConfiguration.current
     val screenHeight = localConfig.screenHeightDp
-    val topBarForLowScreen = screenHeight <= (CardHeight + 24) * 3.8
+    val topBarForLowScreen = screenHeight <= (cardHeight(view.context) + 24) * 3.8
     val screenWidth = localConfig.screenWidthDp
     val topBarForLowAndWidthScreen = screenWidth > 800 && topBarForLowScreen
 

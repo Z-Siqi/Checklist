@@ -30,7 +30,7 @@ fun settingsExtendedNavButton(
     }
     val label = @Composable { Text(buttonText) }
     val tooltipContent = @Composable {
-        NonExtendedTooltip(buttonText, view, 53)
+        NonExtendedTooltip(buttonText, view)
     }
     val tooltipState = rememberBasicTooltipState(isPersistent = false)
     val onClick = {

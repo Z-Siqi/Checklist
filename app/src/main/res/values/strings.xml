@@ -121,6 +121,9 @@
     <string name="select_file_to_import">Please select a file to import!</string>
     <string name="failed_in_zip">Failed! Please make sure zip is valid! (tip: catch log for more details)</string>
     <string name="finished">Finished!</string>
+    <string name="restore_settings">Restore app settings</string>
+    <string name="restore_settings_describe">Once finished, the app may exit to applied the setting. Please reopen app after finish (if is exited).</string>
+    <string name="backup_app_settings">Backup app settings</string>
 
     <!-- Settings -->
     <string name="settings">Settings</string>

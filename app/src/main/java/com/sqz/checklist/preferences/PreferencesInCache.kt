@@ -25,4 +25,22 @@ class PreferencesInCache(context: Context) : PreferencesAccess(context) {
         if (setter != nullStringName) writePreferencesState(preferences, setter)
         return readPreferencesState(preferences, null)
     }
+
+    fun backupSettings(setter: Boolean? = null): Boolean {
+        val preferences = "backup_settings"
+        if (setter != null) writePreferencesState(preferences, setter)
+        return readPreferencesState(preferences, true)
+    }
+
+    fun restoreSettings(setter: Boolean? = null): Boolean {
+        val preferences = "restore_settings"
+        if (setter != null) writePreferencesState(preferences, setter)
+        return readPreferencesState(preferences, false)
+    }
+
+    fun backupOption(setter: Int? = null): Int {
+        val preferences = "backup_option"
+        if (setter != null) writePreferencesState(preferences, setter)
+        return readPreferencesState(preferences, 0)
+    }
 }
