@@ -58,6 +58,7 @@ fun LazyList(
     context: Context,
     modifier: Modifier = Modifier,
     taskState: TaskLayoutViewModel,
+    searchBarSpace: Int = 72,
     isPreview: Boolean = false
 ) {
     var inSearch by rememberSaveable { mutableStateOf(false) }
@@ -107,7 +108,7 @@ fun LazyList(
                 )
             }
         } else {
-            item { Spacer(modifier = modifier.height(72.dp)) }
+            item { Spacer(modifier = modifier.height(searchBarSpace.dp)) }
             items(listState.inSearchItem, key = { it.id }) { task ->
                 MainListItem(
                     task = task,

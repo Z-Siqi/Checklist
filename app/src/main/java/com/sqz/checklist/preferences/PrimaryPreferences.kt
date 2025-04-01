@@ -48,4 +48,16 @@ class PrimaryPreferences(context: Context) : PreferencesAccess(context) {
         if (setter != null) writePreferencesState(preferences, setter)
         return readPreferencesState(preferences, false)
     }
+
+    fun clearHistoryWhenLeaved(setter: Boolean? = null): Boolean {
+        val preferences = "clear_history_when_leaved"
+        if (setter != null) writePreferencesState(preferences, setter)
+        return readPreferencesState(preferences, false)
+    }
+
+    fun disableUndoButton(setter: Boolean? = null): Boolean {
+        val preferences = "disable_undo_button"
+        if (setter != null) writePreferencesState(preferences, setter)
+        return readPreferencesState(preferences, false)
+    }
 }

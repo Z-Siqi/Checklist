@@ -42,6 +42,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -54,6 +55,7 @@ import com.sqz.checklist.MainActivity
 import com.sqz.checklist.R
 import com.sqz.checklist.database.DatabaseRepository
 import com.sqz.checklist.database.Task
+import com.sqz.checklist.ui.main.task.CardHeight
 import com.sqz.checklist.ui.main.task.cardHeight
 import java.text.SimpleDateFormat
 import java.time.LocalDate
@@ -90,6 +92,8 @@ fun SwipeAbleTaskCard(
         stringResource(R.string.task_date_format),
         Locale.getDefault()
     )
+    var currentCardHeight by remember { mutableIntStateOf(0) }
+    val density = LocalDensity.current
     Column(
         modifier = Modifier
             .animateContentSize(
@@ -98,7 +102,11 @@ fun SwipeAbleTaskCard(
                     stiffness = Spring.StiffnessMedium
                 )
             )
-            .height(swipeToDismissControl(itemState, { checked(task.id) }, getIsHistory, context)),
+            .height(swipeToDismissControl(itemState, { checked(task.id) }, getIsHistory, context))
+            .onGloballyPositioned { layoutCoordinates ->
+                val heightPx = layoutCoordinates.size.height
+                currentCardHeight = with(density) { heightPx.toDp() }.value.toInt()
+            },
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -142,7 +150,7 @@ fun SwipeAbleTaskCard(
                 stringResource(R.string.task_creation_time, taskTimeText)
             }
             val localDateText: (Boolean) -> String = {
-                overflowed = it
+                if (currentCardHeight >= CardHeight) overflowed = it
                 dateText
             }
             TaskCardContent(

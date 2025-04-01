@@ -3,6 +3,7 @@ package com.sqz.checklist.ui.material
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
+import android.util.Log
 import android.view.SoundEffectConstants
 import android.view.View
 import androidx.compose.foundation.layout.Spacer
@@ -47,10 +48,12 @@ fun NonExtendedTooltip(text: String, view: View) {
         .size(rememberTextWidth.dp, rememberTextHeight.dp)
         .onGloballyPositioned { layoutCoordinates ->
             val position = layoutCoordinates.positionOnScreen()
+            Log.d("NonExtendedTooltip", "position = x: ${position.x} | y: ${position.y}")
             if (position.x < 2147483647L || position.y < 2147483647L) {
                 rememberPosition = IntOffset(position.x.toInt(), position.y.toInt())
             }
         })
+    Log.d("NonExtendedTooltip", "rememberText = Height: $rememberTextWidth | Width: $rememberTextHeight")
     if (rememberTextWidth != 0 && rememberTextHeight != 0) TooltipBox(
         positionProvider = object : PopupPositionProvider {
             override fun calculatePosition(

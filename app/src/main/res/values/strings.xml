@@ -148,5 +148,7 @@
     <string name="remove_notice_in_auto_del_reminded">Delete notification when reminded task is automatically removed</string>
     <string name="sponsor_me">Sponsor Me</string>
     <string name="donate_describe">If you like my work, please consider supporting me with a donation!</string>
+    <string name="clear_history_when_leaved">Clear all history when leaving the app</string>
+    <string name="disable_undo_button">Disable undo button</string>
 
 </resources>

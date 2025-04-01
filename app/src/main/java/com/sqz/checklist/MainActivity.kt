@@ -21,12 +21,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
+import androidx.lifecycle.coroutineScope
 import com.sqz.checklist.cache.clearExpiredCache
 import com.sqz.checklist.cache.clearOldCacheIfNeeded
+import com.sqz.checklist.database.DatabaseRepository
 import com.sqz.checklist.database.TaskDatabase
 import com.sqz.checklist.database.buildDatabase
+import com.sqz.checklist.preferences.PrimaryPreferences
 import com.sqz.checklist.ui.MainLayout
 import com.sqz.checklist.ui.theme.ChecklistTheme
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     companion object {
@@ -34,10 +38,11 @@ class MainActivity : ComponentActivity() {
         lateinit var appDir: String
     }
 
+    @Override
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        taskDatabase = buildDatabase(applicationContext)
-        appDir = applicationContext.filesDir.absolutePath
+        taskDatabase = buildDatabase(applicationContext) // load database
+        appDir = applicationContext.filesDir.absolutePath // load app dir location
         setContent {
             var getNavHeight by remember { mutableIntStateOf(0) }
             val navigationBars = WindowInsets.navigationBars.toString()
@@ -61,23 +66,33 @@ class MainActivity : ComponentActivity() {
                         .windowInsetsPadding(WindowInsets.statusBars) // Do not override state bar area
                         .fillMaxSize() then windowInsetsPadding,
                     color = MaterialTheme.colorScheme.background
-                ) {
+                ) { // Main app UI
                     MainLayout(
                         context = applicationContext,
                         view = window.decorView,
                     )
                 }
                 @Suppress("DEPRECATION")
-                if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) { // set state bar color for low android version
                     window.statusBarColor = stateBarColor.toArgb()
                     window.navigationBarColor = if (isSystemInDarkTheme()) {
                         MaterialTheme.colorScheme.onSecondary.toArgb()
-                    } else {
-                        MaterialTheme.colorScheme.secondary.toArgb()
-                    }
+                    } else MaterialTheme.colorScheme.secondary.toArgb()
                 }
             }
         }
+    }
+
+    @Override
+    override fun onDestroy() {
+        super.onDestroy()
+        clearHistoryWhenLeaved()
+    }
+
+    @Override
+    override fun onStart() {
+        super.onStart()
+        clearHistoryWhenLeaved()
     }
 
     @Override
@@ -85,5 +100,12 @@ class MainActivity : ComponentActivity() {
         super.onStop()
         clearExpiredCache(applicationContext)
         clearOldCacheIfNeeded(applicationContext)
+    }
+
+    private fun clearHistoryWhenLeaved() {
+        if (PrimaryPreferences(applicationContext).clearHistoryWhenLeaved()) super.lifecycle.coroutineScope.launch {
+            DatabaseRepository(taskDatabase).deleteAllHistory()
+            Log.d("clearHistoryWhenLeaved", "Clear all history")
+        }
     }
 }

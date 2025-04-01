@@ -13,7 +13,7 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -37,6 +37,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -46,8 +47,10 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
@@ -115,6 +118,8 @@ fun TaskLayout(
             start = left, end = if (left / 3 > 15.dp) 15.dp else left / 3
         ) else modifier
 
+        var currentHeight by remember { mutableIntStateOf(0) }
+        val searchBarSpace = if (currentHeight > 50) (currentHeight + 22) else 72
         LazyList( // LazyColumn lists
             listState = listState,
             lazyState = lazyState,
@@ -129,11 +134,12 @@ fun TaskLayout(
                     searchState = listState.searchView,
                     taskState = taskState,
                     modifier = safePaddingForFullscreen
-                )
+                ) { currentHeight = it }
             },
             context = context,
             taskState = taskState,
             modifier = safePaddingForFullscreen,
+            searchBarSpace = searchBarSpace,
             isPreview = isPreview
         )
         if (!listState.unLoading && listState.item.isEmpty()) Column( // Show text if not any task
@@ -225,19 +231,25 @@ private fun TaskDetailInfoDialog(onDismissRequest: () -> Unit, detail: TaskDetai
 private fun taskSearchBar(
     searchState: Boolean,
     taskState: TaskLayoutViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    currentHeight: (Int) -> Unit = {}
 ): Boolean {
     val undo = taskState.undo.collectAsState().value
+    val density = LocalDensity.current
     if (searchState) Column(modifier = modifier.fillMaxSize()) {
         val textFieldState = rememberTextFieldState()
         OutlinedCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(start = 18.dp, end = 18.dp, top = 12.dp)
-                .height(50.dp),
+                .heightIn(min = 50.dp)
+                .onGloballyPositioned { layoutCoordinates ->
+                    val heightPx = layoutCoordinates.size.height
+                    currentHeight(with(density) { heightPx.toDp() }.value.toInt())
+                },
             shape = ShapeDefaults.ExtraLarge
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.heightIn(min = 50.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     modifier = Modifier.padding(start = 10.dp),
                     imageVector = Icons.Filled.Search,
@@ -245,7 +257,7 @@ private fun taskSearchBar(
                 )
                 BasicTextField(
                     modifier = Modifier
-                        .fillMaxSize()
+                        .fillMaxWidth()
                         .padding(start = 9.dp, end = 9.dp, top = 10.dp, bottom = 8.dp)
                         .horizontalScroll(rememberScrollState()),
                     state = textFieldState,

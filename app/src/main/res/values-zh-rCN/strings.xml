@@ -149,5 +149,7 @@
     <string name="remove_notice_in_auto_del_reminded">当最近提醒任务自动移除时删除通知</string>
     <string name="sponsor_me">向我赞助</string>
     <string name="donate_describe">如果你喜欢我的作品，请考虑捐款支持我!</string>
+    <string name="clear_history_when_leaved">离开应用程序时清除所有历史记录</string>
+    <string name="disable_undo_button">禁用撤消按钮</string>
 
 </resources>

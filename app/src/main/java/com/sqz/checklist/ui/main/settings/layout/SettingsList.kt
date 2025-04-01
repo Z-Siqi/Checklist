@@ -82,13 +82,15 @@ fun settingsList(
     val primaryPreferences = PrimaryPreferences(view.context)
     var heightDp by rememberSaveable { mutableIntStateOf(0) }
     val list = listOf(
+        // History
+        allowedNumberOfHistory(primaryPreferences, view),
+        clearHistoryWhenLeaved(primaryPreferences, view),
+        disableUndoButton(primaryPreferences, view),
         // Notification
         disableRemoveNotifyInReminded(primaryPreferences, view),
         disableNoScheduleExactAlarmNotice(primaryPreferences, view),
         recentlyRemindedKeepTime(primaryPreferences, view),
         removeNoticeInAutoDelReminded(primaryPreferences, view),
-        // History
-        allowedNumberOfHistory(primaryPreferences, view),
         // General
         pictureCompressionRate(primaryPreferences, view),
         videoCompressionRate(primaryPreferences, view),
@@ -361,10 +363,10 @@ private fun removeNoticeInAutoDelReminded(
 }
 
 @Composable
-private fun allowedNumberOfHistory(references: PrimaryPreferences, view: View): SettingsItem {
+private fun allowedNumberOfHistory(preferences: PrimaryPreferences, view: View): SettingsItem {
     val content: @Composable (String) -> Unit = {
         var sliderPosition by remember {
-            mutableFloatStateOf(references.allowedNumberOfHistory().toFloat())
+            mutableFloatStateOf(preferences.allowedNumberOfHistory().toFloat())
         }
         var old by remember { mutableFloatStateOf(sliderPosition) }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && old != sliderPosition) {
@@ -385,7 +387,7 @@ private fun allowedNumberOfHistory(references: PrimaryPreferences, view: View): 
             )
             Slider(
                 value = sliderPosition, onValueChange = {
-                    sliderPosition = references.allowedNumberOfHistory(
+                    sliderPosition = preferences.allowedNumberOfHistory(
                         it.toInt()
                     ).toFloat()
                 }, colors = SliderDefaults.colors(
@@ -403,6 +405,44 @@ private fun allowedNumberOfHistory(references: PrimaryPreferences, view: View): 
         SettingsType.History, 100, stringResource(R.string.allowed_number_of_history)
     ) {
         Column(Modifier.heightIn(max = 100.dp)) { content(it) }
+    }
+}
+
+@Composable
+private fun clearHistoryWhenLeaved(preferences: PrimaryPreferences, view: View): SettingsItem {
+    return SettingsItem(
+        SettingsType.History, 64, stringResource(R.string.clear_history_when_leaved)
+    ) {
+        Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            var setting by remember { mutableStateOf(preferences.clearHistoryWhenLeaved()) }
+            OptionText(it, 48)
+            Spacer(modifier = Modifier.weight(1f))
+            Switch(
+                checked = setting, onCheckedChange = {
+                    setting = preferences.clearHistoryWhenLeaved(it)
+                    view.playSoundEffect(SoundEffectConstants.CLICK)
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun disableUndoButton(preferences: PrimaryPreferences, view: View): SettingsItem {
+    return SettingsItem(
+        SettingsType.History, 64, stringResource(R.string.disable_undo_button)
+    ) {
+        Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            var setting by remember { mutableStateOf(preferences.disableUndoButton()) }
+            OptionText(it, 48)
+            Spacer(modifier = Modifier.weight(1f))
+            Switch(
+                checked = setting, onCheckedChange = {
+                    setting = preferences.disableUndoButton(it)
+                    view.playSoundEffect(SoundEffectConstants.CLICK)
+                }
+            )
+        }
     }
 }
 

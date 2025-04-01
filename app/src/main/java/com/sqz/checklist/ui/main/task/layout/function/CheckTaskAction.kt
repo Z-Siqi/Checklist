@@ -42,7 +42,7 @@ fun CheckTaskAction(
     val preferences = PrimaryPreferences(context).allowedNumberOfHistory()
     val undo = taskState.undo.collectAsState().value
     val isWindowFocused = LocalWindowInfo.current.isWindowFocused
-    if (taskState.undoTimeout(lazyState, context)) UndoButton(
+    if (taskState.undoButtonProcess(lazyState, context)) UndoButton(
         onClick = {
             taskState.modifyHandler.onTaskUndoChecked(undo.undoActionId).let {
                 if (it.isActive || it.isCompleted || it.isCancelled) {

@@ -137,28 +137,31 @@ open class TaskLayoutViewModel : ViewModel() {
         it.copy(checkTaskAction = true, undoActionId = id)
     }
 
-    fun undoTimeout(lazyState: LazyListState, context: Context): Boolean { // process undo button
-        var rememberScroll by mutableIntStateOf(0)
-        var rememberScrollIndex by mutableIntStateOf(0)
-        val undoTimeout = { resetUndo(context) }
-        if (_undo.value.checkTaskAction) viewModelScope.launch {
-            while (true) {
-                delay(50)
-                rememberScroll = lazyState.firstVisibleItemScrollOffset
-                rememberScrollIndex = lazyState.firstVisibleItemIndex
-                _undo.update { it.copy(undoButtonState = true) }
-                delay(1500)
-                val isTimeout = rememberScroll > lazyState.firstVisibleItemScrollOffset + 10 ||
-                        rememberScroll < lazyState.firstVisibleItemScrollOffset - 10
-                for (i in 1..7) {
-                    delay(500)
-                    if (rememberScrollIndex != lazyState.firstVisibleItemIndex || isTimeout) break
+    /** Process undo button state **/
+    fun undoButtonProcess(lazyState: LazyListState, context: Context): Boolean {
+        if (!primaryPreferences(context).disableUndoButton()) {
+            var rememberScroll by mutableIntStateOf(0)
+            var rememberScrollIndex by mutableIntStateOf(0)
+            val undoTimeout = { resetUndo(context) }
+            if (_undo.value.checkTaskAction) viewModelScope.launch {
+                while (true) {
+                    delay(50)
+                    rememberScroll = lazyState.firstVisibleItemScrollOffset
+                    rememberScrollIndex = lazyState.firstVisibleItemIndex
+                    _undo.update { it.copy(undoButtonState = true) }
+                    delay(1500)
+                    val isTimeout = rememberScroll > lazyState.firstVisibleItemScrollOffset + 10 ||
+                            rememberScroll < lazyState.firstVisibleItemScrollOffset - 10
+                    for (i in 1..7) {
+                        delay(500)
+                        if (rememberScrollIndex != lazyState.firstVisibleItemIndex || isTimeout) break
+                    }
+                    undoTimeout()
+                    break
                 }
-                undoTimeout()
-                break
             }
-        }
-        return _undo.value.undoButtonState
+            return _undo.value.undoButtonState
+        } else return false.also { resetUndo(context) }
     }
 
     /** Task click action **/
