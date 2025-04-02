@@ -177,7 +177,8 @@ private fun ContentBottom(
 ) = Row(verticalAlignment = Alignment.Bottom) {
     val modifier = Modifier
     val config = LocalConfiguration.current
-    val timeWidth = config.screenWidthDp / 1.7
+    val screenIsWidth = config.screenWidthDp > config.screenHeightDp * 1.1
+    val timeWidth = if (screenIsWidth) config.screenWidthDp / 1.95 else config.screenWidthDp / 1.7
     var overflowed by remember { mutableStateOf(false) }
     val localDateText = dateText(overflowed)
     Text(

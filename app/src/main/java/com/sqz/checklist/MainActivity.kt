@@ -29,6 +29,7 @@ import com.sqz.checklist.database.TaskDatabase
 import com.sqz.checklist.database.buildDatabase
 import com.sqz.checklist.preferences.PrimaryPreferences
 import com.sqz.checklist.ui.MainLayout
+import com.sqz.checklist.ui.main.appScreenSizeLimit
 import com.sqz.checklist.ui.theme.ChecklistTheme
 import kotlinx.coroutines.launch
 
@@ -61,7 +62,7 @@ class MainActivity : ComponentActivity() {
                 )
                 val windowInsetsPadding = if (getNavHeight > 100) // if nav mode is not gesture mode
                     Modifier.windowInsetsPadding(WindowInsets.navigationBars) else Modifier
-                Surface(
+                if (!appScreenSizeLimit()) Surface(
                     modifier = Modifier
                         .windowInsetsPadding(WindowInsets.statusBars) // Do not override state bar area
                         .fillMaxSize() then windowInsetsPadding,

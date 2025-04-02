@@ -91,6 +91,7 @@ fun settingsList(
         disableNoScheduleExactAlarmNotice(primaryPreferences, view),
         recentlyRemindedKeepTime(primaryPreferences, view),
         removeNoticeInAutoDelReminded(primaryPreferences, view),
+        systemNotificationSetting(view),
         // General
         pictureCompressionRate(primaryPreferences, view),
         videoCompressionRate(primaryPreferences, view),
@@ -113,7 +114,7 @@ fun settingsList(
 private fun OptionText(
     text: String, maxHeight: Int, modifier: Modifier = Modifier, miniTitle: Boolean = false,
     textColor: Color = MaterialTheme.colorScheme.secondary, textAlign: TextAlign? = null,
-    url: String? = null, view: View? = null
+    fullWidth: Boolean = false, url: String? = null, view: View? = null
 ) {
     val width = LocalConfiguration.current.screenWidthDp
     val fontSize = when {
@@ -121,18 +122,20 @@ private fun OptionText(
         else -> if (width >= 385) 15.sp else 12.sp
     }
     var overflow by remember { mutableStateOf(false) }
+    val sizeModifier = if (!fullWidth) modifier.sizeIn(
+        maxWidth = (width * 0.7).dp, maxHeight = maxHeight.dp
+    ) else modifier.heightIn(max = maxHeight.dp)
     TextTooltipBox(text = text, enable = overflow) {
         if (url == null || view == null) Text(
             text = text, fontSize = fontSize, fontWeight = FontWeight.SemiBold,
-            modifier = modifier.sizeIn(maxWidth = (width * 0.7).dp, maxHeight = maxHeight.dp),
-            lineHeight = (fontSize.value + 5.sp.value).sp, overflow = TextOverflow.Ellipsis,
-            color = textColor, textAlign = textAlign, onTextLayout = {
+            modifier = sizeModifier, lineHeight = (fontSize.value + 5.sp.value).sp,
+            overflow = TextOverflow.Ellipsis, color = textColor,
+            textAlign = textAlign, onTextLayout = {
                 overflow = it.hasVisualOverflow
             }
         ) else UrlText(
             url = url, view = view, text = text, fontSize = fontSize,
-            fontWeight = FontWeight.SemiBold,
-            modifier = modifier.sizeIn(maxWidth = (width * 0.7).dp, maxHeight = maxHeight.dp),
+            fontWeight = FontWeight.SemiBold, modifier = sizeModifier,
             lineHeight = (fontSize.value + 5.sp.value).sp, overflow = TextOverflow.Ellipsis,
             color = textColor, textAlign = textAlign
         )
@@ -358,6 +361,36 @@ private fun removeNoticeInAutoDelReminded(
                     view.playSoundEffect(SoundEffectConstants.CLICK)
                 }
             )
+        }
+    }
+}
+
+@Composable
+private fun systemNotificationSetting(view: View): SettingsItem {
+    return SettingsItem(
+        SettingsType.Notification, 80, stringResource(R.string.system_notify_settings)
+    ) {
+        Card(
+            colors = CardDefaults.cardColors(Color.Transparent),
+            modifier = Modifier.fillMaxWidth(),
+            onClick = {
+                view.playSoundEffect(SoundEffectConstants.CLICK)
+                val intent = Intent().apply {
+                    action = Settings.ACTION_APP_NOTIFICATION_SETTINGS
+                    putExtra(Settings.EXTRA_APP_PACKAGE, view.context.packageName)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                view.context.startActivity(intent)
+            }
+        ) {
+            Column(Modifier.padding(8.dp) then Modifier.height(68.dp)) {
+                OptionText(it, 34)
+                OptionText(
+                    stringResource(R.string.system_notify_settings_describe), 50,
+                    miniTitle = true, fullWidth = true,
+                    textColor = MaterialTheme.colorScheme.outline
+                )
+            }
         }
     }
 }

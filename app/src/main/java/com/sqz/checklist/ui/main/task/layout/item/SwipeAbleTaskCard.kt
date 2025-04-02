@@ -140,13 +140,14 @@ fun SwipeAbleTaskCard(
             }
         ) { // front of card
             val reminderState = reminderState(task.reminder, databaseRepository)
+            val localConfig = LocalConfiguration.current
             var overflowed by remember { mutableStateOf(false) }
             val dateText = if (mode == ItemMode.RemindedTask) {
                 stringResource(R.string.task_reminded_time, remindTime().toString())
             } else {
-                val taskTimeText = if (overflowed) "\n${task.createDate.format(formatter)}" else {
-                    task.createDate.format(formatter)
-                }
+                val taskTimeText = if (overflowed || localConfig.screenHeightDp < 380) {
+                    "\n${task.createDate.format(formatter)}"
+                } else task.createDate.format(formatter)
                 stringResource(R.string.task_creation_time, taskTimeText)
             }
             val localDateText: (Boolean) -> String = {
