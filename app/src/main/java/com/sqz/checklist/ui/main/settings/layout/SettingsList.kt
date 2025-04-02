@@ -116,14 +116,18 @@ private fun OptionText(
     textColor: Color = MaterialTheme.colorScheme.secondary, textAlign: TextAlign? = null,
     fullWidth: Boolean = false, url: String? = null, view: View? = null
 ) {
-    val width = LocalConfiguration.current.screenWidthDp
+
+    val config = LocalConfiguration.current
+    val screenIsWidth = config.screenWidthDp > config.screenHeightDp * 1.1
+    val width = config.screenWidthDp
+    val sizeModifierWidth = if (screenIsWidth) width * 0.5 else width * 0.7
     val fontSize = when {
         miniTitle -> if (width >= 385) 14.sp else 11.sp
         else -> if (width >= 385) 15.sp else 12.sp
     }
     var overflow by remember { mutableStateOf(false) }
     val sizeModifier = if (!fullWidth) modifier.sizeIn(
-        maxWidth = (width * 0.7).dp, maxHeight = maxHeight.dp
+        maxWidth = sizeModifierWidth.dp, maxHeight = maxHeight.dp
     ) else modifier.heightIn(max = maxHeight.dp)
     TextTooltipBox(text = text, enable = overflow) {
         if (url == null || view == null) Text(
