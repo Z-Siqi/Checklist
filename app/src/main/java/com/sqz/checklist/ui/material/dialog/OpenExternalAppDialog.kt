@@ -53,7 +53,7 @@ fun OpenExternalAppDialog(
     val height = when {
         screenHeightDp >= 700 -> (screenHeightDp / 6.8).toInt()
         screenHeightDp < (LocalConfiguration.current.screenWidthDp / 1.2) -> (screenHeightDp / 4.2).toInt()
-        screenHeightDp <= 458 -> (screenHeightDp / 1.05).toInt()
+        screenHeightDp <= 458 -> (screenHeightDp / 1.8).toInt()
         else -> (screenHeightDp / 6.1).toInt()
     }
     AlertDialog(

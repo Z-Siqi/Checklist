@@ -184,7 +184,7 @@ fun ApplicationList(
             val index = appList.indexOfFirst { it.packageName == selectedAppInfo!!.packageName }
             saver.lazyListState.scrollToItem(index)
         }
-    }
+    } else requestScroll = false
 }
 
 private suspend fun getInstalledApps(context: Context): List<AppInfo> {
