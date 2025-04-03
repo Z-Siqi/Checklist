@@ -33,6 +33,7 @@ import com.sqz.checklist.ui.material.media.PictureSelector
 import com.sqz.checklist.ui.material.dialog.DialogWithMenu
 import com.sqz.checklist.ui.material.media.AudioSelector
 import com.sqz.checklist.ui.material.media.VideoSelector
+import com.sqz.checklist.ui.material.rememberApplicationList
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -57,12 +58,14 @@ fun TaskDetailDialog(
         detailTextState.edit { insert(0, detailDataString) }
         remember = true
     }
+    val applicationListSaver = rememberApplicationList(view.context, detailDataString)
     DialogWithMenu(
         onDismissRequest = onDismissRequest,
         confirm = {
             val available = when (it?.toTaskDetailType()) {
                 TaskDetailType.Text -> detailTextState.text.toString() != ""
                 TaskDetailType.URL -> detailTextState.text.toString() != ""
+                TaskDetailType.Application -> detailDataString != ""
                 else -> detailDataString != "" && detailDataUri != null
             }
             if (available) {
@@ -83,7 +86,11 @@ fun TaskDetailDialog(
 
                         else -> detailTextState.text.toString()
                     }
-                    confirm(detailData.detailType(it?.toTaskDetailType())!!, detailString, detailDataUri)
+                    confirm(
+                        detailData.detailType(it?.toTaskDetailType())!!,
+                        detailString,
+                        detailDataUri
+                    )
                 }
             } else Toast.makeText(view.context, noDoNothing, Toast.LENGTH_SHORT).show()
         },
@@ -108,7 +115,7 @@ fun TaskDetailDialog(
                 TaskDetailType.URL -> false
                 TaskDetailType.Application -> ApplicationList({ name ->
                     detailData.detailString(name)
-                }, detailDataString, view.context) == Unit
+                }, applicationListSaver, view.context) == Unit
 
                 TaskDetailType.Picture -> PictureSelector(detailData, view) == Unit
                 TaskDetailType.Video -> VideoSelector(detailData, view) == Unit
@@ -205,8 +212,9 @@ class TaskDetailData private constructor() {
     private fun output(): TaskDetail? = this.output
     fun output(toByteArray: ByteArray?) {
         this.detailType.value?.let {
-            this.output =
-                TaskDetail(0, this.detailType.value!!, this.detailString.value, toByteArray)
+            this.output = TaskDetail(
+                0, this.detailType.value!!, this.detailString.value, toByteArray
+            )
         }
     }
 

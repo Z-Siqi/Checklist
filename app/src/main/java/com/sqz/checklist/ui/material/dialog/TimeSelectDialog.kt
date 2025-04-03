@@ -303,7 +303,7 @@ private fun DatePickDialog(
             } else {
                 invalid = false
                 val day = (1 + calculateTime / 1000 / 60 / 60 / 24).toInt()
-                if (day > 30) {
+                if (day > 180) {
                     invalid = true
                     tooLarge = true
                     selectedDate((day))

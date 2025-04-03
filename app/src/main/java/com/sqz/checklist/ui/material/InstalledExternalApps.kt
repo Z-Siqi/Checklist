@@ -3,8 +3,8 @@ package com.sqz.checklist.ui.material
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.pm.PackageManager.NameNotFoundException
 import android.graphics.drawable.Drawable
-import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -19,7 +19,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -27,9 +29,13 @@ import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -41,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import com.sqz.checklist.R
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 
 data class AppInfo(
@@ -49,22 +56,84 @@ data class AppInfo(
     val icon: Drawable
 )
 
-suspend fun getInstalledApps(context: Context): List<AppInfo> {
-    return withContext(Dispatchers.IO) {
-        val pm: PackageManager = context.packageManager
-        val intent = Intent(Intent.ACTION_MAIN, null).apply {
-            addCategory(Intent.CATEGORY_LAUNCHER)
-        }
-        val apps = pm.queryIntentActivities(intent, 0)
+class ApplicationListSaver(
+    val selectedAppInfo: MutableState<AppInfo?>,
+    val appList: MutableState<List<AppInfo>>,
+    val lazyListState: LazyListState
+) {
+    companion object {
+        fun saver(context: Context) = Saver<AppInfo?, Any>(
+            save = {
+                if (it == null) null
+                else listOf(it.name, it.packageName)
+            },
+            restore = {
+                run {
+                    val list = it as List<*>
+                    val name = list[0] as String
+                    val packageName = list[1] as String
+                    val icon = try {
+                        context.packageManager.getApplicationIcon(packageName)
+                    } catch (e: Exception) {
+                        context.getDrawable(android.R.drawable.sym_def_app_icon)!!
+                    }
+                    AppInfo(name, packageName, icon)
+                }
+            }
+        )
 
-        apps.map { resolveInfo ->
-            AppInfo(
-                name = resolveInfo.loadLabel(pm).toString(),
-                packageName = resolveInfo.activityInfo.packageName,
-                icon = resolveInfo.loadIcon(pm)
+        fun setter(packageName: String, context: Context): AppInfo? {
+            return try {
+                if (packageName != "") {
+                    val pm: PackageManager = context.packageManager
+                    val intent = context.packageManager.getLaunchIntentForPackage(packageName)
+                    val appInfo = pm.getApplicationInfo(packageName, 0)
+                    if (intent != null)  AppInfo(
+                        name = pm.getApplicationLabel(appInfo).toString(),
+                        packageName = packageName,
+                        icon = appInfo.loadIcon(pm)
+                    ) else null
+                } else null
+            } catch (e: NameNotFoundException) {
+                Toast.makeText(
+                    context, context.getString(R.string.failed_found_package), Toast.LENGTH_SHORT
+                ).show()
+                null
+            }
+        }
+
+        fun listSaver(context: Context): Saver<List<AppInfo>, Any> {
+            return listSaver(
+                save = { list ->
+                    list.map { listOf(it.name, it.packageName) }
+                },
+                restore = { list ->
+                    list.map {
+                        val name = it[0]
+                        val packageName = it[1]
+                        val icon = try {
+                            context.packageManager.getApplicationIcon(packageName)
+                        } catch (e: Exception) {
+                            context.getDrawable(android.R.drawable.sym_def_app_icon)!!
+                        }
+                        AppInfo(name, packageName, icon)
+                    }
+                }
             )
-        }.filter { it.packageName != context.packageName }
+        }
     }
+}
+
+@Composable
+fun rememberApplicationList(context: Context, setter: String? = null): ApplicationListSaver {
+    return ApplicationListSaver(
+        rememberSaveable(stateSaver = ApplicationListSaver.saver(context)) {
+            if (setter != null) mutableStateOf(ApplicationListSaver.setter(setter, context))
+            else mutableStateOf(null)
+        }, rememberSaveable(stateSaver = ApplicationListSaver.listSaver(context)) {
+            mutableStateOf(emptyList())
+        }, rememberLazyListState()
+    )
 }
 
 fun getApp(packageName: String, context: Context): AppInfo? {
@@ -83,20 +152,21 @@ fun getApp(packageName: String, context: Context): AppInfo? {
 @Composable
 fun ApplicationList(
     packageName: (String) -> Unit,
-    defaultPackageName: String?,
+    saver: ApplicationListSaver,
     context: Context
 ) {
-    val pm: PackageManager = context.packageManager
-    var selectedAppInfo by remember { mutableStateOf<AppInfo?>(null) }
-    var appList by remember { mutableStateOf<List<AppInfo>>(emptyList()) }
+    var selectedAppInfo by saver.selectedAppInfo
+    var appList by saver.appList
+    var requestScroll by remember { mutableStateOf(false) }
     if (appList.isEmpty()) LaunchedEffect(Unit) {
         appList = getInstalledApps(context)
+        requestScroll = true
     }
     Box {
         if (appList.isEmpty()) Text(
             stringResource(R.string.loading), modifier = Modifier.padding(8.dp)
         )
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(modifier = Modifier.fillMaxSize(), state = saver.lazyListState) {
             item { Spacer(Modifier.height(3.dp)) }
             items(appList) { app ->
                 AppItem(
@@ -107,24 +177,31 @@ fun ApplicationList(
             item { Spacer(Modifier.height(3.dp)) }
         }
     }
-    if (selectedAppInfo != null) packageName(selectedAppInfo!!.packageName)
-    else LaunchedEffect(appList.isNotEmpty()) {
-        try {
-            if (defaultPackageName != null && defaultPackageName != "") {
-                val intent = context.packageManager.getLaunchIntentForPackage(defaultPackageName)
-                val appInfo = pm.getApplicationInfo(defaultPackageName, 0)
-                if (intent != null) selectedAppInfo = AppInfo(
-                    name = pm.getApplicationLabel(appInfo).toString(),
-                    packageName = defaultPackageName,
-                    icon = appInfo.loadIcon(pm)
-                )
-            }
-        } catch (e: Exception) {
-            Toast.makeText(
-                context, context.getString(R.string.failed_found_package), Toast.LENGTH_SHORT
-            ).show()
-            Log.w("PackageName", "Failed to found saved package name! ERROR: $e")
+    if (selectedAppInfo != null) {
+        packageName(selectedAppInfo!!.packageName)
+        if (requestScroll) LaunchedEffect(Unit) {
+            delay(100)
+            val index = appList.indexOfFirst { it.packageName == selectedAppInfo!!.packageName }
+            saver.lazyListState.scrollToItem(index)
         }
+    }
+}
+
+private suspend fun getInstalledApps(context: Context): List<AppInfo> {
+    return withContext(Dispatchers.IO) {
+        val pm: PackageManager = context.packageManager
+        val intent = Intent(Intent.ACTION_MAIN, null).apply {
+            addCategory(Intent.CATEGORY_LAUNCHER)
+        }
+        val apps = pm.queryIntentActivities(intent, 0)
+
+        apps.map { resolveInfo ->
+            AppInfo(
+                name = resolveInfo.loadLabel(pm).toString(),
+                packageName = resolveInfo.activityInfo.packageName,
+                icon = resolveInfo.loadIcon(pm)
+            )
+        }.filter { it.packageName != context.packageName }
     }
 }
 

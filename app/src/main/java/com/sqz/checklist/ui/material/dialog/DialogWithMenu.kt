@@ -101,6 +101,7 @@ fun DialogWithMenu(
 
     val config = LocalConfiguration.current
     val isLandScape = config.screenWidthDp > config.screenHeightDp && config.screenWidthDp > 400
+    val shortScreen = config.screenHeightDp <= 358
     val selectContent = @Composable {
         OutlinedCard(
             modifier = modifier.heightIn(min = 47.dp) then if (isLandScape) modifier.width((config.screenWidthDp * 0.2).dp) else modifier.fillMaxWidth(),
@@ -231,14 +232,15 @@ fun DialogWithMenu(
         ) then modifier.width((LocalConfiguration.current.screenWidthDp / 1.2).dp),
         title = { Text(text = title) },
         text = {
+            val paddingValue = if (shortScreen) 5.dp else 16.dp
             if (isLandScape) Row {
                 selectContent()
-                VerticalDivider(modifier.padding(start = 16.dp, end = 16.dp))
+                VerticalDivider(modifier.padding(start = paddingValue, end = paddingValue))
                 functionalContent()
             } else Column {
-                HorizontalDivider(modifier.padding(top = 1.dp, bottom = 16.dp))
+                HorizontalDivider(modifier.padding(top = 1.dp, bottom = paddingValue))
                 selectContent()
-                HorizontalDivider(modifier.padding(top = 16.dp, bottom = 16.dp))
+                HorizontalDivider(modifier.padding(top = paddingValue, bottom = paddingValue))
                 functionalContent()
             }
         },
