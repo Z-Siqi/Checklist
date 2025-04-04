@@ -62,40 +62,36 @@ class ApplicationListSaver(
     val lazyListState: LazyListState
 ) {
     companion object {
-        fun saver(context: Context) = Saver<AppInfo?, Any>(
-            save = {
-                if (it == null) null
-                else listOf(it.name, it.packageName)
-            },
-            restore = {
-                run {
-                    val list = it as List<*>
-                    val name = list[0] as String
-                    val packageName = list[1] as String
-                    val icon = try {
-                        context.packageManager.getApplicationIcon(packageName)
-                    } catch (e: Exception) {
-                        context.getDrawable(android.R.drawable.sym_def_app_icon)!!
-                    }
-                    AppInfo(name, packageName, icon)
+        fun saver(context: Context) = Saver<AppInfo?, Any>(save = {
+            if (it == null) null else listOf(it.name, it.packageName)
+        }, restore = {
+            run {
+                val list = it as List<*>
+                val name = list[0] as String
+                val packageName = list[1] as String
+                val icon = try {
+                    context.packageManager.getApplicationIcon(packageName)
+                } catch (e: Exception) {
+                    context.getDrawable(android.R.drawable.sym_def_app_icon)!!
                 }
+                AppInfo(name, packageName, icon)
             }
-        )
+        })
 
-        fun setter(packageName: String, context: Context): AppInfo? {
+        fun setter(packageName: String, context: Context, ignoreToast: Boolean = true): AppInfo? {
             return try {
                 if (packageName != "") {
                     val pm: PackageManager = context.packageManager
                     val intent = context.packageManager.getLaunchIntentForPackage(packageName)
                     val appInfo = pm.getApplicationInfo(packageName, 0)
-                    if (intent != null)  AppInfo(
+                    if (intent != null) AppInfo(
                         name = pm.getApplicationLabel(appInfo).toString(),
                         packageName = packageName,
                         icon = appInfo.loadIcon(pm)
                     ) else null
                 } else null
             } catch (e: NameNotFoundException) {
-                Toast.makeText(
+                if (!ignoreToast) Toast.makeText(
                     context, context.getString(R.string.failed_found_package), Toast.LENGTH_SHORT
                 ).show()
                 null
@@ -103,23 +99,26 @@ class ApplicationListSaver(
         }
 
         fun listSaver(context: Context): Saver<List<AppInfo>, Any> {
-            return listSaver(
-                save = { list ->
-                    list.map { listOf(it.name, it.packageName) }
-                },
-                restore = { list ->
-                    list.map {
-                        val name = it[0]
-                        val packageName = it[1]
-                        val icon = try {
-                            context.packageManager.getApplicationIcon(packageName)
-                        } catch (e: Exception) {
-                            context.getDrawable(android.R.drawable.sym_def_app_icon)!!
-                        }
-                        AppInfo(name, packageName, icon)
+            return listSaver(save = { list ->
+                list.map { listOf(it.name, it.packageName) }
+            }, restore = { list ->
+                list.map {
+                    val name = it[0]
+                    val packageName = it[1]
+                    val icon = try {
+                        context.packageManager.getApplicationIcon(packageName)
+                    } catch (e: Exception) {
+                        context.getDrawable(android.R.drawable.sym_def_app_icon)!!
                     }
+                    AppInfo(name, packageName, icon)
                 }
-            )
+            })
+        }
+    }
+
+    fun setter(packageName: String, context: Context, ignoreToast: Boolean = false): AppInfo? {
+        return ApplicationListSaver.setter(packageName, context, ignoreToast).also {
+            if (it != null) this.selectedAppInfo.value = it
         }
     }
 }

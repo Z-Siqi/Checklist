@@ -58,7 +58,7 @@ fun TaskDetailDialog(
         detailTextState.edit { insert(0, detailDataString) }
         remember = true
     }
-    val applicationListSaver = rememberApplicationList(view.context, detailDataString)
+    val applicationListSaver = rememberApplicationList(view.context)
     DialogWithMenu(
         onDismissRequest = onDismissRequest,
         confirm = {
@@ -115,7 +115,10 @@ fun TaskDetailDialog(
                 TaskDetailType.URL -> false
                 TaskDetailType.Application -> ApplicationList({ name ->
                     detailData.detailString(name)
-                }, applicationListSaver, view.context) == Unit
+                }, applicationListSaver.apply {
+                    if (selectedAppInfo.value == null) setter(detailDataString, view.context)
+                }, view.context
+                ) == Unit
 
                 TaskDetailType.Picture -> PictureSelector(detailData, view) == Unit
                 TaskDetailType.Video -> VideoSelector(detailData, view) == Unit
