@@ -74,8 +74,11 @@ private val MIGRATION_1_2 = object : Migration(1, 2) {
             )
             val mode = if (uuid == null) ReminderModeType.AlarmManager.name
             else ReminderModeType.Worker.name
+            val isReminded = if (reminderId != null && reminderTime != null &&
+                reminderTime < System.currentTimeMillis()
+            ) "1" else "0"
             if (reminderId != null && reminderTime != null) db.execSQL( // INSERT to reminder
-                " INSERT INTO reminder (id, description, reminderTime, mode, isReminded, extraText, extraData, longAsDelay) VALUES (?, ?, ?, ?, 0, NULL, ?, 0)",
+                " INSERT INTO reminder (id, description, reminderTime, mode, isReminded, extraText, extraData, longAsDelay) VALUES (?, ?, ?, ?, $isReminded, NULL, ?, 0)",
                 arrayOf(reminderId, description, reminderTime, mode, extraData)
             )
         }
