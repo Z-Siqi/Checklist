@@ -1,7 +1,8 @@
 package com.sqz.checklist.ui.main.task.layout.function
 
 data class CheckDataState(
-    val checkTaskAction: Boolean = false,
-    val undoActionId: Long = -1,
-    val undoButtonState: Boolean = false,
+    val onCheckTask: Boolean = false,
+    val toUndoId: Long = -1,
+    val rememberScroll: Int? = null,
+    val rememberScrollIndex: Int? = null,
 )

@@ -1,5 +1,6 @@
 package com.sqz.checklist.ui.main.task.layout
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Build
 import android.view.View
@@ -48,11 +49,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -80,8 +81,10 @@ import com.sqz.checklist.ui.material.dialog.OpenExternalAppDialog
 import com.sqz.checklist.ui.material.media.AudioViewDialog
 import com.sqz.checklist.ui.material.media.PictureViewDialog
 import com.sqz.checklist.ui.material.media.VideoViewDialog
+import com.sqz.checklist.ui.theme.Theme
+import com.sqz.checklist.ui.theme.unit.pxToDpInt
+import com.sqz.checklist.ui.theme.unit.screenIsWidth
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import java.time.LocalDate
 
 /**
@@ -97,23 +100,22 @@ fun TaskLayout(
     listState: ListData = taskState.listState.collectAsState().value,
     isPreview: Boolean = false
 ) {
+    val colors = Theme.color
     val lazyState = rememberLazyListState(
         navConnector = taskState.navExtendedConnector.collectAsState().value,
         scrollBehavior = scrollBehavior,
         updateNavConnector = taskState::updateNavConnector
     )
     val coroutineScope = rememberCoroutineScope()
-    var undoTask by rememberSaveable { mutableStateOf(false) }
+    val undoTask = rememberSaveable { mutableStateOf(false) }
     Surface(
         modifier = modifier,
-        color = MaterialTheme.colorScheme.surfaceContainerLow
+        color = colors.backgroundColor
     ) {
-        val localConfig = LocalConfiguration.current
-        val screenIsWidth = localConfig.screenWidthDp > localConfig.screenHeightDp * 1.2
         val left = WindowInsets.displayCutout.asPaddingValues()
             .calculateLeftPadding(LocalLayoutDirection.current)
         val safePaddingForFullscreen = if (
-            Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE && screenIsWidth
+            Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE && screenIsWidth()
         ) modifier.padding(
             start = left, end = if (left / 3 > 15.dp) 15.dp else left / 3
         ) else modifier
@@ -123,12 +125,7 @@ fun TaskLayout(
         LazyList( // LazyColumn lists
             listState = listState,
             lazyState = lazyState,
-            undoTask = { state ->
-                if (undoTask) coroutineScope.launch {
-                    state.reset()
-                    undoTask = false
-                }
-            },
+            undoTask = undoTask,
             isInSearch = { // Search function
                 taskSearchBar(
                     searchState = listState.searchView,
@@ -155,7 +152,7 @@ fun TaskLayout(
             )
         }
         if (!listState.unLoading) CheckTaskAction( // processing check & undo
-            whenUndo = { undoTask = true },
+            whenUndo = undoTask,
             taskState = taskState,
             lazyState = lazyState,
             context = context
@@ -270,7 +267,7 @@ private fun taskSearchBar(
                     cursorBrush = SolidColor(MaterialTheme.colorScheme.onSurfaceVariant)
                 )
                 var oldText by remember { mutableStateOf("") }
-                if (textFieldState.text.toString() != oldText || undo.checkTaskAction) {
+                if (textFieldState.text.toString() != oldText || undo.onCheckTask) {
                     LaunchedEffect(key1 = true) {
                         taskState.searchingText = textFieldState.text.toString()
                         taskState.updateInSearch(taskState.searchingText)
@@ -299,7 +296,7 @@ private fun rememberLazyListState(
     updateNavConnector: (data: NavConnectData, updateSet: NavConnectData) -> Unit,
 ): LazyListState {
     val lazyState = rememberLazyListState()
-    val screenHeight = LocalConfiguration.current.screenHeightDp
+    val screenHeight = LocalWindowInfo.current.containerSize.height.pxToDpInt()
     val rememberTopBarHeight = rememberSaveable { mutableFloatStateOf(0f) }
     LaunchedEffect(Unit) { // this LaunchedEffect is used to fix a crash when rotate screen in auto scroll
         delay(200)
@@ -343,6 +340,7 @@ private fun rememberLazyListState(
     return lazyState
 }
 
+@SuppressLint("ViewModelConstructorInComposable")
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview
 @Composable

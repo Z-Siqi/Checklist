@@ -33,10 +33,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextLayoutResult
@@ -48,6 +49,8 @@ import androidx.compose.ui.unit.sp
 import com.sqz.checklist.R
 import com.sqz.checklist.ui.material.TextTooltipBox
 import com.sqz.checklist.ui.material.dialog.InfoAlertDialog
+import com.sqz.checklist.ui.theme.Theme
+import com.sqz.checklist.ui.theme.unit.pxToDpInt
 
 enum class CardClickType { Reminder, Edit, Pin, Close, Detail }
 
@@ -72,18 +75,21 @@ fun TaskCardContent(
 ) { // card UI
     val view = LocalView.current
     val density = LocalDensity.current
+    val colors = Theme.color
     val topScale = 0.55
     var parentHeight by remember { mutableIntStateOf((64 / topScale).toInt()) }
     OutlinedCard(
-        modifier = modifier.fillMaxSize().onGloballyPositioned { layoutCoordinates ->
-            val heightPx = layoutCoordinates.size.height
-            parentHeight = with(density) { heightPx.toDp() }.value.toInt()
-        },
-        colors = CardDefaults.cardColors(MaterialTheme.colorScheme.secondaryContainer),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.surfaceDim),
+        modifier = modifier
+            .fillMaxSize()
+            .onGloballyPositioned { layoutCoordinates ->
+                val heightPx = layoutCoordinates.size.height
+                parentHeight = with(density) { heightPx.toDp() }.value.toInt()
+            },
+        colors = CardDefaults.cardColors(colors.taskBackgroundColor),
+        border = BorderStroke(1.dp, colors.taskBorderColor),
         shape = ShapeDefaults.ExtraLarge
     ) { // Must be Modifier not modifier in below Column
-        Column(Modifier.padding(bottom = 8.dp, top = 5.dp, start = 12.dp, end = 11.dp)) {
+        Column(Modifier.padding(bottom = 7.dp, top = 5.dp, start = 12.dp, end = 12.dp)) {
             ContentTop(
                 description = description,
                 onClick = {
@@ -125,7 +131,7 @@ private fun ContentTop(
         var overflowState by rememberSaveable { mutableStateOf(false) }
         var overflowInfo by rememberSaveable { mutableStateOf(false) }
         Card(
-            colors = CardDefaults.cardColors(MaterialTheme.colorScheme.secondaryContainer),
+            colors = CardDefaults.cardColors(Color.Transparent),
             modifier = modifier.padding(top = 8.dp)
         ) {
             Box(modifier = modifier.clickable(overflowState) { overflowInfo = true }) {
@@ -176,15 +182,18 @@ private fun ContentBottom(
     view: View
 ) = Row(verticalAlignment = Alignment.Bottom) {
     val modifier = Modifier
-    val config = LocalConfiguration.current
-    val screenIsWidth = config.screenWidthDp > config.screenHeightDp * 1.1
-    val timeWidth = if (screenIsWidth) config.screenWidthDp / 1.95 else config.screenWidthDp / 1.7
+    val config = LocalWindowInfo.current.containerSize
+    val screenIsWidth = config.width > config.height * 1.1
+    val timeWidth =
+        if (screenIsWidth) config.width.pxToDpInt() / 1.95 else config.width.pxToDpInt() / 1.7
     var overflowed by remember { mutableStateOf(false) }
     val localDateText = dateText(overflowed)
     Text(
         text = localDateText, fontWeight = FontWeight.Bold, fontSize = 12.sp,
         color = MaterialTheme.colorScheme.onSurfaceVariant, lineHeight = 14.sp,
-        modifier = modifier.padding(start = 2.dp) then modifier.widthIn(max = timeWidth.dp),
+        modifier = modifier.padding(
+            start = 5.dp, bottom = 3.dp
+        ) then modifier.widthIn(max = timeWidth.dp),
         onTextLayout = { overflowed = it.hasVisualOverflow || it.lineCount > 1 },
         overflow = TextOverflow.Ellipsis
     )

@@ -36,9 +36,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -49,6 +49,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sqz.checklist.MainActivity
 import com.sqz.checklist.R
 import com.sqz.checklist.database.Task
+import com.sqz.checklist.ui.theme.Theme
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -69,8 +70,9 @@ fun TaskHistory(
     item: List<Task> = historyState.taskHistoryData.collectAsState().value.also { historyState.updateTaskHistoryData() }
 ) {
     val view = LocalView.current
-    val localConfig = LocalConfiguration.current
-    val screenIsWidth = localConfig.screenWidthDp > localConfig.screenHeightDp * 1.2
+    val colors = Theme.color
+    val localConfig = LocalWindowInfo.current.containerSize
+    val screenIsWidth = localConfig.width > localConfig.height * 1.2
     val left = WindowInsets.displayCutout.asPaddingValues()
         .calculateLeftPadding(LocalLayoutDirection.current)
     val safePaddingForFullscreen = if (
@@ -80,7 +82,7 @@ fun TaskHistory(
     ) else modifier
     Surface(
         modifier = modifier,
-        color = MaterialTheme.colorScheme.surfaceContainer
+        color = colors.backgroundColor
     ) {
         val selectState = historyState.selectState.collectAsState().value
         LazyColumn(
@@ -132,6 +134,7 @@ private fun ItemBox(
     modifier: Modifier = Modifier,
     view: View
 ) {
+    val colors = Theme.color
     val border = if (selectState.selectedId == item.id) {
         BorderStroke(3.dp, MaterialTheme.colorScheme.tertiary)
     } else BorderStroke(1.dp, MaterialTheme.colorScheme.surfaceDim)
@@ -147,7 +150,7 @@ private fun ItemBox(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 4.dp),
-            colors = CardDefaults.cardColors(MaterialTheme.colorScheme.secondaryContainer),
+            colors = CardDefaults.cardColors(colors.taskBackgroundColor),
             border = border,
             shape = ShapeDefaults.ExtraLarge
         ) {

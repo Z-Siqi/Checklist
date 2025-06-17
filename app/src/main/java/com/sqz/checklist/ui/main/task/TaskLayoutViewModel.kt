@@ -27,6 +27,7 @@ import com.sqz.checklist.ui.material.media.audioMediaPath
 import com.sqz.checklist.ui.material.media.pictureMediaPath
 import com.sqz.checklist.ui.material.media.videoMediaPath
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -124,43 +125,47 @@ open class TaskLayoutViewModel : ViewModel() {
 
     private val _undo = MutableStateFlow(CheckDataState())
     val undo: MutableStateFlow<CheckDataState> = _undo
-    fun resetUndo(context: Context) { // reset undo state
-        reminderHandler.cancelHistoryReminder(context = context)
+    fun resetUndo(context: Context? = null) { // reset undo state
+        if (context != null) reminderHandler.cancelHistoryReminder(context = context)
         _undo.value = CheckDataState()
     }
 
     fun requestUpdateList() = this.updateListState()
 
-    fun taskChecked(id: Long, context: Context) = _undo.update { // when task is checked
+    fun taskChecked(id: Long) = _undo.update { // when task is checked
         modifyHandler.onTaskChecked(id)
-        resetUndo(context)
-        it.copy(checkTaskAction = true, undoActionId = id)
+        resetUndo()
+        it.copy(onCheckTask = true, toUndoId = id)
     }
 
     /** Process undo button state **/
     fun undoButtonProcess(lazyState: LazyListState, context: Context): Boolean {
         if (!primaryPreferences(context).disableUndoButton()) {
-            var rememberScroll by mutableIntStateOf(0)
-            var rememberScrollIndex by mutableIntStateOf(0)
-            val undoTimeout = { resetUndo(context) }
-            if (_undo.value.checkTaskAction) viewModelScope.launch {
-                while (true) {
-                    delay(50)
-                    rememberScroll = lazyState.firstVisibleItemScrollOffset
-                    rememberScrollIndex = lazyState.firstVisibleItemIndex
-                    _undo.update { it.copy(undoButtonState = true) }
-                    delay(1500)
-                    val isTimeout = rememberScroll > lazyState.firstVisibleItemScrollOffset + 10 ||
-                            rememberScroll < lazyState.firstVisibleItemScrollOffset - 10
-                    for (i in 1..7) {
-                        delay(500)
-                        if (rememberScrollIndex != lazyState.firstVisibleItemIndex || isTimeout) break
+            if (_undo.value.onCheckTask) viewModelScope.launch {
+                if (_undo.value.rememberScroll == null && _undo.value.rememberScrollIndex == null) {
+                    _undo.update {
+                        it.copy(
+                            rememberScroll = lazyState.firstVisibleItemScrollOffset,
+                            rememberScrollIndex = lazyState.firstVisibleItemIndex,
+                        )
                     }
-                    undoTimeout()
-                    break
+                    _undo.value.let { // process timeout
+                        if (it.rememberScroll != null && it.rememberScrollIndex != null) {
+                            if (!_undo.value.onCheckTask) this.cancel()
+                            delay(1500)
+                            val isTimeout =
+                                it.rememberScroll > lazyState.firstVisibleItemScrollOffset + 10 || it.rememberScroll < lazyState.firstVisibleItemScrollOffset - 10
+                            for (i in 1..7) {
+                                if (!_undo.value.onCheckTask) this.cancel()
+                                delay(500)
+                                if (it.rememberScrollIndex != lazyState.firstVisibleItemIndex || isTimeout) break
+                            }
+                            resetUndo(context)
+                        }
+                    }
                 }
             }
-            return _undo.value.undoButtonState
+            return _undo.value.onCheckTask
         } else return false.also { resetUndo(context) }
     }
 

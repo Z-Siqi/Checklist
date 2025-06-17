@@ -7,6 +7,12 @@ class PrimaryPreferences(context: Context) : PreferencesAccess(context) {
     private val preferencesFileName = "primary_preferences"
     override fun preferencesFileName(): String = preferencesFileName
 
+    fun appTheme(setter: Int? = null): Int {
+        val preferences = "app_theme"
+        if (setter != null) writePreferencesState(preferences, setter)
+        return readPreferencesState(preferences, 0)
+    }
+
     fun allowedNumberOfHistory(setter: Int? = null): Int {
         val preferences = "allowed_number_of_history"
         if (setter != null) writePreferencesState(preferences, setter)

@@ -43,9 +43,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -57,6 +57,7 @@ import com.sqz.checklist.database.DatabaseRepository
 import com.sqz.checklist.database.Task
 import com.sqz.checklist.ui.main.task.CardHeight
 import com.sqz.checklist.ui.main.task.cardHeight
+import com.sqz.checklist.ui.theme.unit.pxToDpInt
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -110,7 +111,8 @@ fun SwipeAbleTaskCard(
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        val horizontalEdge = if (mode == ItemMode.PinnedTask) 10 else 14
+        val horizontalEdge =
+            if (mode == ItemMode.PinnedTask || mode == ItemMode.RemindedTask) 10 else 14
         val bgStartEnd = horizontalEdge.dp
         val startEnd = bgStartEnd - 2.dp
         val viewRange = (itemState.progress in 0.1f..0.9f)
@@ -140,12 +142,12 @@ fun SwipeAbleTaskCard(
             }
         ) { // front of card
             val reminderState = reminderState(task.reminder, databaseRepository)
-            val localConfig = LocalConfiguration.current
+            val localConfig = LocalWindowInfo.current.containerSize
             var overflowed by remember { mutableStateOf(false) }
             val dateText = if (mode == ItemMode.RemindedTask) {
                 stringResource(R.string.task_reminded_time, remindTime().toString())
             } else {
-                val taskTimeText = if (overflowed || localConfig.screenWidthDp < 380) {
+                val taskTimeText = if (overflowed || localConfig.width.pxToDpInt() < 380) {
                     "\n${task.createDate.format(formatter)}"
                 } else task.createDate.format(formatter)
                 stringResource(R.string.task_creation_time, taskTimeText)
@@ -264,7 +266,8 @@ private fun getReminderTime(id: Int): Long {
 @Preview
 @Composable
 private fun Preview() {
-    val screenWidthPx = LocalConfiguration.current.screenWidthDp * LocalDensity.current.density
+    val screenWidthPx =
+        LocalWindowInfo.current.containerSize.width.pxToDpInt() * LocalDensity.current.density
     val state = rememberSwipeToDismissBoxState(
         positionalThreshold = { screenWidthPx * 0.38f },
     )

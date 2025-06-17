@@ -155,5 +155,8 @@
     <string name="disable_undo_button">禁用撤銷按鈕</string>
     <string name="system_notify_settings">系統通知設定</string>
     <string name="system_notify_settings_describe">點選可設定通知的震動、聲音、覆蓋免打擾等。</string>
+    <string name="theme">Checklist 主題</string>
+    <string name="pastel_theme">柔和</string>
+    <string name="colorful_theme">多彩</string>
 
 </resources>

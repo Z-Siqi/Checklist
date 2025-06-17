@@ -1,10 +1,10 @@
 package com.sqz.checklist.ui.main.settings.layout
 
-import android.os.Build
 import android.view.View
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -22,6 +22,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
@@ -40,7 +41,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
@@ -54,6 +54,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sqz.checklist.R
 import com.sqz.checklist.ui.main.settings.SettingsLayoutViewModel
+import com.sqz.checklist.ui.theme.unit.screenIsWidthAndAPI34
 
 /**
  * App Settings layout
@@ -65,65 +66,45 @@ fun SettingsLayout(
     modifier: Modifier = Modifier
 ) {
     var inSearchText by remember { mutableStateOf<String?>(null) }
-
-    val localConfig = LocalConfiguration.current
-    val screenIsWidth = localConfig.screenWidthDp > localConfig.screenHeightDp * 1.1
     val left = WindowInsets.displayCutout.asPaddingValues()
         .calculateLeftPadding(LocalLayoutDirection.current)
-    val safePaddingForFullscreen = if (
-        Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE && screenIsWidth
-    ) modifier.padding(
+    val safePaddingForFullscreen = if (screenIsWidthAndAPI34()) modifier.padding(
         start = left, end = if (left / 3 > 15.dp) 15.dp else left / 3
     ) else modifier
     val safeBottomForFullscreen =
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE && screenIsWidth
-        ) (WindowInsets.navigationBars.getBottom(LocalDensity.current) / LocalDensity.current.density).dp else 10.dp
-    val settingsList = @Composable {
+        if (screenIsWidthAndAPI34()) (WindowInsets.navigationBars.getBottom(LocalDensity.current) / LocalDensity.current.density).dp else 10.dp
+    val content = @Composable {
+        val settings = SettingsList()
         var currentHeight by remember { mutableIntStateOf(0) }
         val searchBarSpace = if (currentHeight > 55) (currentHeight + 10).dp else 55.dp
         Box(safePaddingForFullscreen) {
-            if (inSearchText == null) LazyColumn {
-                item { if (viewModel.getSearchState()) Spacer(Modifier.height(searchBarSpace)) }
-                item { SubtitleText(stringResource(R.string.task_history)) }
-                item {
-                    var height by remember { mutableIntStateOf(0) }
-                    val list = settingsList(view, SettingsType.History) { height = it }
-                    OutlinedCard(Modifier.padding(10.dp) then Modifier.height(height.dp)) {
-                        LazyColumn(userScrollEnabled = false) {
-                            items(list) { it.Content() }
-                        }
+            if (inSearchText == null) {
+                Column(modifier.verticalScroll(rememberScrollState())) {
+                    if (viewModel.getSearchState()) {
+                        Spacer(Modifier.height(searchBarSpace))
                     }
+                    CategoryCard(
+                        subtitleText = stringResource(R.string.task_history),
+                        settingsItem = settings.settingsList(view, SettingsType.History),
+                    )
+                    CategoryCard(
+                        subtitleText = stringResource(R.string.notification),
+                        settingsItem = settings.settingsList(view, SettingsType.Notification),
+                    )
+                    CategoryCard(
+                        subtitleText = stringResource(R.string.general_settings),
+                        settingsItem = settings.settingsList(view, SettingsType.General),
+                    )
                 }
-                item { SubtitleText(stringResource(R.string.notification)) }
-                item {
-                    var height by remember { mutableIntStateOf(0) }
-                    val list = settingsList(view, SettingsType.Notification) { height = it }
-                    OutlinedCard(Modifier.padding(10.dp) then Modifier.height(height.dp)) {
-                        LazyColumn(userScrollEnabled = false) {
-                            items(list) { it.Content() }
-                        }
-                    }
-                }
-                item { SubtitleText(stringResource(R.string.general_settings)) }
-                item {
-                    var height by remember { mutableIntStateOf(0) }
-                    val list = settingsList(view, SettingsType.General) { height = it }
-                    OutlinedCard(Modifier.padding(10.dp) then Modifier.height(height.dp)) {
-                        LazyColumn(userScrollEnabled = false) {
-                            items(list) { it.Content() }
-                        }
-                    }
-                }
-                item { Spacer(modifier = modifier.height(2.dp + safeBottomForFullscreen)) }
             } else {
-                val list = settingsList(view).filter {
+                val list = settings.settingsList(view).filter {
                     val text = it.text.replace("\n", "").replace(Regex("[A-Z]")) { matchResult ->
                         matchResult.value.lowercase()
                     }
                     text.contains(inSearchText!!)
                 }
                 LazyColumn {
-                    item { if (viewModel.getSearchState()) Spacer(Modifier.height(searchBarSpace)) }
+                    item { if (viewModel.getSearchState()) Spacer(Modifier.height(searchBarSpace + 5.dp)) }
                     items(list) { it.Content() }
                     item { Spacer(modifier = modifier.height(2.dp + safeBottomForFullscreen)) }
                 }
@@ -141,8 +122,28 @@ fun SettingsLayout(
     Surface(
         modifier = modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.surfaceContainerLow,
-        content = settingsList
+        content = content
     )
+}
+
+@Composable
+private fun CategoryCard(subtitleText: String, settingsItem: List<SettingsItem>) = Column {
+    Text(
+        text = subtitleText,
+        modifier = Modifier.padding(start = 12.dp, top = 16.dp),
+        fontWeight = FontWeight.ExtraBold, fontSize = 18.sp,
+        color = MaterialTheme.colorScheme.tertiary,
+    )
+    val cardModifier = Modifier
+        .padding(10.dp)
+        .fillMaxWidth()
+    OutlinedCard(modifier = cardModifier) {
+        settingsItem.forEach {
+            Spacer(Modifier.height(8.dp))
+            it.Content()
+            Spacer(Modifier.height(8.dp))
+        }
+    }
 }
 
 @Composable
@@ -189,18 +190,8 @@ private fun searchBar(currentHeight: (Int) -> Unit = {}): String? {
     }
 }
 
-@Composable
-private fun SubtitleText(text: String) {
-    Text(
-        text = text, modifier = Modifier.padding(start = 12.dp, top = 16.dp),
-        fontWeight = FontWeight.ExtraBold, fontSize = 18.sp,
-        color = MaterialTheme.colorScheme.tertiary,
-    )
-}
-
 class SettingsItem(
     val type: SettingsType,
-    val heightDp: Int,
     val text: String,
     private val content: @Composable (String) -> Unit
 ) {

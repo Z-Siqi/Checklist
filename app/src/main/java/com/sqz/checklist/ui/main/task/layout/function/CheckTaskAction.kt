@@ -17,10 +17,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -30,11 +30,12 @@ import androidx.compose.ui.unit.dp
 import com.sqz.checklist.R
 import com.sqz.checklist.preferences.PrimaryPreferences
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
+import com.sqz.checklist.ui.theme.unit.screenIsWidth
 import kotlinx.coroutines.delay
 
 @Composable
 fun CheckTaskAction(
-    whenUndo: () -> Unit,
+    whenUndo: MutableState<Boolean>,
     taskState: TaskLayoutViewModel,
     lazyState: LazyListState,
     context: Context,
@@ -44,29 +45,27 @@ fun CheckTaskAction(
     val isWindowFocused = LocalWindowInfo.current.isWindowFocused
     if (taskState.undoButtonProcess(lazyState, context)) UndoButton(
         onClick = {
-            taskState.modifyHandler.onTaskUndoChecked(undo.undoActionId).let {
+            taskState.modifyHandler.onTaskUndoChecked(undo.toUndoId).let {
                 if (it.isActive || it.isCompleted || it.isCancelled) {
                     taskState.resetUndo(context)
                 }
             }
-            whenUndo()
+            whenUndo.value = true
         }) else LaunchedEffect(true) { // processing after checked
         delay(100)
         if (preferences != 21) taskState.autoDeleteHistoryTask(preferences)
         taskState.autoDeleteRemindedTaskInfo(context) // delete reminder info
         Log.d("TaskLayout", "Auto del history tasks & del reminder info")
     }
-    if (!isWindowFocused && undo.undoButtonState) {
+    if (!isWindowFocused && undo.onCheckTask) {
         taskState.reminderHandler.cancelHistoryReminder(context = context)
     }
 }
 
 @Composable
 private fun UndoButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val localConfig = LocalConfiguration.current
-    val screenIsWidth = localConfig.screenWidthDp > localConfig.screenHeightDp * 1.2
     val safeBottomForFullscreen =
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE && screenIsWidth
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE && screenIsWidth()
         ) modifier.windowInsetsPadding(WindowInsets.navigationBars) else modifier
     Box(modifier = modifier.fillMaxSize() then safeBottomForFullscreen) {
         FloatingActionButton(

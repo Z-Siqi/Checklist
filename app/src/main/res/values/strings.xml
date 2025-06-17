@@ -154,5 +154,8 @@
     <string name="disable_undo_button">Disable undo button</string>
     <string name="system_notify_settings">System notification settings</string>
     <string name="system_notify_settings_describe">Click to set the vibration, sound, override do not disturb, etc. of the notification.</string>
+    <string name="theme">Checklist Theme</string>
+    <string name="pastel_theme">Pastel</string>
+    <string name="colorful_theme">Colorful</string>
 
 </resources>

@@ -1,7 +1,9 @@
 package com.sqz.checklist.ui.main.task.layout.item
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Build
+import android.util.Log
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -18,11 +20,11 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.ShapeDefaults
-import androidx.compose.material3.SwipeToDismissBoxState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -31,9 +33,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -44,6 +46,9 @@ import com.sqz.checklist.database.Task
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModelPreview
 import com.sqz.checklist.ui.main.task.cardHeight
+import com.sqz.checklist.ui.theme.Theme
+import com.sqz.checklist.ui.theme.unit.screenIsWidth
+import kotlinx.coroutines.delay
 import java.time.LocalDate
 
 /**
@@ -53,7 +58,7 @@ import java.time.LocalDate
 fun LazyList(
     listState: ListData,
     lazyState: LazyListState,
-    undoTask: (state: SwipeToDismissBoxState) -> Unit,
+    undoTask: MutableState<Boolean>,
     isInSearch: @Composable () -> Boolean,
     context: Context,
     modifier: Modifier = Modifier,
@@ -62,12 +67,9 @@ fun LazyList(
     isPreview: Boolean = false
 ) {
     var inSearch by rememberSaveable { mutableStateOf(false) }
-    val screenWidthPx = LocalConfiguration.current.screenWidthDp * LocalDensity.current.density
-
-    val localConfig = LocalConfiguration.current
-    val screenIsWidth = localConfig.screenWidthDp > localConfig.screenHeightDp * 1.1
+    val screenWidthPx = LocalWindowInfo.current.containerSize.width.toFloat()
     val safeBottomForFullscreen =
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE && screenIsWidth
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE && screenIsWidth()
         ) (WindowInsets.navigationBars.getBottom(LocalDensity.current) / LocalDensity.current.density).dp else 10.dp
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -128,11 +130,21 @@ fun LazyList(
     val value by if (isPreview) remember { mutableIntStateOf(0) } else {
         taskState.reminderHandler.getIsRemindedNum()!!.collectAsState(initial = 0)
     }
+    var init by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(value, rememberValue) {
         if (value != rememberValue) {
-            if (value >= 1) taskState.requestUpdateList()
+            if (value >= 1 && init) {
+                taskState.requestUpdateList()
+                // Auto scroll to reminded area when first notification is arrived and at top
+                if (value == 1 && lazyState.canScrollBackward && lazyState.firstVisibleItemIndex in 1..2) {
+                    delay(50)
+                    lazyState.animateScrollToItem(0)
+                    Log.d("LazyListScroll", "Scroll to top (item index 0)")
+                }
+            }
             rememberValue = value
         }
+        init = true
     }
 }
 
@@ -143,7 +155,7 @@ fun LazyList(
 private fun MainListItem(
     task: Task,
     screenWidthPx: Float,
-    undoTask: (state: SwipeToDismissBoxState) -> Unit,
+    undoTask: MutableState<Boolean>,
     context: Context,
     taskState: TaskLayoutViewModel,
     modifier: Modifier = Modifier,
@@ -154,15 +166,19 @@ private fun MainListItem(
     SwipeAbleTaskCard(
         task = task,
         onTaskItemClick = taskState::onTaskItemClick,
-        checked = { taskState.taskChecked(it, context) },
+        checked = { taskState.taskChecked(it) },
         getIsHistory = taskState.getIsHistory(task.id),
         context = context, itemState = state,
         mode = ItemMode.NormalTask,
         modifier = modifier,
         databaseRepository = taskState.database()
     )
-    undoTask(state)
+    if (undoTask.value) LaunchedEffect(Unit) {
+        state.reset()
+    }
 }
+
+val colors: Theme @Composable get() = Theme.color
 
 /** Reminded item list **/
 @Composable
@@ -186,11 +202,11 @@ private fun RemindedItem(
             .fillMaxWidth()
             .padding(start = 8.dp, end = 8.dp, top = 10.dp),
         shape = ShapeDefaults.Large,
-        colors = CardDefaults.cardColors(MaterialTheme.colorScheme.tertiaryContainer)
+        colors = CardDefaults.cardColors(colors.remindedBackgroundColor)
     ) {
         Text(
             text = stringResource(R.string.recently_reminded), fontSize = 15.sp,
-            fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.tertiary,
+            fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onTertiaryContainer,
             modifier = Modifier.padding(start = 9.dp, top = 5.dp, bottom = 5.dp),
             onTextLayout = { textHeight = with(density) { it.size.height.toDp() }.value.toInt() }
         )
@@ -202,7 +218,7 @@ private fun RemindedItem(
                 SwipeAbleTaskCard(
                     task = task,
                     onTaskItemClick = taskState::onTaskItemClick,
-                    checked = { taskState.taskChecked(it, context) },
+                    checked = { taskState.taskChecked(it) },
                     getIsHistory = taskState.getIsHistory(task.id),
                     context = context,
                     itemState = state,
@@ -225,7 +241,8 @@ private fun PinnedItem(
     val notEmpty = pinnedItem.isNotEmpty()
     val density = LocalDensity.current
     var textHeight by remember { mutableIntStateOf(25) }
-    val pinnedHeight = if (notEmpty) (25 + textHeight + (cardHeight(LocalContext.current) * pinnedItem.size)).dp else 0.dp
+    val pinnedHeight =
+        if (notEmpty) (25 + textHeight + (cardHeight(LocalContext.current) * pinnedItem.size)).dp else 0.dp
     val animatedPinnedHeight by animateDpAsState(
         targetValue = pinnedHeight, label = "Pinned Height"
     )
@@ -235,7 +252,7 @@ private fun PinnedItem(
             .fillMaxWidth()
             .padding(start = 8.dp, end = 8.dp, top = 10.dp),
         shape = ShapeDefaults.Large,
-        colors = CardDefaults.cardColors(MaterialTheme.colorScheme.background)
+        colors = CardDefaults.cardColors(colors.pinnedBackgroundColor)
     ) {
         Text(
             text = stringResource(R.string.pinned_task), fontSize = 15.sp,
@@ -251,7 +268,7 @@ private fun PinnedItem(
                 SwipeAbleTaskCard(
                     task = task,
                     onTaskItemClick = taskState::onTaskItemClick,
-                    checked = { taskState.taskChecked(it, context) },
+                    checked = { taskState.taskChecked(it) },
                     getIsHistory = taskState.getIsHistory(task.id),
                     context = context,
                     itemState = state,
@@ -264,13 +281,15 @@ private fun PinnedItem(
 }
 
 
+@SuppressLint("ViewModelConstructorInComposable")
 @Preview(showBackground = true)
 @Composable
 private fun Preview() {
     val item = listOf(Task(0, "The quick brown fox jumps over the lazy dog.", LocalDate.now()))
     val context = LocalContext.current
     LazyList(
-        ListData(false, item, item, item), rememberLazyListState(), {}, { false },
+        ListData(false, item, item, item), rememberLazyListState(),
+        rememberSaveable { mutableStateOf(false) }, { false },
         context, Modifier, TaskLayoutViewModelPreview(), isPreview = true
     )
 }

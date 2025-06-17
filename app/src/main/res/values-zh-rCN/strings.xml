@@ -155,5 +155,8 @@
     <string name="disable_undo_button">禁用撤消按钮</string>
     <string name="system_notify_settings">系统通知设置</string>
     <string name="system_notify_settings_describe">点击以设置通知的振动、声音、覆盖免打扰等。</string>
+    <string name="theme">检查清单主题</string>
+    <string name="pastel_theme">柔和</string>
+    <string name="colorful_theme">多彩</string>
 
 </resources>

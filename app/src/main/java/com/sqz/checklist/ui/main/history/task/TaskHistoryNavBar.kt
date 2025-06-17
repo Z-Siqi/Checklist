@@ -16,7 +16,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -38,6 +37,7 @@ import androidx.compose.ui.res.stringResource
 import com.sqz.checklist.R
 import com.sqz.checklist.ui.main.NavMode
 import com.sqz.checklist.ui.material.dialog.WarningAlertDialog
+import com.sqz.checklist.ui.theme.Theme
 
 @Composable
 fun TaskHistoryNavBar(
@@ -110,12 +110,13 @@ private fun NavigationSelector(
     selected: Boolean, deleteClick: () -> Unit, redoClick: () -> Unit,
     view: View, modifier: Modifier = Modifier,
 ) {
+    val themeColors = Theme.color
     val colors = TaskHistoryColors(
-        containerColor = MaterialTheme.colorScheme.primaryContainer,
-        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-        indicatorColor = MaterialTheme.colorScheme.inversePrimary,
-        selectedIconColor = MaterialTheme.colorScheme.inverseSurface,
-        disabledIconColor = MaterialTheme.colorScheme.primary,
+        containerColor = themeColors.navBarBgColor,
+        contentColor = themeColors.navBarContentColor,
+        indicatorColor = themeColors.navBarItemColor,
+        selectedIconColor = themeColors.navBarSelectedIconColor,
+        disabledIconColor = themeColors.navBarDisabledIconColor,
     )
     when (mode) {
         NavMode.NavBar -> NavBar(colors, selected, deleteClick, redoClick, view, modifier)

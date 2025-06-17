@@ -48,6 +48,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.sqz.checklist.R
 import com.sqz.checklist.ui.MainLayoutNav
+import com.sqz.checklist.ui.theme.Theme
 
 /**
  * Extended Button actions layout data for the Navigation Bar
@@ -96,6 +97,8 @@ private val selectedInNav: (index: Int) -> MainLayoutNav = { index ->
     }
 }
 
+private val colors: Theme @Composable get() = Theme.color
+
 /** Navigation Bar **/
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -115,17 +118,17 @@ private fun NavBar(
             elevation = 5.dp,
             ambientColor = MaterialTheme.colorScheme.secondary
         ) then heightLimit,
-        containerColor = MaterialTheme.colorScheme.primaryContainer,
-        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+        containerColor = colors.navBarBgColor,
+        contentColor = colors.navBarContentColor
     ) {
         Spacer(modifier = modifier.weight(0.5f))
         items().forEachIndexed { index, item ->
             NavigationBarItem(
                 modifier = modifier.weight(1f),
                 colors = NavigationBarItemDefaults.colors(
-                    indicatorColor = MaterialTheme.colorScheme.inversePrimary,
-                    selectedIconColor = MaterialTheme.colorScheme.inverseSurface,
-                    disabledIconColor = MaterialTheme.colorScheme.primary
+                    selectedIconColor = colors.navBarSelectedIconColor,
+                    disabledIconColor = colors.navBarDisabledIconColor,
+                    indicatorColor = colors.navBarItemColor
                 ),
                 icon = {
                     Icon(
@@ -177,21 +180,21 @@ private fun NavRailBar(
         .calculateRightPadding(LocalLayoutDirection.current)
     val safeWidthForFullscreen =
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE) modifier.width(right) else modifier
-    val bgColor = MaterialTheme.colorScheme.primaryContainer
+    val bgColor = colors.navBarBgColor
     Row {
         NavigationRail(
             modifier = modifier,
             containerColor = bgColor,
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+            contentColor = colors.navBarContentColor
         ) {
             Spacer(modifier = modifier.weight(0.5f))
             items().forEachIndexed { index, item ->
                 NavigationRailItem(
                     modifier = modifier.weight(1f),
                     colors = NavigationRailItemDefaults.colors(
-                        indicatorColor = MaterialTheme.colorScheme.inversePrimary,
-                        selectedIconColor = MaterialTheme.colorScheme.inverseSurface,
-                        disabledIconColor = MaterialTheme.colorScheme.primary
+                        indicatorColor = colors.navBarItemColor,
+                        selectedIconColor = colors.navBarSelectedIconColor,
+                        disabledIconColor = colors.navBarDisabledIconColor
                     ),
                     icon = {
                         Icon(
