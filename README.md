@@ -1,4 +1,4 @@
-# Checklist
+# Checklist - schedule planner & to-do reminder
 
 *An easy-to-use and intuitive checklist application.*
 
