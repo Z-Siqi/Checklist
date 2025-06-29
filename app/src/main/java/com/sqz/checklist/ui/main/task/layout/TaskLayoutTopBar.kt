@@ -30,6 +30,7 @@ import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.TopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -62,13 +63,16 @@ import java.util.Locale
 fun TaskLayoutTopBar(
     scrollBehavior: TopAppBarScrollBehavior,
     topBarState: TopAppBarState,
-    onMenuClick: @Composable (setter: Boolean, getter: (Boolean) -> Unit) -> Unit,
+    onMenuClick: @Composable (MutableState<Boolean>) -> Unit,
     view: View,
     modifier: Modifier = Modifier
 ): Boolean {
     val colors = Theme.color
-    var menu by remember { mutableStateOf(false) }
-    onMenuClick(menu) { menu = it } // able to add the menu UI inside this
+    val menu = remember { mutableStateOf(false) }
+    if (menu.value) {
+        // menu UI, disable this when menu.value not true (to fix a weird memory leak when top bar is disappear)
+        onMenuClick(menu)
+    }
 
     val localConfig = LocalWindowInfo.current.containerSize
     val screenHeight = localConfig.height.pxToDpInt()
@@ -140,7 +144,7 @@ fun TaskLayoutTopBar(
             topRightExtraPadding = true
         ) {
             IconButton(onClick = {
-                menu = true
+                menu.value = true
                 view.playSoundEffect(SoundEffectConstants.CLICK)
             }) {
                 Icon(

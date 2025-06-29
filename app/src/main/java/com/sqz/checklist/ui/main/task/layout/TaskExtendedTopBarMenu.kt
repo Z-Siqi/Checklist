@@ -12,11 +12,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -29,19 +25,16 @@ enum class TopBarMenuClickType { History, Search, BackupRestore, Settings }
 
 /**
  * Top bar menu content.
- * @return close menu request when return 0
  */
 @Composable
-fun topBarExtendedMenu(
-    state: Boolean = false,
+fun TopBarExtendedMenu(
+    state: MutableState<Boolean>,
     navController: NavHostController,
     onClickType: (type: TopBarMenuClickType, context: Context) -> Unit,
     view: View,
     modifier: Modifier = Modifier,
-): Int {
+) {
     val primaryPreferences = PrimaryPreferences(view.context)
-    var closeMenu by remember { mutableIntStateOf(-1) }
-    LaunchedEffect(closeMenu) { if (state) closeMenu = 1 }
     val taskHistoryClick = {
         onClickType(TopBarMenuClickType.History, view.context)
         navController.navigate(MainLayoutNav.TaskHistory.name)
@@ -65,13 +58,12 @@ fun topBarExtendedMenu(
         menuList.drop(1)
     }
     MenuLayout(
-        expanded = state,
-        onDismissRequest = { closeMenu = 0 },
+        expanded = state.value,
+        onDismissRequest = { state.value = false },
         menuItem = dropList,
         view = view,
         modifier = modifier
     )
-    return closeMenu
 }
 
 @Composable

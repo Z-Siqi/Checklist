@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.Calendar
@@ -27,13 +28,16 @@ import kotlin.random.Random
 
 class ReminderHandler private constructor(
     private val coroutineScope: CoroutineScope,
-    private val requestUpdate: MutableStateFlow<Boolean>
+    private val requestUpdate: MutableStateFlow<Boolean>,
+    private val initState: MutableStateFlow<Boolean>,
 ) {
     companion object {
         fun instance(
-            viewModel: TaskLayoutViewModel, requestUpdate: MutableStateFlow<Boolean>
+            viewModel: TaskLayoutViewModel, requestUpdate: MutableStateFlow<Boolean>,
+            initState: MutableStateFlow<Boolean>
         ): ReminderHandler = ReminderHandler(
-            coroutineScope = viewModel.viewModelScope, requestUpdate = requestUpdate
+            coroutineScope = viewModel.viewModelScope, requestUpdate = requestUpdate,
+            initState = initState
         )
     }
 
@@ -70,7 +74,9 @@ class ReminderHandler private constructor(
     fun isAlarmPermission(): Boolean = notifyManager.getAlarmPermission()
 
     fun notificationInitState(context: Context, init: Boolean = false): PermissionState {
-        val requestPermission = notifyManager.requestPermission(context)
+        val requestPermission = if (!initState.value) PermissionState.Null else {
+            notifyManager.requestPermission(context)
+        }
         fun makeToast() = Toast.makeText(
             context, context.getString(R.string.permission_lost_toast), Toast.LENGTH_LONG
         ).show()
@@ -194,5 +200,11 @@ class ReminderHandler private constructor(
         return if (taskId != null) database().getReminderData(taskId) else null
     }
 
-    fun getIsRemindedNum(): Flow<Int>? = database().getIsRemindedNum(true)
+    fun getIsRemindedNum(): Flow<Int>? {
+        return if (!initState.value) flowOf(0) else {
+            database().getIsRemindedNum(true)
+        }
+    }
+
+    fun requestUpdateList() = requestUpdate.update { true }
 }

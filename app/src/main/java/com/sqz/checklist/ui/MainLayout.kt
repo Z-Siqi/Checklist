@@ -17,13 +17,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -35,19 +35,20 @@ import com.sqz.checklist.ui.main.NavExtendedButtonData
 import com.sqz.checklist.ui.main.NavMode
 import com.sqz.checklist.ui.main.backup.BackupAndRestoreLayout
 import com.sqz.checklist.ui.main.backup.BackupRestoreTopBar
-import com.sqz.checklist.ui.main.settings.layout.SettingsLayout
-import com.sqz.checklist.ui.main.settings.SettingsLayoutViewModel
-import com.sqz.checklist.ui.main.settings.SettingsTopBar
-import com.sqz.checklist.ui.main.settings.settingsExtendedNavButton
-import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
 import com.sqz.checklist.ui.main.history.task.HistoryTopBar
 import com.sqz.checklist.ui.main.history.task.TaskHistory
 import com.sqz.checklist.ui.main.history.task.TaskHistoryNavBar
 import com.sqz.checklist.ui.main.history.task.TaskHistoryViewModel
+import com.sqz.checklist.ui.main.settings.SettingsLayoutViewModel
+import com.sqz.checklist.ui.main.settings.SettingsTopBar
+import com.sqz.checklist.ui.main.settings.layout.SettingsLayout
+import com.sqz.checklist.ui.main.settings.settingsExtendedNavButton
+import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
 import com.sqz.checklist.ui.main.task.layout.TaskLayout
 import com.sqz.checklist.ui.main.task.layout.TaskLayoutTopBar
+import com.sqz.checklist.ui.main.task.layout.TopBarExtendedMenu
 import com.sqz.checklist.ui.main.task.layout.taskExtendedNavButton
-import com.sqz.checklist.ui.main.task.layout.topBarExtendedMenu
+import com.sqz.checklist.ui.theme.unit.screenIsWidth
 
 enum class MainLayoutNav {
     TaskLayout,
@@ -79,15 +80,14 @@ fun MainLayout(context: Context, view: View, modifier: Modifier = Modifier) {
         else TopAppBarDefaults.pinnedScrollBehavior() //fix scroll bug when open with landscape mode
             .also { if (it.state.heightOffset != 0f) it.state.heightOffset = 0f }
     val taskLayoutTopBar = @Composable {
-        val onMenuClick: @Composable (setter: Boolean, getter: (Boolean) -> Unit) -> (Unit) =
-            { setter, getter -> // setter: open menu. getter: get whether need close menu.
-                val menu = topBarExtendedMenu( // menu UI
-                    state = setter,
+        val onMenuClick: @Composable (MutableState<Boolean>) -> Unit =
+            { state -> // setter: open menu. getter: get whether need close menu.
+                TopBarExtendedMenu( // menu UI
+                    state = state,
                     navController = navController,
                     onClickType = taskLayoutViewModel::onTopBarMenuClick,
                     view = view
                 )
-                if (menu == 0) getter(false)
             }
         canScroll = TaskLayoutTopBar(scrollBehavior, topBarState, onMenuClick, view)
     }
@@ -149,10 +149,8 @@ fun MainLayout(context: Context, view: View, modifier: Modifier = Modifier) {
     }
 
     // Set Navigation bar mode (Navigation Bar or Navigation Rail)
-    val localConfig = LocalConfiguration.current
-    val screenIsWidth = localConfig.screenWidthDp > localConfig.screenHeightDp * 1.1
-    val navMode = if (!screenIsWidth) NavMode.NavBar else NavMode.Disable
-    val navRailMode = if (screenIsWidth) NavMode.NavRail else NavMode.Disable
+    val navMode = if (!screenIsWidth()) NavMode.NavBar else NavMode.Disable
+    val navRailMode = if (screenIsWidth()) NavMode.NavRail else NavMode.Disable
 
     // Layout
     val nulLog = { Log.d("MainLayout", "Navigation bar or Top bar is disable") }

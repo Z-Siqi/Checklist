@@ -77,6 +77,7 @@ fun SwipeAbleTaskCard(
     context: Context,
     itemState: SwipeToDismissBoxState,
     mode: ItemMode,
+    allowSwipe: Boolean,
     modifier: Modifier = Modifier,
     databaseRepository: DatabaseRepository
 ) { // Process card action
@@ -118,7 +119,9 @@ fun SwipeAbleTaskCard(
         val viewRange = (itemState.progress in 0.1f..0.9f)
         val isStartToEnd = itemState.dismissDirection == SwipeToDismissBoxValue.StartToEnd
         val isEndToStart = itemState.dismissDirection == SwipeToDismissBoxValue.EndToStart
+        val isMoved = isStartToEnd || isEndToStart
         SwipeToDismissBox(
+            gesturesEnabled = if (!isMoved) allowSwipe else true,
             state = itemState,
             backgroundContent = { // back of card
                 Card(
@@ -274,6 +277,6 @@ private fun Preview() {
     SwipeAbleTaskCard(
         Task(0, "The quick brown fox jumps over the lazy dog.", LocalDate.now()),
         { _, _, _ -> }, {}, false, LocalContext.current, state, ItemMode.NormalTask,
-        databaseRepository = DatabaseRepository(null)
+        true, databaseRepository = DatabaseRepository(null)
     )
 }

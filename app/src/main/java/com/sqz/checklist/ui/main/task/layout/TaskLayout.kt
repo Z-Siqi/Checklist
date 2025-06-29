@@ -2,7 +2,6 @@ package com.sqz.checklist.ui.main.task.layout
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.os.Build
 import android.view.View
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.horizontalScroll
@@ -83,7 +82,7 @@ import com.sqz.checklist.ui.material.media.PictureViewDialog
 import com.sqz.checklist.ui.material.media.VideoViewDialog
 import com.sqz.checklist.ui.theme.Theme
 import com.sqz.checklist.ui.theme.unit.pxToDpInt
-import com.sqz.checklist.ui.theme.unit.screenIsWidth
+import com.sqz.checklist.ui.theme.unit.screenIsWidthAndAPI34Above
 import kotlinx.coroutines.delay
 import java.time.LocalDate
 
@@ -97,8 +96,7 @@ fun TaskLayout(
     context: Context, view: View,
     modifier: Modifier = Modifier,
     taskState: TaskLayoutViewModel = viewModel(),
-    listState: ListData = taskState.listState.collectAsState().value,
-    isPreview: Boolean = false
+    listState: ListData = taskState.listState.collectAsState().value
 ) {
     val colors = Theme.color
     val lazyState = rememberLazyListState(
@@ -107,16 +105,13 @@ fun TaskLayout(
         updateNavConnector = taskState::updateNavConnector
     )
     val coroutineScope = rememberCoroutineScope()
-    val undoTask = rememberSaveable { mutableStateOf(false) }
     Surface(
         modifier = modifier,
         color = colors.backgroundColor
     ) {
         val left = WindowInsets.displayCutout.asPaddingValues()
             .calculateLeftPadding(LocalLayoutDirection.current)
-        val safePaddingForFullscreen = if (
-            Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE && screenIsWidth()
-        ) modifier.padding(
+        val safePaddingForFullscreen = if (screenIsWidthAndAPI34Above()) modifier.padding(
             start = left, end = if (left / 3 > 15.dp) 15.dp else left / 3
         ) else modifier
 
@@ -125,7 +120,6 @@ fun TaskLayout(
         LazyList( // LazyColumn lists
             listState = listState,
             lazyState = lazyState,
-            undoTask = undoTask,
             isInSearch = { // Search function
                 taskSearchBar(
                     searchState = listState.searchView,
@@ -136,8 +130,7 @@ fun TaskLayout(
             context = context,
             taskState = taskState,
             modifier = safePaddingForFullscreen,
-            searchBarSpace = searchBarSpace,
-            isPreview = isPreview
+            searchBarSpace = searchBarSpace
         )
         if (!listState.unLoading && listState.item.isEmpty()) Column( // Show text if not any task
             modifier = modifier.fillMaxSize(),
@@ -152,7 +145,6 @@ fun TaskLayout(
             )
         }
         if (!listState.unLoading) CheckTaskAction( // processing check & undo
-            whenUndo = undoTask,
             taskState = taskState,
             lazyState = lazyState,
             context = context
@@ -174,7 +166,7 @@ fun TaskLayout(
             view = view
         )
     }
-    if (!isPreview) ReminderHandlerListener(
+    ReminderHandlerListener(
         reminderHandler = taskState.reminderHandler,
         context = context,
         view = view,
@@ -349,6 +341,6 @@ private fun Preview() {
     TaskLayout(
         TopAppBarDefaults.exitUntilCollapsedScrollBehavior(),
         LocalContext.current, LocalView.current, listState = ListData(false, item, item, item),
-        taskState = TaskLayoutViewModelPreview(), isPreview = true
+        taskState = TaskLayoutViewModelPreview()
     )
 }

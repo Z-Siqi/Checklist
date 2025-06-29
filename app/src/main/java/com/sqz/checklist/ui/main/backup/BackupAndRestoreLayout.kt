@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
@@ -51,10 +50,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -68,6 +67,9 @@ import com.sqz.checklist.database.ExportTaskDatabase
 import com.sqz.checklist.database.IOdbState
 import com.sqz.checklist.database.ImportTaskDatabase
 import com.sqz.checklist.preferences.PreferencesInCache
+import com.sqz.checklist.ui.theme.unit.navBarsBottomDp
+import com.sqz.checklist.ui.theme.unit.pxToDpInt
+import com.sqz.checklist.ui.theme.unit.screenIsWidth
 
 /**
  * Backup & Restore layout
@@ -81,9 +83,8 @@ fun BackupAndRestoreLayout(
     val audioManager = view.context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     val cache = PreferencesInCache(view.context)
 
-    val localConfig = LocalConfiguration.current
-    val screenIsWidth = localConfig.screenWidthDp > localConfig.screenHeightDp * 1.2
-    val safePaddingForFullscreen = if (screenIsWidth) modifier.padding(
+    val localConfig = LocalWindowInfo.current.containerSize
+    val safePaddingForFullscreen = if (screenIsWidth()) modifier.padding(
         start = WindowInsets.displayCutout.asPaddingValues()
             .calculateLeftPadding(LocalLayoutDirection.current),
         end = WindowInsets.displayCutout.asPaddingValues()
@@ -277,7 +278,7 @@ fun BackupAndRestoreLayout(
                 )
                 Text(
                     stringResource(R.string.restore_settings_describe),
-                    modifier.widthIn(max = (localConfig.screenWidthDp / 1.5).dp),
+                    modifier.widthIn(max = (localConfig.width.pxToDpInt() / 1.5).dp),
                     fontSize = 12.sp, lineHeight = 14.sp, color = MaterialTheme.colorScheme.outline,
                     fontWeight = FontWeight.Medium
                 )
@@ -287,9 +288,6 @@ fun BackupAndRestoreLayout(
         }
     }
 
-    val safeBottomForFullscreen =
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE && screenIsWidth
-        ) (WindowInsets.navigationBars.getBottom(LocalDensity.current) / LocalDensity.current.density).dp else 10.dp
     Surface(
         modifier = modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.surfaceContainerLow
@@ -328,7 +326,7 @@ fun BackupAndRestoreLayout(
                 modifier = modifier.padding(16.dp, 1.dp, 16.dp, 16.dp),
                 content = restoreOption
             )
-            Spacer(modifier = modifier.height(safeBottomForFullscreen))
+            Spacer(modifier = modifier.height(navBarsBottomDp()))
         }
     }
 }

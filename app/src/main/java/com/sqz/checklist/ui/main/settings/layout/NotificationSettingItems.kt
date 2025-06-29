@@ -70,7 +70,7 @@ class NotificationSettingItems(private val view: View) : SettingsList() {
             TimeItem(timeDisplay(43200L), 43200000L),
             TimeItem(timeDisplay(86400L), 86400000L),
             TimeItem(timeDisplay(604800L), 604800000L),
-            TimeItem(stringResource(R.string.disable), 0L),
+            TimeItem(stringResource(R.string.unlimited), 0L),
             TimeItem(stringResource(R.string.custom), -1L)
         )
 

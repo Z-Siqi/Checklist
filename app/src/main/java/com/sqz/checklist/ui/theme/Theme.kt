@@ -95,6 +95,11 @@ class Theme private constructor(preference: Int) {
         val color: Theme @Composable get() = Theme(ThemePreference.preference())
     }
 
+    val sysStateBarBgColor: Color
+        @Composable get() = when (localPreference) {
+            1 -> MaterialTheme.colorScheme.secondary
+            else -> MaterialTheme.colorScheme.surfaceContainerHigh
+        }
     val backgroundColor: Color
         @Composable get() = when (localPreference) {
             1 -> MaterialTheme.colorScheme.surfaceContainerLow
@@ -107,8 +112,13 @@ class Theme private constructor(preference: Int) {
         }
     val remindedBackgroundColor: Color
         @Composable get() = when (localPreference) {
-            1 -> MaterialTheme.colorScheme.tertiaryContainer
-            else -> MaterialTheme.colorScheme.primaryContainer
+            1 -> MaterialTheme.colorScheme.surfaceContainerLow
+            else -> MaterialTheme.colorScheme.surfaceContainerLowest
+        }
+    val remindedBorderColor: Color
+        @Composable get() = when (localPreference) {
+            1 -> MaterialTheme.colorScheme.outline
+            else -> MaterialTheme.colorScheme.tertiary
         }
     val taskBackgroundColor: Color
         @Composable get() = when (localPreference) {

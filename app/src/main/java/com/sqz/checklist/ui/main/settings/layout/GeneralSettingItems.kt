@@ -60,7 +60,7 @@ class GeneralSettingItems(private val view: View) : SettingsList() {
         }
         return SettingsItem(SettingsType.General, stringResource(R.string.theme)) {
             Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                if (LocalWindowInfo.current.containerSize.width.pxToDpInt() > 370) {
+                if (LocalWindowInfo.current.containerSize.width.pxToDpInt() > 375) {
                     OptionText(it, Modifier.widthIn(max = 150.dp))
                     Spacer(Modifier.weight(1f))
                     SegmentedButton(Modifier.width(215.dp))

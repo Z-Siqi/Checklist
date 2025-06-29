@@ -65,7 +65,7 @@ open class TaskLayoutViewModel : ViewModel() {
 
     private val _requestUpdate = MutableStateFlow(false)
 
-    private var _init by mutableStateOf(false)
+    private var _init = MutableStateFlow(false)
     private val _isUpdateRunning = AtomicBoolean(false)
     private val _listState = MutableStateFlow(ListData())
     val listState: StateFlow<ListData> = _listState.asStateFlow()
@@ -85,7 +85,7 @@ open class TaskLayoutViewModel : ViewModel() {
                     unLoading = false
                 )
             }.also { Log.d("ViewModel", "List is Update") }
-            if (!init) updateInSearch(searchingText) else _init = true
+            if (!init) updateInSearch(searchingText) else _init.value = true
             delay(220)
             _isUpdateRunning.set(false)
         }
@@ -104,10 +104,10 @@ open class TaskLayoutViewModel : ViewModel() {
 
     init {
         this.let { viewModel ->
-            reminderHandler = ReminderHandler.instance(viewModel, _requestUpdate)
+            reminderHandler = ReminderHandler.instance(viewModel, _requestUpdate, _init)
             modifyHandler = ModifyHandler.instance(viewModel, _requestUpdate)
         }
-        updateListState(init = true)
+        if (!_init.value) updateListState(init = true)
         viewModelScope.launch {
             _requestUpdate.collect { state ->
                 if (state) {
@@ -129,8 +129,6 @@ open class TaskLayoutViewModel : ViewModel() {
         if (context != null) reminderHandler.cancelHistoryReminder(context = context)
         _undo.value = CheckDataState()
     }
-
-    fun requestUpdateList() = this.updateListState()
 
     fun taskChecked(id: Long) = _undo.update { // when task is checked
         modifyHandler.onTaskChecked(id)
@@ -229,15 +227,16 @@ open class TaskLayoutViewModel : ViewModel() {
                         database().deleteReminderData(data.id)
                     }
                 }
-                if (_init) _init = false.also { removeInvalidFile(context) }
+                updateListState()
             } catch (e: NoSuchFieldException) {
                 Log.w("DeleteReminderData", "Noting need to delete")
             }
-            updateListState()
+            if (_init.value && !_removeInvalidFile) removeInvalidFile(context)
         }
     }
 
     /** Remove invalid media file from error **/
+    private var _removeInvalidFile by mutableStateOf(false)
     private fun removeInvalidFile(context: Context) = viewModelScope.launch(Dispatchers.IO) {
         val cache = PreferencesInCache(context)
         val list = listOf(pictureMediaPath, videoMediaPath, audioMediaPath)
@@ -248,6 +247,7 @@ open class TaskLayoutViewModel : ViewModel() {
                 if (file.exists()) file.delete().also { cache.errFileNameSaver(null) }
             }
         }
+        _removeInvalidFile = true
     }
 
     /** Get Task is History or Not **/

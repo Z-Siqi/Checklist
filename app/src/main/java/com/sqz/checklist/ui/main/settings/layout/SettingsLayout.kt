@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -54,7 +53,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sqz.checklist.R
 import com.sqz.checklist.ui.main.settings.SettingsLayoutViewModel
-import com.sqz.checklist.ui.theme.unit.screenIsWidthAndAPI34
+import com.sqz.checklist.ui.theme.unit.navBarsBottomDp
+import com.sqz.checklist.ui.theme.unit.screenIsWidthAndAPI34Above
 
 /**
  * App Settings layout
@@ -68,11 +68,9 @@ fun SettingsLayout(
     var inSearchText by remember { mutableStateOf<String?>(null) }
     val left = WindowInsets.displayCutout.asPaddingValues()
         .calculateLeftPadding(LocalLayoutDirection.current)
-    val safePaddingForFullscreen = if (screenIsWidthAndAPI34()) modifier.padding(
+    val safePaddingForFullscreen = if (screenIsWidthAndAPI34Above()) modifier.padding(
         start = left, end = if (left / 3 > 15.dp) 15.dp else left / 3
     ) else modifier
-    val safeBottomForFullscreen =
-        if (screenIsWidthAndAPI34()) (WindowInsets.navigationBars.getBottom(LocalDensity.current) / LocalDensity.current.density).dp else 10.dp
     val content = @Composable {
         val settings = SettingsList()
         var currentHeight by remember { mutableIntStateOf(0) }
@@ -106,7 +104,7 @@ fun SettingsLayout(
                 LazyColumn {
                     item { if (viewModel.getSearchState()) Spacer(Modifier.height(searchBarSpace + 5.dp)) }
                     items(list) { it.Content() }
-                    item { Spacer(modifier = modifier.height(2.dp + safeBottomForFullscreen)) }
+                    item { Spacer(modifier = modifier.height(2.dp + navBarsBottomDp())) }
                 }
             }
             inSearchText = if (viewModel.getSearchState()) searchBar { currentHeight = it } else {

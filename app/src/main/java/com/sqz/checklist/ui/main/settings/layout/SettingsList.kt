@@ -55,6 +55,7 @@ import com.sqz.checklist.ui.material.UrlText
 import com.sqz.checklist.ui.material.verticalColumnScrollbar
 import com.sqz.checklist.ui.theme.unit.pxToDpInt
 import com.sqz.checklist.ui.theme.unit.screenIsWidth
+import androidx.compose.ui.platform.LocalConfiguration
 
 open class SettingsList {
 
@@ -212,6 +213,7 @@ open class SettingsList {
     protected fun segmentedButton(
         list: Array<out Any>, label: (Any) -> String, initSetter: Int, modifier: Modifier = Modifier
     ): Int {
+        var overflow by remember { mutableStateOf(false) }
         var selectedIndex by remember { mutableIntStateOf(initSetter) }
         SingleChoiceSegmentedButtonRow(modifier = modifier) {
             list.forEachIndexed { index, item ->
@@ -220,9 +222,17 @@ open class SettingsList {
                         index = index,
                         count = list.size
                     ),
+                    label = {
+                        TextTooltipBox(label(item), enable = overflow) {
+                            Text(
+                                text = label(item), overflow = TextOverflow.Ellipsis, maxLines = 1,
+                                fontSize = 15.sp / LocalConfiguration.current.fontScale,
+                                onTextLayout = { overflow = it.hasVisualOverflow }
+                            )
+                        }
+                    },
                     onClick = { selectedIndex = index },
                     selected = index == selectedIndex,
-                    label = { Text(label(item), overflow = TextOverflow.Ellipsis, maxLines = 1) }
                 )
             }
         }
