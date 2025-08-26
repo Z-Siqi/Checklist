@@ -47,8 +47,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sqz.checklist.R
-import com.sqz.checklist.ui.material.TextTooltipBox
-import com.sqz.checklist.ui.material.dialog.InfoAlertDialog
+import com.sqz.checklist.ui.common.TextTooltipBox
+import com.sqz.checklist.ui.common.dialog.InfoAlertDialog
 import com.sqz.checklist.ui.theme.Theme
 import com.sqz.checklist.ui.theme.unit.pxToDpInt
 

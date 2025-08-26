@@ -13,7 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.sqz.checklist.R
 import com.sqz.checklist.ui.main.NavExtendedButtonData
-import com.sqz.checklist.ui.material.NonExtendedTooltip
+import com.sqz.checklist.ui.common.NonExtendedTooltip
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable

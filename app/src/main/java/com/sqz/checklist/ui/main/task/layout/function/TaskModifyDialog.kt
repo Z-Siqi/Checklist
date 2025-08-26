@@ -31,12 +31,12 @@ import com.sqz.checklist.MainActivity
 import com.sqz.checklist.R
 import com.sqz.checklist.database.TaskDetail
 import com.sqz.checklist.database.TaskDetailType
-import com.sqz.checklist.ui.material.TextTooltipBox
-import com.sqz.checklist.ui.material.dialog.EditableContentDialog
-import com.sqz.checklist.ui.material.media.errUri
-import com.sqz.checklist.ui.material.media.insertAudio
-import com.sqz.checklist.ui.material.media.insertPicture
-import com.sqz.checklist.ui.material.media.insertVideo
+import com.sqz.checklist.ui.common.TextTooltipBox
+import com.sqz.checklist.ui.common.dialog.EditableContentDialog
+import com.sqz.checklist.ui.common.media.errUri
+import com.sqz.checklist.ui.common.media.insertAudio
+import com.sqz.checklist.ui.common.media.insertPicture
+import com.sqz.checklist.ui.common.media.insertVideo
 import kotlinx.coroutines.launch
 import java.io.File
 

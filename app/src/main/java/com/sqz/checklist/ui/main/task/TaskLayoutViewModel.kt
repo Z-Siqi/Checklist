@@ -23,9 +23,9 @@ import com.sqz.checklist.ui.main.task.layout.TopBarMenuClickType
 import com.sqz.checklist.ui.main.task.layout.function.CheckDataState
 import com.sqz.checklist.ui.main.task.layout.item.CardClickType
 import com.sqz.checklist.ui.main.task.layout.item.ListData
-import com.sqz.checklist.ui.material.media.audioMediaPath
-import com.sqz.checklist.ui.material.media.pictureMediaPath
-import com.sqz.checklist.ui.material.media.videoMediaPath
+import com.sqz.checklist.ui.common.media.audioMediaPath
+import com.sqz.checklist.ui.common.media.pictureMediaPath
+import com.sqz.checklist.ui.common.media.videoMediaPath
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay

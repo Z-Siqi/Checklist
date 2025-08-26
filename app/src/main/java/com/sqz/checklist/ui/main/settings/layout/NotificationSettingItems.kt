@@ -21,7 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.sqz.checklist.R
 import com.sqz.checklist.preferences.PrimaryPreferences
-import com.sqz.checklist.ui.material.dialog.EditableContentDialog
+import com.sqz.checklist.ui.common.dialog.EditableContentDialog
 import com.sqz.checklist.ui.theme.unit.timeDisplay
 import java.util.Locale
 

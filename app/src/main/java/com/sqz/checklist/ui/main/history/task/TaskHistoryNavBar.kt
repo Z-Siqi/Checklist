@@ -36,7 +36,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import com.sqz.checklist.R
 import com.sqz.checklist.ui.main.NavMode
-import com.sqz.checklist.ui.material.dialog.WarningAlertDialog
+import com.sqz.checklist.ui.common.dialog.WarningAlertDialog
 import com.sqz.checklist.ui.theme.Theme
 
 @Composable

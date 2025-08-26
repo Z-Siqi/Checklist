@@ -20,7 +20,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.sqz.checklist.R
-import com.sqz.checklist.ui.material.TextTooltipBox
+import com.sqz.checklist.ui.common.TextTooltipBox
 import com.sqz.checklist.ui.theme.Theme
 
 @OptIn(ExperimentalMaterial3Api::class)

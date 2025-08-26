@@ -46,7 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sqz.checklist.R
 import com.sqz.checklist.ui.main.task.cardHeight
-import com.sqz.checklist.ui.material.TextTooltipBox
+import com.sqz.checklist.ui.common.TextTooltipBox
 import com.sqz.checklist.ui.theme.Theme
 import com.sqz.checklist.ui.theme.unit.pxToDpInt
 import com.sqz.checklist.ui.theme.unit.screenIsWidth

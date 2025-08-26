@@ -28,7 +28,7 @@ import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
 import com.sqz.checklist.ui.main.task.layout.function.CreateTask
 import com.sqz.checklist.ui.main.task.layout.function.TaskDetailData
 import com.sqz.checklist.ui.main.task.layout.function.TaskModifyDialog
-import com.sqz.checklist.ui.material.NonExtendedTooltip
+import com.sqz.checklist.ui.common.NonExtendedTooltip
 import kotlinx.coroutines.launch
 
 /** Nav Extended Button Connect Data **/

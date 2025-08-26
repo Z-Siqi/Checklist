@@ -31,8 +31,8 @@ import com.sqz.checklist.notification.PermissionState
 import com.sqz.checklist.preferences.PreferencesInCache
 import com.sqz.checklist.preferences.PrimaryPreferences
 import com.sqz.checklist.ui.main.task.handler.ReminderHandler
-import com.sqz.checklist.ui.material.dialog.WarningAlertDialog
-import com.sqz.checklist.ui.material.dialog.TimeSelectDialog
+import com.sqz.checklist.ui.common.dialog.WarningAlertDialog
+import com.sqz.checklist.ui.common.dialog.TimeSelectDialog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -123,7 +123,7 @@ fun ReminderHandlerListener(
                             }
                         },
                         onFailed = { resetState() },
-                        context = context
+                        view = view
                     )
                 }
             }
