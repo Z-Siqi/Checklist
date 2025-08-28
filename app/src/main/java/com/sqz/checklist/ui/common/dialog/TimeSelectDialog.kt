@@ -84,7 +84,8 @@ fun TimeSelectDialog(
     onConfirmClick: (cal: Long) -> Unit,
     onFailed: () -> Unit,
     view: View,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    allowDismissRequest: Boolean = true,
 ) {
     val context = view.context
     var isTimeInput by rememberSaveable { mutableStateOf(false) }
@@ -112,7 +113,7 @@ fun TimeSelectDialog(
         modifier = modifier
             .widthIn(min = widthIn.dp)
             .windowInsetsPadding(WindowInsets.navigationBars),
-        onDismissRequest = onDismissRequest,
+        onDismissRequest = { if (allowDismissRequest) onDismissRequest() },
         confirmButton = {
             Row(modifier = modifier.fillMaxWidth()) {
                 if (!timePickLimit) IconButton(onClick = {

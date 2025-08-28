@@ -57,6 +57,7 @@ fun ReminderHandlerListener(
     }
     val cachePreferences = PreferencesInCache(view.context)
     var requestPermission by rememberSaveable { mutableStateOf(false) }
+    @Suppress("AssignedValueIsNeverRead")
     when (reminderActionType) {
         ReminderActionType.Set -> {
             when (reminderHandler.notificationInitState(context)) {
@@ -123,7 +124,8 @@ fun ReminderHandlerListener(
                             }
                         },
                         onFailed = { resetState() },
-                        view = view
+                        view = view,
+                        allowDismissRequest = reminderHandler.allowDismissRequest.collectAsState().value
                     )
                 }
             }
@@ -181,6 +183,7 @@ private fun NoPermissionDialog(
     )
     if (requestPermission) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            @Suppress("AssignedValueIsNeverRead")
             if (requestNotificationPermission(context, true) {
                     requestPermission = !it
                     if (it) onConfirmButtonClick()

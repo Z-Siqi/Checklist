@@ -101,7 +101,7 @@ fun taskExtendedNavButton(
                     it.description, it.pin,
                     it.detail?.type, it.detail?.dataString, it.detail?.dataByte
                 ).let { taskId ->
-                    if (it.reminder) viewModel.reminderHandler.requestReminder(taskId).also {
+                    if (it.reminder) viewModel.reminderHandler.requestReminder(taskId, false).also {
                         Toast.makeText(
                             view.context,
                             view.context.getString(R.string.task_is_created),

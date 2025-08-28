@@ -43,10 +43,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -56,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
 import com.sqz.checklist.ui.common.verticalColumnScrollbar
+import com.sqz.checklist.ui.theme.unit.pxToDpInt
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -99,24 +100,26 @@ fun DialogWithMenu(
         if (!ignoreRequest) onDismissRequest(onDismissClick)
     }
 
-    val config = LocalConfiguration.current
-    val isLandScape = config.screenWidthDp > config.screenHeightDp && config.screenWidthDp > 400
-    val shortScreen = config.screenHeightDp <= 358
+    val containerSize = LocalWindowInfo.current.containerSize
+    val isLandScape =
+        containerSize.width > containerSize.height && containerSize.width.pxToDpInt() > 400
+    val shortScreen = containerSize.height.pxToDpInt() <= 358
     val selectContent = @Composable {
         OutlinedCard(
-            modifier = modifier.heightIn(min = 47.dp) then if (isLandScape) modifier.width((config.screenWidthDp * 0.2).dp) else modifier.fillMaxWidth(),
+            modifier = modifier.heightIn(min = 47.dp) then if (isLandScape) modifier.width((containerSize.width.pxToDpInt() * 0.2).dp) else modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainer),
             shape = ShapeDefaults.Small
         ) {
             var parentWidthDp by remember { mutableStateOf(0.dp) }
             val density = LocalDensity.current
-            Column(modifier = modifier
-                .heightIn(min = 47.dp)
-                .fillMaxWidth()
-                .clickable {
-                    expanded = !expanded
-                    view.playSoundEffect(SoundEffectConstants.CLICK)
-                } then modifier.onGloballyPositioned { layoutCoordinates ->
+            Column(
+                modifier = modifier
+                    .heightIn(min = 47.dp)
+                    .fillMaxWidth()
+                    .clickable {
+                        expanded = !expanded
+                        view.playSoundEffect(SoundEffectConstants.CLICK)
+                    } then modifier.onGloballyPositioned { layoutCoordinates ->
                 val widthPx = layoutCoordinates.size.width
                 parentWidthDp = with(density) { widthPx.toDp() }
             }, verticalArrangement = Arrangement.Center
@@ -128,7 +131,8 @@ fun DialogWithMenu(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 val scrollState = rememberScrollState()
-                DropdownMenu(expanded = expanded,
+                DropdownMenu(
+                    expanded = expanded,
                     modifier = modifier
                         .width(parentWidthDp)
                         .heightIn(min = 80.dp, max = 200.dp)
@@ -153,11 +157,11 @@ fun DialogWithMenu(
         }
     }
     val functionalContent = @Composable {
-        val screenHeightDp = config.screenHeightDp
+        val screenHeightDp = containerSize.height.pxToDpInt()
         val height = when {
             isLandScape -> screenHeightDp
             screenHeightDp >= 700 -> (screenHeightDp / 5.8).toInt()
-            screenHeightDp < (config.screenWidthDp / 1.2) -> (screenHeightDp / 3.2).toInt()
+            screenHeightDp < (containerSize.width / 1.1) -> (screenHeightDp / 3.2).toInt()
             else -> (screenHeightDp / 5.1).toInt()
         }
         OutlinedCard(
@@ -228,8 +232,8 @@ fun DialogWithMenu(
             }
         },
         modifier = modifier.sizeIn(
-            maxWidth = 720.dp, maxHeight = (LocalConfiguration.current.screenHeightDp / 1.2).dp
-        ) then modifier.width((LocalConfiguration.current.screenWidthDp / 1.2).dp),
+            maxWidth = 720.dp, maxHeight = (containerSize.height.pxToDpInt() / 1.2).dp
+        ) then modifier.width((containerSize.width.pxToDpInt() / 1.2).dp),
         title = { Text(text = title) },
         text = {
             val paddingValue = if (shortScreen) 5.dp else 16.dp
@@ -244,7 +248,9 @@ fun DialogWithMenu(
                 functionalContent()
             }
         },
-        properties = DialogProperties(usePlatformDefaultWidth = false)
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false, dismissOnClickOutside = type == null
+        )
     )
 }
 

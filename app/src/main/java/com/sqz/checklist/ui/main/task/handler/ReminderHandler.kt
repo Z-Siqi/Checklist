@@ -50,11 +50,15 @@ class ReminderHandler private constructor(
     private var _notifyId: Int? = null
     private var _reminderActionType = MutableStateFlow(ReminderActionType.None)
     private var _taskId: Long? = null
+    private var _allowDismissRequest = MutableStateFlow(true)
+
+    val allowDismissRequest: StateFlow<Boolean> = _allowDismissRequest.asStateFlow()
 
     val reminderActionType: StateFlow<ReminderActionType> = _reminderActionType.asStateFlow()
 
-    fun requestReminder(taskId: Long) = coroutineScope.launch {
+    fun requestReminder(taskId: Long, dismiss: Boolean = true) = coroutineScope.launch {
         _taskId = taskId
+        _allowDismissRequest.update { dismiss }
         database().getReminderData(taskId).let {
             if (it != null && !it.isReminded) {
                 _notifyId = it.id
@@ -169,7 +173,7 @@ class ReminderHandler private constructor(
             }
             // Delete reminder info
             database().deleteReminderData(id)
-        } catch (e: NoSuchFieldException) {
+        } catch (_: NoSuchFieldException) {
             Log.d("DeleteReminderData", "Noting need to delete")
         } catch (e: IllegalStateException) {
             Log.w("TaskLayoutViewModel", "$e")
