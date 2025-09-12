@@ -183,11 +183,12 @@ private fun NoPermissionDialog(
     )
     if (requestPermission) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val requestNotificationPermission = requestNotificationPermission(context, true) {
+                requestPermission = !it
+                if (it) onConfirmButtonClick()
+            }
             @Suppress("AssignedValueIsNeverRead")
-            if (requestNotificationPermission(context, true) {
-                    requestPermission = !it
-                    if (it) onConfirmButtonClick()
-                }) requestPermission = false
+            if (requestNotificationPermission) requestPermission = false
         } else {
             val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
                 addFlags(FLAG_ACTIVITY_NEW_TASK)

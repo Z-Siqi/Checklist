@@ -157,6 +157,7 @@ fun TaskModifyDialog(
 }
 
 /** Add/Edit task dialog handler **/
+@Suppress("AssignedValueIsNeverRead")
 @Composable
 private fun TaskModifyDialog(
     onDismissRequest: () -> Unit,
