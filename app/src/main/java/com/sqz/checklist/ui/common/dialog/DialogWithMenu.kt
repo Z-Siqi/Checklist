@@ -56,7 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
 import com.sqz.checklist.ui.common.verticalColumnScrollbar
-import com.sqz.checklist.ui.theme.unit.pxToDpInt
+import com.sqz.checklist.ui.common.unit.pxToDpInt
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 

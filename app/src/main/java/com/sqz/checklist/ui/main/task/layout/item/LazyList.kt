@@ -47,7 +47,7 @@ import com.sqz.checklist.ui.main.task.TaskLayoutViewModelPreview
 import com.sqz.checklist.ui.main.task.cardHeight
 import com.sqz.checklist.ui.main.task.handler.ReminderHandler
 import com.sqz.checklist.ui.theme.Theme
-import com.sqz.checklist.ui.theme.unit.navBarsBottomDp
+import com.sqz.checklist.ui.common.unit.navBarsBottomDp
 import kotlinx.coroutines.delay
 import java.time.LocalDate
 
@@ -117,6 +117,7 @@ fun LazyList(
         }
         item { Spacer(modifier = modifier.height(2.dp + navBarsBottomDp())) }
     }
+    @Suppress("AssignedValueIsNeverRead")
     inSearch = isInSearch() // Searching UI & search state
     AutoScrollList(
         lazyState = lazyState,

@@ -53,8 +53,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sqz.checklist.R
 import com.sqz.checklist.ui.main.settings.SettingsLayoutViewModel
-import com.sqz.checklist.ui.theme.unit.navBarsBottomDp
-import com.sqz.checklist.ui.theme.unit.screenIsWidthAndAPI34Above
+import com.sqz.checklist.ui.common.unit.navBarsBottomDp
+import com.sqz.checklist.ui.common.unit.screenIsWidthAndAPI34Above
 
 /**
  * App Settings layout

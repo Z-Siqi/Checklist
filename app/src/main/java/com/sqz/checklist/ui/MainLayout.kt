@@ -48,7 +48,7 @@ import com.sqz.checklist.ui.main.task.layout.TaskLayout
 import com.sqz.checklist.ui.main.task.layout.TaskLayoutTopBar
 import com.sqz.checklist.ui.main.task.layout.TopBarExtendedMenu
 import com.sqz.checklist.ui.main.task.layout.taskExtendedNavButton
-import com.sqz.checklist.ui.theme.unit.screenIsWidth
+import com.sqz.checklist.ui.common.unit.screenIsWidth
 
 enum class MainLayoutNav {
     TaskLayout,

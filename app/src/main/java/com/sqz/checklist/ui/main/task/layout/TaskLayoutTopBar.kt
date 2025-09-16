@@ -48,8 +48,8 @@ import com.sqz.checklist.R
 import com.sqz.checklist.ui.main.task.cardHeight
 import com.sqz.checklist.ui.common.TextTooltipBox
 import com.sqz.checklist.ui.theme.Theme
-import com.sqz.checklist.ui.theme.unit.pxToDpInt
-import com.sqz.checklist.ui.theme.unit.screenIsWidth
+import com.sqz.checklist.ui.common.unit.pxToDpInt
+import com.sqz.checklist.ui.common.unit.screenIsWidth
 import kotlinx.coroutines.delay
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter

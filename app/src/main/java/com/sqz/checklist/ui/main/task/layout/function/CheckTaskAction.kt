@@ -29,7 +29,7 @@ import androidx.compose.ui.unit.dp
 import com.sqz.checklist.R
 import com.sqz.checklist.preferences.PrimaryPreferences
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
-import com.sqz.checklist.ui.theme.unit.screenIsWidth
+import com.sqz.checklist.ui.common.unit.screenIsWidth
 import kotlinx.coroutines.delay
 
 @Composable

@@ -50,7 +50,7 @@ import com.sqz.checklist.R
 import com.sqz.checklist.ui.common.TextTooltipBox
 import com.sqz.checklist.ui.common.dialog.InfoAlertDialog
 import com.sqz.checklist.ui.theme.Theme
-import com.sqz.checklist.ui.theme.unit.pxToDpInt
+import com.sqz.checklist.ui.common.unit.pxToDpInt
 
 enum class CardClickType { Reminder, Edit, Pin, Close, Detail }
 

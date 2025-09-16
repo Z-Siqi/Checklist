@@ -81,8 +81,8 @@ import com.sqz.checklist.ui.common.media.AudioViewDialog
 import com.sqz.checklist.ui.common.media.PictureViewDialog
 import com.sqz.checklist.ui.common.media.VideoViewDialog
 import com.sqz.checklist.ui.theme.Theme
-import com.sqz.checklist.ui.theme.unit.pxToDpInt
-import com.sqz.checklist.ui.theme.unit.screenIsWidthAndAPI34Above
+import com.sqz.checklist.ui.common.unit.pxToDpInt
+import com.sqz.checklist.ui.common.unit.screenIsWidthAndAPI34Above
 import kotlinx.coroutines.delay
 import java.time.LocalDate
 

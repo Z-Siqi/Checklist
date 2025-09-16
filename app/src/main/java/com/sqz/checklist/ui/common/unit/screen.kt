@@ -1,4 +1,4 @@
-package com.sqz.checklist.ui.theme.unit
+package com.sqz.checklist.ui.common.unit
 
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.navigationBars

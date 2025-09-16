@@ -17,8 +17,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.sqz.checklist.R
-import com.sqz.checklist.ui.theme.unit.pxToDp
-import com.sqz.checklist.ui.theme.unit.pxToDpInt
+import com.sqz.checklist.ui.common.unit.pxToDp
+import com.sqz.checklist.ui.common.unit.pxToDpInt
 
 const val screenWidthLimitDpInt = 335
 

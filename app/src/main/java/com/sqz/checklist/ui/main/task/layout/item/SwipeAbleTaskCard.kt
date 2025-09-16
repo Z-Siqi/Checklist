@@ -57,7 +57,7 @@ import com.sqz.checklist.database.DatabaseRepository
 import com.sqz.checklist.database.Task
 import com.sqz.checklist.ui.main.task.CardHeight
 import com.sqz.checklist.ui.main.task.cardHeight
-import com.sqz.checklist.ui.theme.unit.pxToDpInt
+import com.sqz.checklist.ui.common.unit.pxToDpInt
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter

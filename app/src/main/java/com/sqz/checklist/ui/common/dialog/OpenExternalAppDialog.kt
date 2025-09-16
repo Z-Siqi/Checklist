@@ -30,9 +30,9 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -40,6 +40,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.core.graphics.drawable.toBitmap
 import com.sqz.checklist.R
 import com.sqz.checklist.ui.common.getApp
+import com.sqz.checklist.ui.common.unit.pxToDpInt
 
 @Composable
 fun OpenExternalAppDialog(
@@ -49,16 +50,17 @@ fun OpenExternalAppDialog(
     title: String? = null,
 ) {
     val view = LocalView.current
-    val screenHeightDp = LocalConfiguration.current.screenHeightDp
+    val containerSize = LocalWindowInfo.current.containerSize
+    val screenHeightDp = containerSize.height.pxToDpInt()
     val height = when {
         screenHeightDp >= 700 -> (screenHeightDp / 6.8).toInt()
-        screenHeightDp < (LocalConfiguration.current.screenWidthDp / 1.2) -> (screenHeightDp / 4.2).toInt()
+        screenHeightDp < (containerSize.width.pxToDpInt() / 1.2) -> (screenHeightDp / 4.2).toInt()
         screenHeightDp <= 458 -> (screenHeightDp / 1.8).toInt()
         else -> (screenHeightDp / 6.1).toInt()
     }
     AlertDialog(
         modifier = modifier
-            .width((LocalConfiguration.current.screenWidthDp / 1.2).dp)
+            .width((containerSize.width.pxToDpInt() / 1.2).dp)
             .sizeIn(maxWidth = 560.dp),
         onDismissRequest = onDismissRequest,
         confirmButton = {

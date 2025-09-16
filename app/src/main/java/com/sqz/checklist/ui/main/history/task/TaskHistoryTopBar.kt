@@ -21,7 +21,7 @@ import androidx.compose.ui.unit.dp
 import com.sqz.checklist.R
 import com.sqz.checklist.ui.common.TextTooltipBox
 import com.sqz.checklist.ui.theme.Theme
-import com.sqz.checklist.ui.theme.unit.screenIsWidth
+import com.sqz.checklist.ui.common.unit.screenIsWidth
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

@@ -22,7 +22,7 @@ import androidx.compose.ui.res.stringResource
 import com.sqz.checklist.R
 import com.sqz.checklist.preferences.PrimaryPreferences
 import com.sqz.checklist.ui.common.dialog.EditableContentDialog
-import com.sqz.checklist.ui.theme.unit.timeDisplay
+import com.sqz.checklist.ui.common.unit.timeDisplay
 import java.util.Locale
 
 class NotificationSettingItems(private val view: View) : SettingsList() {

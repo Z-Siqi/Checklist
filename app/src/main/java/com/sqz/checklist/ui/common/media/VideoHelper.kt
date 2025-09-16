@@ -43,8 +43,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -64,6 +64,7 @@ import com.sqz.checklist.preferences.PrimaryPreferences
 import com.sqz.checklist.ui.main.task.layout.function.TaskDetailData
 import com.sqz.checklist.ui.main.task.layout.function.toUri
 import com.sqz.checklist.ui.common.TextTooltipBox
+import com.sqz.checklist.ui.common.unit.pxToDpInt
 import io.sanghun.compose.video.RepeatMode
 import io.sanghun.compose.video.VideoPlayer
 import io.sanghun.compose.video.controller.VideoPlayerControllerConfig
@@ -147,6 +148,7 @@ fun VideoSelector(
             stringResource(R.string.click_select_video), color = MaterialTheme.colorScheme.outline
         )
     }
+    @Suppress("AssignedValueIsNeverRead")
     if (checkSize != null) {
         val size = checkSize ?: 1
         if ((size / 1024 / 1024) > 350) {
@@ -169,10 +171,11 @@ fun VideoViewDialog(
     openBySystem: Boolean = false,
 ) {
     val view = LocalView.current
-    val screenHeightDp = LocalConfiguration.current.screenHeightDp
+    val containerSize = LocalWindowInfo.current.containerSize
+    val screenHeightDp = containerSize.height.pxToDpInt()
     val height = when {
         screenHeightDp >= 700 -> (screenHeightDp / 3.8).toInt()
-        screenHeightDp < (LocalConfiguration.current.screenWidthDp / 1.2) -> (screenHeightDp / 2.1).toInt()
+        screenHeightDp < (containerSize.width.pxToDpInt() / 1.2) -> (screenHeightDp / 2.1).toInt()
         else -> (screenHeightDp / 3.1).toInt()
     }
     val coroutineScope = rememberCoroutineScope()
@@ -227,7 +230,7 @@ fun VideoViewDialog(
                 )
             }
         }, title = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-        modifier = Modifier.widthIn(max = (LocalConfiguration.current.screenWidthDp * 0.9).dp),
+        modifier = Modifier.widthIn(max = (containerSize.width.pxToDpInt() * 0.9).dp),
         properties = DialogProperties(usePlatformDefaultWidth = false)
     )
 }
@@ -283,6 +286,7 @@ fun openVideoBySystem(videoName: String, uri: Uri, context: Context) {
         cache.waitingDeletedCacheName(name)
     } catch (e: FileNotFoundException) {
         Toast.makeText(context, context.getString(R.string.failed_open), Toast.LENGTH_SHORT).show()
+        e.printStackTrace()
     } catch (e: Exception) {
         e.printStackTrace()
     }
@@ -326,7 +330,7 @@ private fun insertVideo(
                         Log.d("VideoBitrate", "$it")
                         it
                     }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 Log.d("VideoBitrate", "Failed to get! Use default: 5800000L")
                 5800000L
             }
@@ -372,13 +376,14 @@ private fun insertVideo(
             context, context.getString(R.string.detail_file_not_found), Toast.LENGTH_LONG
         ).show()
         errFileNameSaver(null)
+        e.printStackTrace()
         onComplete(errUri)
     } catch (e: Exception) {
         e.printStackTrace()
         errFileNameSaver(null)
         onComplete(errUri)
     }
-} //TODO: ERR process (file) / program close within process will make invalid file
+}
 
 @Composable
 fun insertVideo(context: Context, uri: Uri, ignoreCompressSettings: Boolean = false): Uri? {

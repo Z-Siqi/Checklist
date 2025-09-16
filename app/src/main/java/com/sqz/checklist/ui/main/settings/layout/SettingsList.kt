@@ -53,8 +53,8 @@ import androidx.core.content.ContextCompat
 import com.sqz.checklist.ui.common.TextTooltipBox
 import com.sqz.checklist.ui.common.UrlText
 import com.sqz.checklist.ui.common.verticalColumnScrollbar
-import com.sqz.checklist.ui.theme.unit.pxToDpInt
-import com.sqz.checklist.ui.theme.unit.screenIsWidth
+import com.sqz.checklist.ui.common.unit.pxToDpInt
+import com.sqz.checklist.ui.common.unit.screenIsWidth
 import androidx.compose.ui.platform.LocalConfiguration
 
 open class SettingsList {

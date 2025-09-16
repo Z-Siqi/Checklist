@@ -1,4 +1,4 @@
-package com.sqz.checklist.ui.theme.unit
+package com.sqz.checklist.ui.common.unit
 
 import android.icu.text.MeasureFormat
 import android.icu.util.Measure

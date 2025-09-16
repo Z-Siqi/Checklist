@@ -67,9 +67,9 @@ import com.sqz.checklist.database.ExportTaskDatabase
 import com.sqz.checklist.database.IOdbState
 import com.sqz.checklist.database.ImportTaskDatabase
 import com.sqz.checklist.preferences.PreferencesInCache
-import com.sqz.checklist.ui.theme.unit.navBarsBottomDp
-import com.sqz.checklist.ui.theme.unit.pxToDpInt
-import com.sqz.checklist.ui.theme.unit.screenIsWidth
+import com.sqz.checklist.ui.common.unit.navBarsBottomDp
+import com.sqz.checklist.ui.common.unit.pxToDpInt
+import com.sqz.checklist.ui.common.unit.screenIsWidth
 
 /**
  * Backup & Restore layout

@@ -37,7 +37,7 @@ import com.sqz.checklist.R
 import com.sqz.checklist.preferences.PrimaryPreferences
 import com.sqz.checklist.ui.common.dialog.EditableContentDialog
 import com.sqz.checklist.ui.theme.ThemePreference
-import com.sqz.checklist.ui.theme.unit.pxToDpInt
+import com.sqz.checklist.ui.common.unit.pxToDpInt
 
 class GeneralSettingItems(private val view: View) : SettingsList() {
 

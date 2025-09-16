@@ -1,4 +1,4 @@
-package com.sqz.checklist.ui.theme.unit
+package com.sqz.checklist.ui.common.unit
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable

@@ -8,9 +8,14 @@
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <uses-permission
-        android:name="android.permission.QUERY_ALL_PACKAGES"
-        tools:ignore="QueryAllPackagesPermission" />
+
+    <queries>
+        <intent>
+            <!-- 1. ALLOW SHOW THE OPTION FROM OTHER APP IN TEXT SELECTION MENU -->
+            <!-- 2. ALLOW GET INSTALLED APPLICATION PACKAGE -->
+            <action android:name="*" />
+        </intent>
+    </queries>
 
     <application
         android:allowBackup="true"
@@ -19,10 +24,10 @@
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
+        android:localeConfig="@xml/locales_config"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Checklist"
-        android:localeConfig="@xml/locales_config"
         tools:targetApi="33">
         <activity
             android:name=".MainActivity"
