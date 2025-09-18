@@ -66,7 +66,7 @@ fun NavTooltipContent(
         var onLongClickType by remember { mutableStateOf<OnClickType?>(null) }
         ButtonsLayout(
             modifier = modifier.padding(
-                start = 8.dp, end = 8.dp, top = 10.dp, bottom = 10.dp
+                start = 8.dp, end = 8.dp, top = (8.5).dp, bottom = (8.5).dp
             ),
             mode = mode
         ) {
@@ -115,7 +115,6 @@ fun NavTooltipContent(
             }
         }
         if (onLongClickType != null) LaunchedEffect(Unit) {
-            createVibration(view)
             delay(3500)
             onLongClickType = null
         }

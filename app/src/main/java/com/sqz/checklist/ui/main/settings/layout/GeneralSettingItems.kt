@@ -38,6 +38,7 @@ import com.sqz.checklist.preferences.PrimaryPreferences
 import com.sqz.checklist.ui.common.dialog.EditableContentDialog
 import com.sqz.checklist.ui.theme.ThemePreference
 import com.sqz.checklist.ui.common.unit.pxToDpInt
+import androidx.core.net.toUri
 
 class GeneralSettingItems(private val view: View) : SettingsList() {
 
@@ -47,6 +48,7 @@ class GeneralSettingItems(private val view: View) : SettingsList() {
         val themeList = listOf(
             stringResource(R.string.pastel_theme), stringResource(R.string.colorful_theme)
         )
+
         @Composable
         fun SegmentedButton(modifier: Modifier = Modifier) {
             selectedIndex = segmentedButton(
@@ -95,7 +97,7 @@ class GeneralSettingItems(private val view: View) : SettingsList() {
             LaunchedEffect(state.text.toString()) {
                 isNumeric = try {
                     state.text.toString().toInt() !in 0..100
-                } catch (e: NumberFormatException) {
+                } catch (_: NumberFormatException) {
                     true
                 }
             }
@@ -156,7 +158,7 @@ class GeneralSettingItems(private val view: View) : SettingsList() {
             LaunchedEffect(state.text.toString()) {
                 isNumeric = try {
                     state.text.toString().toInt() !in 0..100
-                } catch (e: NumberFormatException) {
+                } catch (_: NumberFormatException) {
                     true
                 }
             }
@@ -263,7 +265,30 @@ class GeneralSettingItems(private val view: View) : SettingsList() {
                 Spacer(Modifier.weight(1f))
                 IconButton({
                     view.playSoundEffect(SoundEffectConstants.CLICK)
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("$url/Checklist")).apply {
+                    val packageName = "com.sqz.checklist"
+                    try {
+                        val uriStr = "market://details?id=$packageName"
+                        val intent = Intent(Intent.ACTION_VIEW, uriStr.toUri()).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        intent.setPackage("com.android.vending")
+                        view.context.startActivity(intent)
+                    } catch (_: android.content.ActivityNotFoundException) {
+                        val uriStr = "https://play.google.com/store/apps/details?id=$packageName"
+                        val intent = Intent(Intent.ACTION_VIEW, uriStr.toUri()).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        view.context.startActivity(intent)
+                    }
+                }) {
+                    Icon(
+                        painterResource(R.drawable.google_play), "Google Play",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+                IconButton({
+                    view.playSoundEffect(SoundEffectConstants.CLICK)
+                    val intent = Intent(Intent.ACTION_VIEW, "$url/Checklist".toUri()).apply {
                         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     }
                     view.context.startActivity(intent)
@@ -286,7 +311,7 @@ class GeneralSettingItems(private val view: View) : SettingsList() {
             ClickView(
                 title = it,
                 onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                    val intent = Intent(Intent.ACTION_VIEW, url.toUri()).apply {
                         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     }
                     view.context.startActivity(intent)

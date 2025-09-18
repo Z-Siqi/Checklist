@@ -11,8 +11,8 @@
       "type": "SINGLE",
       "filters": [],
       "attributes": [],
-      "versionCode": 39,
-      "versionName": "0.5.0-Build_DEBUG_39",
+      "versionCode": 51,
+      "versionName": "0.5.1",
       "outputFile": "app-release.apk"
     }
   ],
