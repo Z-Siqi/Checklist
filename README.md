@@ -19,7 +19,8 @@ Looking for a simplicity and practicality in design? Want a design without unnec
 * Based on Material Design 3
 
 ## Screenshot
-<img src="https://github.com/Z-Siqi/Checklist/assets/77391690/891b1a17-8be0-42e4-8e62-4694366c2a43" width="290" height="620">
+<img width="300" height="800" alt="Screenshot" src="https://github.com/user-attachments/assets/db4db541-5610-4dd2-914c-2be3eb71f145" />
+
 
 ***
 
