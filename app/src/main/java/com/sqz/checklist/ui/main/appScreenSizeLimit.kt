@@ -20,9 +20,9 @@ import com.sqz.checklist.R
 import com.sqz.checklist.ui.common.unit.pxToDp
 import com.sqz.checklist.ui.common.unit.pxToDpInt
 
-const val screenWidthLimitDpInt = 335
+const val screenWidthLimitDpInt = 275
 
-const val screenHeightLimitDpInt = 338
+const val screenHeightLimitDpInt = 278
 
 @Composable
 fun appScreenSizeLimit(override: Boolean = false): Boolean {
@@ -36,14 +36,17 @@ fun appScreenSizeLimit(override: Boolean = false): Boolean {
             verticalArrangement = Arrangement.Center
         ) {
             Text(
-                stringResource(R.string.unsupported_screen_size),
+                text = stringResource(R.string.unsupported_screen_size),
                 color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold
             )
             Text(
-                stringResource(R.string.unsupported_screen_size_describe),
+                text = stringResource(R.string.unsupported_screen_size_describe),
                 textAlign = TextAlign.Center, modifier = Modifier.padding(bottom = 5.dp)
             )
-            Text("Request dp: W >= 335, H >= 338", color = MaterialTheme.colorScheme.outline)
+            Text(
+                text = "Request dp: W >= $screenWidthLimitDpInt, H >= $screenHeightLimitDpInt",
+                color = MaterialTheme.colorScheme.outline
+            )
             Text(
                 "Currently dp: W = ${config.width.pxToDp()}, H = ${config.height.pxToDp()}",
                 color = MaterialTheme.colorScheme.onErrorContainer

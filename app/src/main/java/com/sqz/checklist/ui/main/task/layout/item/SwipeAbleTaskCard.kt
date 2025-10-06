@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -48,7 +49,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat.getSystemService
 import com.sqz.checklist.MainActivity
@@ -56,7 +56,6 @@ import com.sqz.checklist.R
 import com.sqz.checklist.database.DatabaseRepository
 import com.sqz.checklist.database.Task
 import com.sqz.checklist.ui.main.task.CardHeight
-import com.sqz.checklist.ui.main.task.cardHeight
 import com.sqz.checklist.ui.common.unit.pxToDpInt
 import java.text.SimpleDateFormat
 import java.time.LocalDate
@@ -79,7 +78,8 @@ fun SwipeAbleTaskCard(
     mode: ItemMode,
     allowSwipe: Boolean,
     modifier: Modifier = Modifier,
-    databaseRepository: DatabaseRepository
+    databaseRepository: DatabaseRepository,
+    currentHeight: (dp: Int) -> Unit = {}
 ) { // Process card action
     val remindTime = @Composable { // The text of reminder time
         val getTimeInLong =
@@ -94,7 +94,6 @@ fun SwipeAbleTaskCard(
         stringResource(R.string.task_date_format),
         Locale.getDefault()
     )
-    var currentCardHeight by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
     Column(
         modifier = Modifier
@@ -104,10 +103,10 @@ fun SwipeAbleTaskCard(
                     stiffness = Spring.StiffnessMedium
                 )
             )
-            .height(swipeToDismissControl(itemState, { checked(task.id) }, getIsHistory, context))
+            .swipeToDismissControl(itemState, { checked(task.id) }, getIsHistory, context)
             .onGloballyPositioned { layoutCoordinates ->
                 val heightPx = layoutCoordinates.size.height
-                currentCardHeight = with(density) { heightPx.toDp() }.value.toInt()
+                currentHeight(with(density) { heightPx.toDp() }.value.toInt())
             },
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally
@@ -145,35 +144,26 @@ fun SwipeAbleTaskCard(
             }
         ) { // front of card
             val reminderState = reminderState(task.reminder, databaseRepository)
-            val localConfig = LocalWindowInfo.current.containerSize
-            var overflowed by remember { mutableStateOf(false) }
-            val dateText = if (mode == ItemMode.RemindedTask) {
-                stringResource(R.string.task_reminded_time, remindTime().toString())
-            } else {
-                val taskTimeText = if (overflowed || localConfig.width.pxToDpInt() < 380) {
-                    "\n${task.createDate.format(formatter)}"
-                } else task.createDate.format(formatter)
-                stringResource(R.string.task_creation_time, taskTimeText)
-            }
-            val localDateText: (Boolean) -> String = {
-                if (currentCardHeight >= CardHeight) overflowed = it
-                dateText
-            }
             TaskCardContent(
-                description = task.description,
-                dateText = { localDateText(it) },
+                textState = TaskTextState(
+                    description = task.description,
+                    dateText = if (mode == ItemMode.RemindedTask) stringResource(
+                        R.string.task_reminded_time, remindTime().toString()
+                    ) else stringResource(
+                        R.string.task_creation_time, task.createDate.format(formatter)
+                    ),
+                    reminderTooltip = if (reminderState) remindTime() else null
+                ),
                 onClick = { type -> onTaskItemClick(task, type, context) },
-                timerIconState = reminderState,
-                pinIconState = task.isPin,
-                tooltipRemindText = if (reminderState) remindTime() else null,
+                iconState = TaskIconState(
+                    isPinned = task.isPin,
+                    isReminderSet = reminderState,
+                    isDetailExist = task.detail
+                ),
+                modifier = modifier
+                    .padding(start = startEnd, end = startEnd, top = 4.dp, bottom = 4.dp)
+                    .heightIn(min = CardHeight.dp),
                 mode = mode,
-                isDetail = task.detail,
-                modifier = modifier.padding(
-                    start = startEnd,
-                    end = startEnd,
-                    top = 4.dp,
-                    bottom = 4.dp
-                )
             )
         }
     }
@@ -181,10 +171,10 @@ fun SwipeAbleTaskCard(
 
 /** Control the action of swipe to dismiss, @return the height of card **/
 @Composable
-private fun swipeToDismissControl(
+private fun Modifier.swipeToDismissControl(
     itemState: SwipeToDismissBoxState,
     checked: () -> Unit, isHistory: Boolean, context: Context
-): Dp {
+): Modifier {
     val dismissInEndToStart = itemState.currentValue == SwipeToDismissBoxValue.EndToStart
     val dismissInStartToEnd = itemState.currentValue == SwipeToDismissBoxValue.StartToEnd
     val isDismissed = dismissInEndToStart || dismissInStartToEnd
@@ -198,7 +188,7 @@ private fun swipeToDismissControl(
     } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
         Vibrate(context, itemState)
     }
-    return if (!isDismissed) cardHeight(context).dp else 0.dp
+    return if (!isDismissed) this else this.height(0.dp)
 }
 
 /** check the reminder is set or not **/
@@ -228,16 +218,14 @@ private fun Vibrate(
     var isOn by remember { mutableStateOf(false) }
     if (itemState.targetValue == SwipeToDismissBoxValue.StartToEnd ||
         itemState.targetValue == SwipeToDismissBoxValue.EndToStart
-    ) {
-        LaunchedEffect(true) {
-            getSystemService(context, Vibrator::class.java)?.vibrate(
-                VibrationEffect.createPredefined(
-                    VibrationEffect.EFFECT_TICK
-                )
+    ) LaunchedEffect(Unit) {
+        getSystemService(context, Vibrator::class.java)?.vibrate(
+            VibrationEffect.createPredefined(
+                VibrationEffect.EFFECT_TICK
             )
-        }
+        )
         isOn = true
-    } else if (isOn && itemState.targetValue == itemState.currentValue) {
+    } else if (isOn && itemState.targetValue == itemState.currentValue) LaunchedEffect(Unit) {
         getSystemService(context, Vibrator::class.java)?.vibrate(
             VibrationEffect.createOneShot(12L, 58)
         )

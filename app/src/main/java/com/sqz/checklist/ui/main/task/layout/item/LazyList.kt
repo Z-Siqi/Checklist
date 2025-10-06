@@ -44,10 +44,10 @@ import com.sqz.checklist.R
 import com.sqz.checklist.database.Task
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModelPreview
-import com.sqz.checklist.ui.main.task.cardHeight
 import com.sqz.checklist.ui.main.task.handler.ReminderHandler
 import com.sqz.checklist.ui.theme.Theme
 import com.sqz.checklist.ui.common.unit.navBarsBottomDp
+import com.sqz.checklist.ui.main.task.CardHeight
 import kotlinx.coroutines.delay
 import java.time.LocalDate
 
@@ -212,8 +212,9 @@ private fun RemindedItem(
     val notEmpty = isRemindedItem.isNotEmpty()
     val density = LocalDensity.current
     var textHeight by remember { mutableIntStateOf(25) }
+    var cardHeight by remember { mutableIntStateOf(CardHeight + 18) }
     val remindedHeight =
-        if (notEmpty) (25 + textHeight + (cardHeight(context) * isRemindedItem.size)).dp else 0.dp
+        if (notEmpty) (25 + textHeight + (cardHeight * isRemindedItem.size)).dp else 0.dp
     val animatedRemindedHeight by animateDpAsState(
         targetValue = remindedHeight, label = "Reminded Height"
     )
@@ -243,7 +244,8 @@ private fun RemindedItem(
                     itemState = rememberSwipeState(),
                     mode = ItemMode.RemindedTask,
                     allowSwipe = allowSwipe,
-                    databaseRepository = taskState.database()
+                    databaseRepository = taskState.database(),
+                    currentHeight = { if (cardHeight != it) cardHeight = it }
                 )
             }
         }
@@ -262,8 +264,9 @@ private fun PinnedItem(
     val notEmpty = pinnedItem.isNotEmpty()
     val density = LocalDensity.current
     var textHeight by remember { mutableIntStateOf(25) }
+    var cardHeight by remember { mutableIntStateOf(CardHeight + 18) }
     val pinnedHeight =
-        if (notEmpty) (25 + textHeight + (cardHeight(context) * pinnedItem.size)).dp else 0.dp
+        if (notEmpty) (25 + textHeight + (cardHeight * pinnedItem.size)).dp else 0.dp
     val animatedPinnedHeight by animateDpAsState(
         targetValue = pinnedHeight, label = "Pinned Height"
     )
@@ -292,7 +295,8 @@ private fun PinnedItem(
                     itemState = rememberSwipeState(),
                     mode = ItemMode.PinnedTask,
                     allowSwipe = allowSwipe,
-                    databaseRepository = taskState.database()
+                    databaseRepository = taskState.database(),
+                    currentHeight = { if (cardHeight != it) cardHeight = it }
                 )
             }
         }

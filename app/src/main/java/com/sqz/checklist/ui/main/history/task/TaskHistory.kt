@@ -6,9 +6,7 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -36,6 +34,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalWindowInfo
@@ -43,6 +42,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -77,9 +77,9 @@ fun TaskHistory(
         .calculateLeftPadding(LocalLayoutDirection.current)
     val safePaddingForFullscreen = if (
         screenIsWidth
-    ) modifier.padding(
+    ) Modifier.padding(
         start = left, end = if (left / 3 > 15.dp) 15.dp else left / 3
-    ) else modifier
+    ) else Modifier
     Surface(
         modifier = modifier,
         color = colors.backgroundColor
@@ -139,55 +139,57 @@ private fun ItemBox(
         BorderStroke(3.dp, MaterialTheme.colorScheme.tertiary)
     } else BorderStroke(1.dp, MaterialTheme.colorScheme.surfaceDim)
     Column(
-        modifier = modifier.animateContentSize(
-            animationSpec = spring(
-                dampingRatio = Spring.DampingRatioNoBouncy,
-                stiffness = Spring.StiffnessHigh
+        modifier = modifier
+            .animateContentSize(
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioNoBouncy,
+                    stiffness = Spring.StiffnessHigh
+                )
             )
-        ) then Modifier.height(if (hide) 0.dp else 120.dp)
+            .height(if (hide) 0.dp else Dp.Unspecified),
+        verticalArrangement = Arrangement.Top,
     ) {
+        val density = LocalDensity.current
+        val twoLinesHeightDp = with(density) { ((21.sp).toPx() * 2.5f).toDp() }
+        val oneLineHeightDp = with(density) { (12.sp).toDp() }
         OutlinedCard(
             modifier = Modifier
-                .fillMaxSize()
+                .height(twoLinesHeightDp + oneLineHeightDp + 50.dp)
                 .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 4.dp),
             colors = CardDefaults.cardColors(colors.taskBackgroundColor),
             border = border,
+            onClick = {
+                onItemClick()
+                view.playSoundEffect(SoundEffectConstants.CLICK)
+            },
             shape = ShapeDefaults.ExtraLarge
         ) {
             val formatter = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.getDefault())
-            val padding = Modifier.padding(bottom = 8.dp, top = 12.dp, start = 12.dp, end = 11.dp)
-            val onClick = Modifier.clickable {
-                onItemClick()
-                view.playSoundEffect(SoundEffectConstants.CLICK)
-            }
-            Box(modifier = Modifier.fillMaxSize() then onClick) {
-                val time =
-                    stringResource(R.string.task_creation_time, item.createDate.format(formatter))
-                Box(modifier = padding) {
-                    Column {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth(0.75f)
-                                .height(50.dp),
-                            horizontalAlignment = Alignment.Start
-                        ) {
-                            Text(
-                                text = item.description,
-                                modifier = Modifier.padding(top = 0.dp),
-                                fontSize = 21.sp,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                        Spacer(modifier = Modifier.weight(1f))
-                        Row(verticalAlignment = Alignment.Bottom) {
-                            Text(
-                                text = time,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
+            val time = stringResource(
+                R.string.task_creation_time, item.createDate.format(formatter)
+            )
+            val paddingModifier = Modifier.padding(
+                bottom = 8.dp, top = 12.dp, start = 12.dp, end = 11.dp
+            )
+            Column(modifier = paddingModifier.fillMaxWidth()) {
+                Text(
+                    text = item.description,
+                    fontSize = 21.sp,
+                    lineHeight = 23.sp,
+                    maxLines = 2,
+                    modifier = Modifier.fillMaxWidth(0.8f),
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                Row(modifier = Modifier, verticalAlignment = Alignment.Bottom) {
+                    Text(
+                        text = time,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp / view.context.resources.configuration.fontScale,
+                        lineHeight = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
             }
         }

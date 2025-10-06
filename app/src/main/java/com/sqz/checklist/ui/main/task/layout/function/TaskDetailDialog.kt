@@ -125,8 +125,9 @@ fun TaskDetailDialog(
                 TaskDetailType.Audio -> AudioSelector(detailData, view) == Unit
 
                 else -> Text(
-                    stringResource(R.string.select_detail_type),
-                    Modifier.padding(7.dp), MaterialTheme.colorScheme.secondary, 16.sp
+                    text = stringResource(R.string.select_detail_type),
+                    modifier = Modifier.padding(7.dp), MaterialTheme.colorScheme.secondary,
+                    fontSize = 16.sp
                 ) == Unit
             }
         },

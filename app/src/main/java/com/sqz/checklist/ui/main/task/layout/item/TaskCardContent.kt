@@ -3,18 +3,24 @@ package com.sqz.checklist.ui.main.task.layout.item
 import android.view.SoundEffectConstants
 import android.view.View
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.layout.requiredSizeIn
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -24,8 +30,8 @@ import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -34,23 +40,25 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.sp
 import com.sqz.checklist.R
 import com.sqz.checklist.ui.common.TextTooltipBox
 import com.sqz.checklist.ui.common.dialog.InfoAlertDialog
+import com.sqz.checklist.ui.main.task.CardHeight
 import com.sqz.checklist.ui.theme.Theme
-import com.sqz.checklist.ui.common.unit.pxToDpInt
 
 enum class CardClickType { Reminder, Edit, Pin, Close, Detail }
 
@@ -58,182 +66,148 @@ enum class ItemMode {
     NormalTask, PinnedTask, RemindedTask
 }
 
+data class TaskIconState(
+    val isPinned: Boolean = false,
+    val isReminderSet: Boolean = false,
+    val isDetailExist: Boolean = false,
+)
+
+data class TaskTextState(
+    val description: String,
+    val dateText: String,
+    val reminderTooltip: String? = null
+)
+
 /**
  * The content of the task UI
  */
 @Composable
 fun TaskCardContent(
-    description: String,
-    dateText: (overflowed: Boolean) -> String,
+    textState: TaskTextState,
     onClick: (CardClickType) -> Unit,
-    timerIconState: Boolean,
-    pinIconState: Boolean,
-    tooltipRemindText: String?,
     mode: ItemMode,
-    isDetail: Boolean,
+    iconState: TaskIconState,
     modifier: Modifier = Modifier,
-) { // card UI
+) {
     val view = LocalView.current
-    val density = LocalDensity.current
     val colors = Theme.color
-    val topScale = 0.55
-    var parentHeight by remember { mutableIntStateOf((64 / topScale).toInt()) }
-    OutlinedCard(
-        modifier = modifier
-            .fillMaxSize()
-            .onGloballyPositioned { layoutCoordinates ->
-                val heightPx = layoutCoordinates.size.height
-                parentHeight = with(density) { heightPx.toDp() }.value.toInt()
-            },
-        colors = CardDefaults.cardColors(colors.taskBackgroundColor),
-        border = BorderStroke(1.dp, colors.taskBorderColor),
-        shape = ShapeDefaults.ExtraLarge
-    ) { // Must be Modifier not modifier in below Column
-        Column(Modifier.padding(bottom = 7.dp, top = 5.dp, start = 12.dp, end = 12.dp)) {
-            ContentTop(
-                description = description,
-                onClick = {
-                    onClick(if (mode == ItemMode.RemindedTask) CardClickType.Close else CardClickType.Pin)
-                },
-                topRightIcon = if (mode == ItemMode.RemindedTask) R.drawable.close else {
-                    if (pinIconState) R.drawable.pinned else R.drawable.pin
-                },
-                rotation = mode != ItemMode.RemindedTask,
-                view = view,
-                modifier = Modifier.heightIn(max = (parentHeight * topScale).dp)
+    TaskBackground(colors = colors, modifier = modifier) {
+        Row(modifier = Modifier, horizontalArrangement = Arrangement.Start) {
+            TaskDescription(
+                textState = textState,
+                modifier = Modifier
             )
-            Spacer(modifier = modifier.weight(1f))
-            ContentBottom(
-                dateText = dateText,
+            Spacer(modifier = Modifier.weight(1f))
+            PinOrCloseButton(
+                mode = mode,
                 onClick = onClick,
-                timerIcon = if (timerIconState) R.drawable.timer_on else R.drawable.timer,
-                attachIcon = if (isDetail) R.drawable.attach else null,
-                tooltipText = tooltipRemindText ?: stringResource(R.string.reminder),
-                view = view
+                iconState = iconState,
+                modifier = Modifier.requiredSizeIn(minWidth = 28.dp),
+                view = view,
             )
+        }
+        Row(
+            modifier = Modifier.heightIn(min = CardHeight.dp * 0.38f),
+            verticalAlignment = Alignment.Bottom
+        ) {
+            DateText(
+                modifier = Modifier
+                    .weight(1f),
+                textState = textState,
+            )
+            ButtonsRow(
+                textState = textState,
+                onClick = onClick,
+                iconState = iconState,
+                view = view,
+                modifier = Modifier
+            )
+            Spacer(modifier = Modifier.padding(end = 15.dp))
         }
     }
 }
 
 @Composable
-private fun ContentTop(
-    description: String,
-    onClick: () -> Unit,
-    topRightIcon: Int,
-    rotation: Boolean,
-    view: View,
-    modifier: Modifier = Modifier
-) = Row {
-    Column(
-        modifier = modifier.fillMaxWidth(0.75f),
-        horizontalAlignment = Alignment.Start
-    ) {
-        var overflowState by rememberSaveable { mutableStateOf(false) }
-        var overflowInfo by rememberSaveable { mutableStateOf(false) }
-        Card(
-            colors = CardDefaults.cardColors(Color.Transparent),
-            modifier = modifier.padding(top = 8.dp)
-        ) {
-            Box(modifier = modifier.clickable(overflowState) { overflowInfo = true }) {
-                Text(
-                    text = description,
-                    modifier = modifier
-                        .fillMaxSize()
-                        .padding(start = 5.dp),
-                    fontSize = 21.sp,
-                    overflow = TextOverflow.Ellipsis,
-                    onTextLayout = { textLayoutResult: TextLayoutResult ->
-                        overflowState = textLayoutResult.hasVisualOverflow
-                    },
-                    maxLines = 2,
-                    fontWeight = FontWeight.Normal,
-                )
-            }
-        }
-        if (overflowInfo) InfoAlertDialog(
-            onDismissRequest = { overflowInfo = false },
-            text = description
-        )
+private fun DateText(
+    textState: TaskTextState,
+    modifier: Modifier,
+    density: Density = LocalDensity.current,
+    twoLinesHeightDp: Dp = with(density) { ((14.sp).toPx() * 2.5f).toDp() }
+) = Column(
+    modifier = modifier.heightIn(max = twoLinesHeightDp),
+    verticalArrangement = Arrangement.Bottom
+) {
+    var overflow by remember { mutableStateOf(false) }
+    val overflowSizeValue = if (!overflow) 1f else 1.8f
+    val containerSize = LocalWindowInfo.current.containerSize
+    var rememberState by remember { mutableStateOf(containerSize) }
+    if (overflow && rememberState != containerSize) LaunchedEffect(Unit) {
+        rememberState = containerSize
+        overflow = false
     }
-    Spacer(modifier = modifier.weight(1f))
-    TextTooltipBox(if (topRightIcon == R.drawable.pin) R.string.pin else R.string.cancel_highlight) {
-        IconButton(
-            modifier = if (rotation) modifier.rotate(40f) else modifier,
-            onClick = {
-                onClick()
-                view.playSoundEffect(SoundEffectConstants.CLICK)
-            }
-        ) {
-            Icon(
-                painter = painterResource(topRightIcon),
-                contentDescription = stringResource(R.string.pin)
-            )
-        }
-    }
-}
-
-@Composable
-private fun ContentBottom(
-    dateText: (overflowed: Boolean) -> String,
-    onClick: (CardClickType) -> Unit,
-    timerIcon: Int,
-    attachIcon: Int?,
-    tooltipText: String,
-    view: View
-) = Row(verticalAlignment = Alignment.Bottom) {
-    val modifier = Modifier
-    val config = LocalWindowInfo.current.containerSize
-    val screenIsWidth = config.width > config.height * 1.1
-    val timeWidth =
-        if (screenIsWidth) config.width.pxToDpInt() / 1.95 else config.width.pxToDpInt() / 1.7
-    var overflowed by remember { mutableStateOf(false) }
-    val localDateText = dateText(overflowed)
     Text(
-        text = localDateText, fontWeight = FontWeight.Bold, fontSize = 12.sp,
-        color = MaterialTheme.colorScheme.onSurfaceVariant, lineHeight = 14.sp,
-        modifier = modifier.padding(
-            start = 5.dp, bottom = 3.dp
-        ) then modifier.widthIn(max = timeWidth.dp),
-        onTextLayout = { overflowed = it.hasVisualOverflow || it.lineCount > 1 },
+        text = textState.dateText.replace( // format date for only one line date
+            Regex("(\\d{1,2}) (\\p{Alpha}+) (\\d{4})"),
+            "$1\u00A0$2\u00A0$3"
+        ).let { if (!overflow) it else it.replace("\n", "") },
+        fontWeight = FontWeight.Bold,
+        fontSize = 12.sp / overflowSizeValue,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        lineHeight = 14.sp / overflowSizeValue,
+        modifier = Modifier
+            .padding(start = 5.dp, bottom = 3.dp),
+        maxLines = 3,
+        onTextLayout = { if (it.hasVisualOverflow) overflow = true },
         overflow = TextOverflow.Ellipsis
     )
-    Spacer(modifier = modifier.weight(1f) then modifier.widthIn(min = 10.dp))
+}
+
+@Composable
+private fun ButtonsRow(
+    textState: TaskTextState,
+    onClick: (CardClickType) -> Unit,
+    iconState: TaskIconState,
+    view: View,
+    modifier: Modifier
+) = BoxWithConstraints(modifier = modifier, contentAlignment = Alignment.BottomStart) {
+    val buttonsArea = min(maxWidth * 0.38f, 200.dp)
     Row(
-        modifier = modifier.widthIn(
-            max = if (attachIcon != null) 150.dp else 100.dp,
-            min = if (attachIcon != null) 150.dp else 150.dp,
-        ),
-        horizontalArrangement = Arrangement.End
+        modifier = Modifier.width(buttonsArea),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        attachIcon?.let {
-            TextTooltipBox(textRid = R.string.detail) {
-                IconButton(modifier = modifier.size(30.dp), onClick = {
-                    onClick(CardClickType.Detail)
-                    view.playSoundEffect(SoundEffectConstants.CLICK)
-                }) {
-                    Icon(
-                        modifier = modifier.rotate(-5f),
-                        painter = painterResource(id = attachIcon),
-                        contentDescription = stringResource(R.string.detail)
-                    )
-                }
-            }
-            Spacer(modifier = modifier.weight(0.18f))
-        }
-        TextTooltipBox(text = tooltipText) {
-            IconButton(modifier = modifier.size(30.dp), onClick = {
-                onClick(CardClickType.Reminder)
+        if (iconState.isDetailExist) TextTooltipBox(textRid = R.string.detail) {
+            IconButton(modifier = Modifier.requiredSize(30.dp), onClick = {
+                onClick(CardClickType.Detail)
                 view.playSoundEffect(SoundEffectConstants.CLICK)
             }) {
                 Icon(
+                    modifier = Modifier.rotate(-5f),
+                    painter = painterResource(id = R.drawable.attach),
+                    contentDescription = stringResource(R.string.detail)
+                )
+            }
+        } else Spacer(
+            modifier = Modifier.requiredSize(30.dp)
+        )
+        Spacer(modifier = Modifier.weight(1f))
+        val timerText = textState.reminderTooltip ?: stringResource(R.string.reminder)
+        TextTooltipBox(text = timerText) {
+            IconButton(modifier = Modifier.requiredSize(30.dp), onClick = {
+                onClick(CardClickType.Reminder)
+                view.playSoundEffect(SoundEffectConstants.CLICK)
+            }) {
+                val timerIcon =
+                    if (iconState.isReminderSet) R.drawable.timer_on else R.drawable.timer
+                Icon(
                     painter = painterResource(id = timerIcon),
-                    contentDescription = stringResource(R.string.reminder)
+                    contentDescription = timerText
                 )
             }
         }
-        Spacer(modifier = modifier.weight(0.2f))
+        Spacer(modifier = Modifier.weight(1f))
         TextTooltipBox(textRid = R.string.edit) {
-            IconButton(modifier = modifier.size(30.dp), onClick = {
+            IconButton(modifier = Modifier.requiredSize(30.dp), onClick = {
                 onClick(CardClickType.Edit)
                 view.playSoundEffect(SoundEffectConstants.CLICK)
             }) {
@@ -243,18 +217,104 @@ private fun ContentBottom(
                 )
             }
         }
-        Spacer(modifier = modifier.weight(0.2f))
     }
+}
+
+@Composable
+private fun TaskDescription(
+    textState: TaskTextState,
+    modifier: Modifier,
+    density: Density = LocalDensity.current
+) = Card(
+    modifier = modifier
+        .padding(top = 8.dp)
+        .fillMaxWidth(0.75f)
+        .height(IntrinsicSize.Min)
+        .width(IntrinsicSize.Min),
+    colors = CardDefaults.cardColors(Color.Transparent),
+) {
+    val twoLinesHeightDp = with(density) {
+        ((21.sp).toPx() * 2.5f).toDp()
+    }
+    var overflowState by remember { mutableStateOf(false) }
+    var overflowInfo by rememberSaveable { mutableStateOf(false) }
+    val clickableModifier = if (overflowState) Modifier.combinedClickable(
+        onLongClick = { overflowInfo = true },
+        onClick = { overflowInfo = true }
+    ) else Modifier.pointerInput(Unit) {
+        detectTapGestures(onLongPress = { overflowInfo = true })
+    }
+    Box(modifier = clickableModifier.height(twoLinesHeightDp)) {
+        Text(
+            text = textState.description,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(start = 5.dp),
+            fontSize = 21.sp,
+            lineHeight = 21.sp,
+            overflow = TextOverflow.Ellipsis,
+            onTextLayout = { overflowState = it.hasVisualOverflow },
+            maxLines = 2,
+            fontWeight = FontWeight.Normal,
+        )
+    }
+    if (overflowInfo) InfoAlertDialog(
+        onDismissRequest = { overflowInfo = false },
+        text = textState.description
+    )
+}
+
+@Composable
+private fun PinOrCloseButton(
+    mode: ItemMode,
+    onClick: (CardClickType) -> Unit,
+    iconState: TaskIconState,
+    view: View,
+    modifier: Modifier,
+    iconTextId: Int = if (mode == ItemMode.RemindedTask) R.string.cancel_highlight else R.string.pin
+) = TextTooltipBox(iconTextId, modifier = modifier.requiredSize(30.dp)) {
+    IconButton(
+        modifier = if (mode != ItemMode.RemindedTask) Modifier.rotate(40f) else Modifier,
+        onClick = {
+            if (mode == ItemMode.RemindedTask) onClick(CardClickType.Close) else {
+                onClick(CardClickType.Pin)
+            }
+            view.playSoundEffect(SoundEffectConstants.CLICK)
+        }
+    ) {
+        val iconId = if (mode == ItemMode.RemindedTask) R.drawable.close else {
+            if (iconState.isPinned) R.drawable.pinned else R.drawable.pin
+        }
+        Icon(
+            painter = painterResource(iconId),
+            contentDescription = stringResource(iconTextId)
+        )
+    }
+}
+
+@Composable
+private fun TaskBackground(
+    colors: Theme,
+    modifier: Modifier,
+    content: @Composable (ColumnScope.() -> Unit),
+) = OutlinedCard(
+    modifier = modifier,
+    colors = CardDefaults.cardColors(colors.taskBackgroundColor),
+    border = BorderStroke(1.dp, colors.taskBorderColor),
+    shape = ShapeDefaults.ExtraLarge
+) {
+    Column(
+        modifier = Modifier.padding(bottom = 7.dp, top = 5.dp, start = 12.dp, end = 12.dp),
+        verticalArrangement = Arrangement.Center,
+        content = content
+    )
 }
 
 @Preview
 @Composable
 private fun Preview() {
-    Box(modifier = Modifier.size(500.dp, 120.dp)) {
-        TaskCardContent(
-            description = "description", dateText = { "createDate" }, onClick = {},
-            timerIconState = false, pinIconState = false,
-            tooltipRemindText = null, mode = ItemMode.NormalTask, isDetail = true
-        )
-    }
+    TaskCardContent(
+        textState = TaskTextState("TEST", "DATE", null),
+        onClick = {}, mode = ItemMode.NormalTask, iconState = TaskIconState(isDetailExist = true)
+    )
 }
