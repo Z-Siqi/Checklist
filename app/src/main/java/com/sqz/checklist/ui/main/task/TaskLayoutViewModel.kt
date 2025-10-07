@@ -157,6 +157,7 @@ open class TaskLayoutViewModel : ViewModel() {
                                 if (!_undo.value.onCheckTask) this.cancel()
                                 delay(500)
                                 if (it.rememberScrollIndex != lazyState.firstVisibleItemIndex || isTimeout) break
+                                i
                             }
                             resetUndo(context)
                         }
@@ -228,7 +229,7 @@ open class TaskLayoutViewModel : ViewModel() {
                     }
                 }
                 updateListState()
-            } catch (e: NoSuchFieldException) {
+            } catch (_: NoSuchFieldException) {
                 Log.w("DeleteReminderData", "Noting need to delete")
             }
             if (_init.value && !_removeInvalidFile) removeInvalidFile(context)
@@ -284,5 +285,9 @@ open class TaskLayoutViewModel : ViewModel() {
             return listOf()
         }
         viewModelScope.launch { _listState.update { it.copy(inSearchItem = returnList()) } }
+    }
+
+    fun requestUpdateList() {
+        updateListState()
     }
 }

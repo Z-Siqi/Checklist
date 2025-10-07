@@ -17,6 +17,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -61,7 +62,7 @@ enum class MainLayoutNav {
 /** Top level of MainLayout **/
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun MainLayout(context: Context, view: View, modifier: Modifier = Modifier) {
+fun MainLayout(context: Context, view: View, modifier: Modifier) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -136,7 +137,7 @@ fun MainLayout(context: Context, view: View, modifier: Modifier = Modifier) {
                 }
                 if (currentRoute == MainLayoutNav.Settings.name) settingsLayoutViewModel.resetSearchState()
             },
-            modifier = modifier
+            modifier = Modifier
         )
     }
     val taskHistoryNavBar: @Composable (mode: NavMode) -> Unit = { mode ->
@@ -144,7 +145,7 @@ fun MainLayout(context: Context, view: View, modifier: Modifier = Modifier) {
             mode = mode,
             view = view,
             historyState = taskHistoryViewModel,
-            modifier = modifier
+            modifier = Modifier
         )
     }
 
@@ -154,7 +155,7 @@ fun MainLayout(context: Context, view: View, modifier: Modifier = Modifier) {
 
     // Layout
     val nulLog = { Log.d("MainLayout", "Navigation bar or Top bar is disable") }
-    val nul = @Composable { Spacer(modifier = modifier).also { nulLog() } }
+    val nul = @Composable { Spacer(modifier = Modifier).also { nulLog() } }
     ContentLayout(
         topBar = when (currentRoute) {
             MainLayoutNav.TaskLayout.name -> taskLayoutTopBar
@@ -186,6 +187,10 @@ fun MainLayout(context: Context, view: View, modifier: Modifier = Modifier) {
             startDestination = MainLayoutNav.TaskLayout.name
         ) {
             composable(MainLayoutNav.TaskLayout.name) {
+                var refreshed by rememberSaveable { mutableStateOf(false) }
+                if (!refreshed) LaunchedEffect(Unit) {
+                    taskLayoutViewModel.requestUpdateList()
+                }
                 TaskLayout(
                     scrollBehavior = scrollBehavior,
                     context = context, view = view,
@@ -215,16 +220,16 @@ private fun ContentLayout(
     navigationRail: @Composable () -> Unit = {},
     floatingActionButton: @Composable () -> Unit = {},
     content: @Composable (paddingValues: PaddingValues) -> Unit = {}
-) = Row {
+) = Row(modifier = modifier) {
     Surface(
-        modifier = modifier.weight(1f)
+        modifier = Modifier.weight(1f)
     ) {
         Scaffold(
             topBar = topBar,
             bottomBar = bottomBar,
             floatingActionButton = floatingActionButton,
         ) { paddingValues ->
-            Surface(modifier = modifier.padding(paddingValues)) {
+            Surface(modifier = Modifier.padding(paddingValues)) {
                 content(paddingValues)
             }
         }

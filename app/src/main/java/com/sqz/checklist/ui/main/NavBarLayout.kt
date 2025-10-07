@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
@@ -40,7 +39,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -48,6 +46,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.sqz.checklist.R
 import com.sqz.checklist.ui.MainLayoutNav
+import com.sqz.checklist.ui.common.unit.isApi35AndAbove
+import com.sqz.checklist.ui.common.unit.isGestureNavigationMode
 import com.sqz.checklist.ui.theme.Theme
 
 /**
@@ -108,11 +108,9 @@ private fun NavBar(
     onNavClick: (index: MainLayoutNav) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val notButtonNav = WindowInsets.navigationBars.getBottom(LocalDensity.current) < 100
-    val heightLimit =
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE && notButtonNav) {
-            modifier.heightIn(max = 100.dp)
-        } else modifier
+    val heightLimit = if (!(isApi35AndAbove && isGestureNavigationMode())) Modifier else {
+        Modifier.heightIn(max = 100.dp)
+    }
     NavigationBar(
         modifier = modifier.shadow(
             elevation = 5.dp,
@@ -121,10 +119,10 @@ private fun NavBar(
         containerColor = colors.navBarBgColor,
         contentColor = colors.navBarContentColor
     ) {
-        Spacer(modifier = modifier.weight(0.5f))
+        Spacer(modifier = Modifier.weight(0.5f))
         items().forEachIndexed { index, item ->
             NavigationBarItem(
-                modifier = modifier.weight(1f),
+                modifier = Modifier.weight(1f),
                 colors = NavigationBarItemDefaults.colors(
                     selectedIconColor = colors.navBarSelectedIconColor,
                     disabledIconColor = colors.navBarDisabledIconColor,
@@ -134,7 +132,7 @@ private fun NavBar(
                     Icon(
                         painter = painterResource(id = item.icon),
                         contentDescription = item.text,
-                        modifier = modifier.size(24.dp, 24.dp)
+                        modifier = Modifier.size(24.dp, 24.dp)
                     )
                 },
                 label = { Text(item.text) },
@@ -144,18 +142,18 @@ private fun NavBar(
         }
         Spacer(modifier = modifier.weight(0.5f))
         VerticalDivider(
-            modifier = modifier.height(50.dp), color = if (isSystemInDarkTheme()) {
+            modifier = Modifier.height(50.dp), color = if (isSystemInDarkTheme()) {
                 MaterialTheme.colorScheme.onSurface
             } else DividerDefaults.color
         )
-        Row(modifier = modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+        Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
             BasicTooltipBox(
-                positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
-                tooltip = extendedButtonData.tooltipContent,
+                positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(
+                ), tooltip = extendedButtonData.tooltipContent,
                 state = extendedButtonData.tooltipState
             ) {
                 NavigationBarItem(
-                    modifier = modifier,
+                    modifier = Modifier,
                     colors = NavigationBarItemDefaults.colors(MaterialTheme.colorScheme.primary),
                     icon = extendedButtonData.icon,
                     label = extendedButtonData.label,
@@ -179,18 +177,18 @@ private fun NavRailBar(
     val right = WindowInsets.displayCutout.asPaddingValues()
         .calculateRightPadding(LocalLayoutDirection.current)
     val safeWidthForFullscreen =
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE) modifier.width(right) else modifier
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE) Modifier.width(right) else Modifier
     val bgColor = colors.navBarBgColor
-    Row {
+    Row(modifier = modifier) {
         NavigationRail(
-            modifier = modifier,
+            modifier = Modifier,
             containerColor = bgColor,
             contentColor = colors.navBarContentColor
         ) {
-            Spacer(modifier = modifier.weight(0.5f))
+            Spacer(modifier = Modifier.weight(0.5f))
             items().forEachIndexed { index, item ->
                 NavigationRailItem(
-                    modifier = modifier.weight(1f),
+                    modifier = Modifier.weight(1f),
                     colors = NavigationRailItemDefaults.colors(
                         indicatorColor = colors.navBarItemColor,
                         selectedIconColor = colors.navBarSelectedIconColor,
@@ -200,7 +198,7 @@ private fun NavRailBar(
                         Icon(
                             painter = painterResource(id = item.icon),
                             contentDescription = item.text,
-                            modifier = modifier.size(24.dp, 24.dp)
+                            modifier = Modifier.size(24.dp, 24.dp)
                         )
                     },
                     label = { Text(item.text) },
@@ -208,20 +206,20 @@ private fun NavRailBar(
                     onClick = { onNavClick(selectedInNav(index)) }
                 )
             }
-            Spacer(modifier = modifier.weight(0.5f))
+            Spacer(modifier = Modifier.weight(0.5f))
             HorizontalDivider(
-                modifier = modifier.width(50.dp), color = if (isSystemInDarkTheme()) {
+                modifier = Modifier.width(50.dp), color = if (isSystemInDarkTheme()) {
                     MaterialTheme.colorScheme.onSurface
                 } else DividerDefaults.color
             )
-            Column(modifier = modifier.weight(1f), verticalArrangement = Arrangement.Center) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
                 BasicTooltipBox(
-                    positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
-                    tooltip = extendedButtonData.tooltipContent,
+                    positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(
+                    ), tooltip = extendedButtonData.tooltipContent,
                     state = extendedButtonData.tooltipState
                 ) {
                     NavigationRailItem(
-                        modifier = modifier,
+                        modifier = Modifier,
                         colors = NavigationRailItemDefaults.colors(MaterialTheme.colorScheme.primary),
                         icon = extendedButtonData.icon,
                         label = extendedButtonData.label,
@@ -231,7 +229,7 @@ private fun NavRailBar(
                 }
             }
         }
-        Spacer(modifier = safeWidthForFullscreen.fillMaxHeight() then modifier.background(bgColor))
+        Spacer(modifier = safeWidthForFullscreen.fillMaxHeight() then Modifier.background(bgColor))
     }
 }
 

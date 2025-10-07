@@ -35,7 +35,6 @@ import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -56,7 +55,6 @@ import com.sqz.checklist.R
 import com.sqz.checklist.database.DatabaseRepository
 import com.sqz.checklist.database.Task
 import com.sqz.checklist.ui.main.task.CardHeight
-import com.sqz.checklist.ui.common.unit.pxToDpInt
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -68,19 +66,18 @@ import java.util.Locale
 @Composable
 fun SwipeAbleTaskCard(
     task: Task,
-    onTaskItemClick: (
-        task: Task, type: CardClickType, context: Context
-    ) -> Unit,
+    onTaskItemClick: (task: Task, type: CardClickType, context: Context) -> Unit,
     checked: (id: Long) -> Unit,
     getIsHistory: Boolean,
     context: Context,
-    itemState: SwipeToDismissBoxState,
     mode: ItemMode,
     allowSwipe: Boolean,
     modifier: Modifier = Modifier,
     databaseRepository: DatabaseRepository,
     currentHeight: (dp: Int) -> Unit = {}
 ) { // Process card action
+    val screenWidthPx = LocalWindowInfo.current.containerSize.width * 0.35f
+    val itemState = rememberSwipeToDismissBoxState(positionalThreshold = { screenWidthPx })
     val remindTime = @Composable { // The text of reminder time
         val getTimeInLong =
             if (task.reminder != null) getReminderTime(task.reminder) else 0L
@@ -178,15 +175,19 @@ private fun Modifier.swipeToDismissControl(
     val dismissInEndToStart = itemState.currentValue == SwipeToDismissBoxValue.EndToStart
     val dismissInStartToEnd = itemState.currentValue == SwipeToDismissBoxValue.StartToEnd
     val isDismissed = dismissInEndToStart || dismissInStartToEnd
+    var rememberDismissed by rememberSaveable { mutableStateOf<Boolean?>(null) }
     if (isDismissed) {
-        var isDismissedId by rememberSaveable { mutableIntStateOf(0) }
-        LaunchedEffect(true) { isDismissedId++ }
-        if (isDismissedId < 1) checked()
-        if (!isHistory) LaunchedEffect(true) {
+        if (rememberDismissed == null) rememberDismissed = true
+        if (!isHistory && rememberDismissed == false) LaunchedEffect(Unit) {
             itemState.reset()
+            rememberDismissed = null
         }
     } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
         Vibrate(context, itemState)
+    }
+    if (rememberDismissed == true) LaunchedEffect(Unit) {
+        rememberDismissed = false
+        checked()
     }
     return if (!isDismissed) this else this.height(0.dp)
 }
@@ -257,14 +258,9 @@ private fun getReminderTime(id: Int): Long {
 @Preview
 @Composable
 private fun Preview() {
-    val screenWidthPx =
-        LocalWindowInfo.current.containerSize.width.pxToDpInt() * LocalDensity.current.density
-    val state = rememberSwipeToDismissBoxState(
-        positionalThreshold = { screenWidthPx * 0.38f },
-    )
     SwipeAbleTaskCard(
         Task(0, "The quick brown fox jumps over the lazy dog.", LocalDate.now()),
-        { _, _, _ -> }, {}, false, LocalContext.current, state, ItemMode.NormalTask,
+        { _, _, _ -> }, {}, false, LocalContext.current, ItemMode.NormalTask,
         true, databaseRepository = DatabaseRepository(null)
     )
 }

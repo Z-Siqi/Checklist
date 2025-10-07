@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
 import androidx.lifecycle.coroutineScope
 import com.sqz.checklist.cache.clearExpiredCache
 import com.sqz.checklist.cache.clearOldCacheIfNeeded
@@ -22,9 +21,10 @@ import com.sqz.checklist.database.TaskDatabase
 import com.sqz.checklist.database.buildDatabase
 import com.sqz.checklist.preferences.PrimaryPreferences
 import com.sqz.checklist.ui.MainLayout
-import com.sqz.checklist.ui.theme.SystemBarsColor
+import com.sqz.checklist.ui.common.unit.isGestureNavigationMode
 import com.sqz.checklist.ui.main.appScreenSizeLimit
 import com.sqz.checklist.ui.theme.ChecklistTheme
+import com.sqz.checklist.ui.theme.SystemBarsColor
 import com.sqz.checklist.ui.theme.Theme
 import com.sqz.checklist.ui.theme.ThemePreference
 import kotlinx.coroutines.launch
@@ -41,11 +41,11 @@ class MainActivity : ComponentActivity() {
         taskDatabase = buildDatabase(applicationContext) // load database
         appDir = applicationContext.filesDir.absolutePath // load app dir location
         setContent {
-            val notButtonNav = WindowInsets.navigationBars.getBottom(LocalDensity.current) < 100
             ChecklistTheme {
-                SystemBarsColor.CreateSystemBars(window)
-                val windowInsetsPadding = if (!notButtonNav) // if nav mode is not gesture mode
-                    Modifier.windowInsetsPadding(WindowInsets.navigationBars) else Modifier
+                SystemBarsColor.CreateSystemBars(window) // if nav mode is not gesture mode
+                val windowInsetsPadding = if (isGestureNavigationMode()) Modifier else {
+                    Modifier.windowInsetsPadding(WindowInsets.navigationBars)
+                }
                 if (!appScreenSizeLimit()) Surface(
                     modifier = Modifier
                         .windowInsetsPadding(WindowInsets.statusBars) // Do not override state bar area
@@ -55,6 +55,7 @@ class MainActivity : ComponentActivity() {
                     MainLayout(
                         context = applicationContext,
                         view = window.decorView,
+                        modifier = Modifier
                     )
                 }
                 val theme = Theme.color

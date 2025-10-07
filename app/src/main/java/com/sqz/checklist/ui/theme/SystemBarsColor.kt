@@ -34,11 +34,14 @@ class SystemBarsColor private constructor() {
         val current: SystemBarsColor = SystemBarsColor()
 
         @Composable
-        fun CreateSystemBars(window: Window) {
-            if (!current._init) current.barsColorFlow.update {
-                current._init = true
-                val color = MaterialTheme.colorScheme
-                it.copy(navBgColor = color.secondary, stateBgColor = color.secondary)
+        fun CreateSystemBars(window: Window, defSetter: @Composable () -> Unit = {}) {
+            if (!current._init) {
+                current.barsColorFlow.update {
+                    current._init = true
+                    val color = MaterialTheme.colorScheme
+                    it.copy(navBgColor = color.secondary, stateBgColor = color.secondary)
+                }
+                defSetter()
             }
             current.SetSystemBars(window)
         }
