@@ -165,13 +165,15 @@ fun TaskLayoutTopBar(
         actions = { actionButton() },
         colors = colors.topBarBgColors(true),
         scrollBehavior = scrollBehavior,
-        modifier = shadow
+        modifier = shadow,
+        windowInsets = WindowInsets(),
     ) else {
         MediumTopAppBar(
             colors = colors.topBarBgColors(false),
             title = title,
             actions = { actionButton() },
             scrollBehavior = scrollBehavior,
+            windowInsets = WindowInsets(),
             modifier = if (topBarState.heightOffset == topBarState.heightOffsetLimit) shadow else modifier
         )
         val visible = topBarState.heightOffset >= topBarState.heightOffsetLimit * 0.58

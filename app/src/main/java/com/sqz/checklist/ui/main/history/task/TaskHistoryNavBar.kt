@@ -195,7 +195,8 @@ private fun NavRailBar(
     Row {
         NavigationRail(
             containerColor = colors.containerColor, contentColor = colors.contentColor,
-            modifier = modifier
+            modifier = modifier,
+            windowInsets = WindowInsets()
         ) {
             Spacer(modifier = modifier.weight(0.58f))
             val deleteText = stringResource(R.string.delete)

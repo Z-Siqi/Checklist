@@ -13,9 +13,11 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -35,6 +37,7 @@ import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,23 +45,28 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat.getSystemService
 import com.sqz.checklist.MainActivity
 import com.sqz.checklist.R
 import com.sqz.checklist.database.DatabaseRepository
 import com.sqz.checklist.database.Task
+import com.sqz.checklist.ui.common.unit.isApi29AndAbove
 import com.sqz.checklist.ui.main.task.CardHeight
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlin.math.abs
 
 /**
  * Swipe-able task item for list (Expected @LazyList call this)
@@ -74,24 +82,17 @@ fun SwipeAbleTaskCard(
     allowSwipe: Boolean,
     modifier: Modifier = Modifier,
     databaseRepository: DatabaseRepository,
-    currentHeight: (dp: Int) -> Unit = {}
 ) { // Process card action
     val screenWidthPx = LocalWindowInfo.current.containerSize.width * 0.35f
-    val itemState = rememberSwipeToDismissBoxState(positionalThreshold = { screenWidthPx })
-    val remindTime = @Composable { // The text of reminder time
-        val getTimeInLong =
-            if (task.reminder != null) getReminderTime(task.reminder) else 0L
-        val fullDateShort = stringResource(R.string.full_date_short)
-        if (getTimeInLong <= 1000L) null else SimpleDateFormat(
-            fullDateShort,
-            Locale.getDefault()
-        ).format(getTimeInLong)
-    }
-    val formatter = DateTimeFormatter.ofPattern(
-        stringResource(R.string.task_date_format),
-        Locale.getDefault()
+    val itemState = rememberSwipeToDismissBoxState(
+        positionalThreshold = { screenWidthPx } // This seems like not work anymore in material3 1.4.0 ~ 1.5.0-alpha06 or maybe above
     )
     val density = LocalDensity.current
+    var onValueChange by rememberSaveable { mutableStateOf(false) }
+    if (onValueChange && !getIsHistory) LaunchedEffect(Unit) { // on restore
+        itemState.reset()
+        onValueChange = false
+    }
     Column(
         modifier = Modifier
             .animateContentSize(
@@ -100,11 +101,7 @@ fun SwipeAbleTaskCard(
                     stiffness = Spring.StiffnessMedium
                 )
             )
-            .swipeToDismissControl(itemState, { checked(task.id) }, getIsHistory, context)
-            .onGloballyPositioned { layoutCoordinates ->
-                val heightPx = layoutCoordinates.size.height
-                currentHeight(with(density) { heightPx.toDp() }.value.toInt())
-            },
+            .height(if (onValueChange) 0.dp else Dp.Unspecified),
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -112,34 +109,68 @@ fun SwipeAbleTaskCard(
             if (mode == ItemMode.PinnedTask || mode == ItemMode.RemindedTask) 10 else 14
         val bgStartEnd = horizontalEdge.dp
         val startEnd = bgStartEnd - 2.dp
-        val viewRange = (itemState.progress in 0.1f..0.9f)
-        val isStartToEnd = itemState.dismissDirection == SwipeToDismissBoxValue.StartToEnd
-        val isEndToStart = itemState.dismissDirection == SwipeToDismissBoxValue.EndToStart
-        val isMoved = isStartToEnd || isEndToStart
+        var weight by remember { mutableFloatStateOf(88f) }
+        var positionalThreshold by remember { mutableStateOf(58.dp) }
         SwipeToDismissBox(
-            gesturesEnabled = if (!isMoved) allowSwipe else true,
             state = itemState,
-            backgroundContent = { // back of card
+            onValueChange = { currentValue ->
+                if (!onValueChange && currentValue != SwipeToDismissBoxValue.Settled) { // on checked
+                    onValueChange = true
+                    checked(task.id)
+                }
+            },
+            modifier = modifier.onGloballyPositioned { layoutCoordinates ->
+                val widthPx = layoutCoordinates.size.width
+                val width = with(density) { (widthPx * 0.35f).toDp() }
+                positionalThreshold = width.let { if (it > 200.dp) 200.dp else it }
+            },
+            swipeEnabled = if (itemState.dismissDirection != SwipeToDismissBoxValue.Settled) allowSwipe else true,
+            backgroundContent = { swipeDirection -> // back of card
+                val isStartToEnd = swipeDirection == SwipeToDismissBoxValue.StartToEnd
+                val isEndToStart = swipeDirection == SwipeToDismissBoxValue.EndToStart
+                val isInProcess = itemState.progress != 1.0f
                 Card(
-                    modifier = modifier
+                    modifier = Modifier
                         .fillMaxSize()
                         .padding(start = bgStartEnd, end = bgStartEnd, top = 4.dp, bottom = 4.dp),
                     colors = CardDefaults.cardColors(MaterialTheme.colorScheme.secondary),
                     shape = ShapeDefaults.ExtraLarge
                 ) {
+                    val weightModifier = Modifier.weight(0.05f)
                     Row(
                         modifier = Modifier.fillMaxSize(),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Spacer(modifier = modifier.weight(0.05f))
-                        AnimateInFinishedTask((viewRange && isStartToEnd), Alignment.Start)
-                        Spacer(modifier = modifier.weight(0.7f))
-                        AnimateInFinishedTask((viewRange && isEndToStart), Alignment.End)
-                        Spacer(modifier = modifier.weight(0.05f))
+                        Spacer(modifier = weightModifier.onGloballyPositioned { layoutCoordinates ->
+                            val widthPx = layoutCoordinates.size.width
+                            weight = widthPx.toFloat()
+                        })
+                        AnimateInFinishedTask(isStartToEnd, Alignment.Start)
+                        if (isInProcess && !isStartToEnd && !isEndToStart) {
+                            AnimateInFinishedTask(true, Alignment.CenterHorizontally)
+                        } else {
+                            Spacer(modifier = Modifier.weight(0.7f))
+                        }
+                        AnimateInFinishedTask(isEndToStart, Alignment.End)
+                        Spacer(modifier = weightModifier)
                     }
                 }
-            }
+            },
+            positionalThreshold = positionalThreshold,
+            animationStartThreshold = weight * 1.5f,
         ) { // front of card
+            val remindTime = @Composable { // The text of reminder time
+                val getTimeInLong =
+                    if (task.reminder != null) getReminderTime(task.reminder) else 0L
+                val fullDateShort = stringResource(R.string.full_date_short)
+                if (getTimeInLong <= 1000L) null else SimpleDateFormat(
+                    fullDateShort,
+                    Locale.getDefault()
+                ).format(getTimeInLong)
+            }
+            val formatter = DateTimeFormatter.ofPattern(
+                stringResource(R.string.task_date_format), Locale.getDefault()
+            )
             val reminderState = reminderState(task.reminder, databaseRepository)
             TaskCardContent(
                 textState = TaskTextState(
@@ -157,7 +188,7 @@ fun SwipeAbleTaskCard(
                     isReminderSet = reminderState,
                     isDetailExist = task.detail
                 ),
-                modifier = modifier
+                modifier = Modifier
                     .padding(start = startEnd, end = startEnd, top = 4.dp, bottom = 4.dp)
                     .heightIn(min = CardHeight.dp),
                 mode = mode,
@@ -166,30 +197,93 @@ fun SwipeAbleTaskCard(
     }
 }
 
-/** Control the action of swipe to dismiss, @return the height of card **/
 @Composable
-private fun Modifier.swipeToDismissControl(
-    itemState: SwipeToDismissBoxState,
-    checked: () -> Unit, isHistory: Boolean, context: Context
-): Modifier {
-    val dismissInEndToStart = itemState.currentValue == SwipeToDismissBoxValue.EndToStart
-    val dismissInStartToEnd = itemState.currentValue == SwipeToDismissBoxValue.StartToEnd
-    val isDismissed = dismissInEndToStart || dismissInStartToEnd
-    var rememberDismissed by rememberSaveable { mutableStateOf<Boolean?>(null) }
-    if (isDismissed) {
-        if (rememberDismissed == null) rememberDismissed = true
-        if (!isHistory && rememberDismissed == false) LaunchedEffect(Unit) {
-            itemState.reset()
-            rememberDismissed = null
+private fun SwipeToDismissBox(
+    state: SwipeToDismissBoxState,
+    onValueChange: (SwipeToDismissBoxValue) -> Unit,
+    swipeEnabled: Boolean,
+    backgroundContent: @Composable (RowScope.(SwipeToDismissBoxValue) -> Unit),
+    modifier: Modifier = Modifier,
+    positionalThreshold: Dp = 38.dp, // google broke it in material3 1.4.0, so rewrite this function... fuck
+    animationStartThreshold: Float,
+    content: @Composable (RowScope.() -> Unit),
+) {
+    val positionalThresholdPx = with(LocalDensity.current) { positionalThreshold.toPx() }
+    var swipeDirection by remember { mutableStateOf(SwipeToDismissBoxValue.Settled) }
+    var pressed by remember { mutableStateOf(false) }
+    var onDismissPreparer by remember { mutableStateOf(false) }
+    var onDismiss by remember { mutableStateOf(false) }
+    if (pressed) {
+        var currentOffset by remember { mutableFloatStateOf(0f) }
+        currentOffset = try {
+            state.requireOffset()
+        } catch (_: IllegalStateException) {
+            0f
         }
-    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        Vibrate(context, itemState)
+        // to solve the state.progress not return value before arrive positionalThreshold anymore
+        if (abs(currentOffset) > animationStartThreshold) when {
+            currentOffset == 0f -> swipeDirection = SwipeToDismissBoxValue.Settled
+            currentOffset > 0f -> swipeDirection = SwipeToDismissBoxValue.StartToEnd
+            currentOffset < 0f -> swipeDirection = SwipeToDismissBoxValue.EndToStart
+        } else {
+            swipeDirection = SwipeToDismissBoxValue.Settled
+        }
+        // to fix the positionalThreshold not work correctly
+        if (abs(currentOffset) > positionalThresholdPx) LaunchedEffect(Unit) {
+            onDismissPreparer = true
+        } else LaunchedEffect(Unit) {
+            onDismissPreparer = false
+            onDismiss = false
+        }
+    } else if (onDismissPreparer && !onDismiss) LaunchedEffect(Unit) {
+        onValueChange(state.dismissDirection).also { onDismiss = true }
+        onDismissPreparer = false
     }
-    if (rememberDismissed == true) LaunchedEffect(Unit) {
-        rememberDismissed = false
-        checked()
+    if (isApi29AndAbove) Vibrate(
+        context = LocalContext.current,
+        isInTarget = onDismissPreparer || state.targetValue != SwipeToDismissBoxValue.Settled && state.progress != 1.0f,
+        isBackable = !onDismiss && pressed
+    )
+    SwipeToDismissBox(
+        gesturesEnabled = swipeEnabled,
+        state = state,
+        backgroundContent = { backgroundContent(swipeDirection) },
+        onDismiss = { onValueChange(it).also { onDismiss = true } },
+        modifier = modifier.pointerInput(Unit) {
+            awaitPointerEventScope {
+                while (true) { // detect for the new positionalThreshold
+                    awaitFirstDown(pass = PointerEventPass.Initial)
+                    pressed = true
+                    var stillPressed = true
+                    while (stillPressed) {
+                        val event = awaitPointerEvent(pass = PointerEventPass.Initial)
+                        stillPressed = event.changes.any { it.pressed }
+                    }
+                    pressed = false
+                }
+            }
+        },
+        content = content
+    )
+}
+
+@RequiresApi(Build.VERSION_CODES.Q)
+@Composable
+private fun Vibrate(context: Context, isInTarget: Boolean, isBackable: Boolean) {
+    var isOn by remember { mutableStateOf(false) }
+    if (isInTarget) LaunchedEffect(Unit) {
+        getSystemService(context, Vibrator::class.java)?.vibrate(
+            VibrationEffect.createPredefined(
+                VibrationEffect.EFFECT_TICK
+            )
+        )
+        isOn = true
+    } else if (isOn && isBackable) LaunchedEffect(Unit) {
+        getSystemService(context, Vibrator::class.java)?.vibrate(
+            VibrationEffect.createOneShot(12L, 58)
+        )
+        isOn = false
     }
-    return if (!isDismissed) this else this.height(0.dp)
 }
 
 /** check the reminder is set or not **/
@@ -208,30 +302,6 @@ private fun reminderState(reminder: Int?, databaseRepository: DatabaseRepository
         } else state = false
     }
     return state
-}
-
-@RequiresApi(Build.VERSION_CODES.Q)
-@Composable
-private fun Vibrate(
-    context: Context,
-    itemState: SwipeToDismissBoxState
-) {
-    var isOn by remember { mutableStateOf(false) }
-    if (itemState.targetValue == SwipeToDismissBoxValue.StartToEnd ||
-        itemState.targetValue == SwipeToDismissBoxValue.EndToStart
-    ) LaunchedEffect(Unit) {
-        getSystemService(context, Vibrator::class.java)?.vibrate(
-            VibrationEffect.createPredefined(
-                VibrationEffect.EFFECT_TICK
-            )
-        )
-        isOn = true
-    } else if (isOn && itemState.targetValue == itemState.currentValue) LaunchedEffect(Unit) {
-        getSystemService(context, Vibrator::class.java)?.vibrate(
-            VibrationEffect.createOneShot(12L, 58)
-        )
-        isOn = false
-    }
 }
 
 @Composable

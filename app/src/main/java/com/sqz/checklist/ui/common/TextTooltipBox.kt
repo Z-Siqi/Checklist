@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Text
+import androidx.compose.material3.TooltipAnchorPosition
 import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.rememberTooltipState
@@ -44,7 +45,9 @@ fun TextTooltipBox(
     enable: Boolean = true,
     content: @Composable () -> Unit,
 ) = TooltipBox(
-    positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+    positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
+        TooltipAnchorPosition.Above
+    ),
     tooltip = {
         val extraPaddingValue = if (topLeftExtraPadding) {
             modifier.padding(top = 25.dp, bottom = 20.dp)

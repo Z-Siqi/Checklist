@@ -286,12 +286,12 @@ private fun HighlightItems(
             text = title, fontSize = 15.sp, fontWeight = FontWeight.Medium, color = titleColor,
             modifier = Modifier.padding(start = 9.dp, top = 5.dp, bottom = 5.dp),
         )
-        var cacheList by remember { mutableStateOf(items) }
-        if (cacheList != items) { // refresh list
-            LaunchedEffect(Unit) { cacheList = items }
+        var cacheList by remember { mutableIntStateOf(items.size) }
+        if (cacheList != items.size) { // refresh list
             items.fastForEach { item ->
                 itemContent(item)
             }
+            LaunchedEffect(Unit) { cacheList = items.size }
         } else {
             items.fastForEach { item ->
                 itemContent(item)

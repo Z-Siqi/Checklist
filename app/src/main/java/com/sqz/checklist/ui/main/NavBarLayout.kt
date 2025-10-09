@@ -33,6 +33,7 @@ import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.NavigationRailItemDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TooltipAnchorPosition
 import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
@@ -148,7 +149,8 @@ private fun NavBar(
         )
         Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
             BasicTooltipBox(
-                positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(
+                positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
+                    TooltipAnchorPosition.Above
                 ), tooltip = extendedButtonData.tooltipContent,
                 state = extendedButtonData.tooltipState
             ) {
@@ -183,7 +185,8 @@ private fun NavRailBar(
         NavigationRail(
             modifier = Modifier,
             containerColor = bgColor,
-            contentColor = colors.navBarContentColor
+            contentColor = colors.navBarContentColor,
+            windowInsets = WindowInsets()
         ) {
             Spacer(modifier = Modifier.weight(0.5f))
             items().forEachIndexed { index, item ->
@@ -214,7 +217,8 @@ private fun NavRailBar(
             )
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
                 BasicTooltipBox(
-                    positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(
+                    positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
+                        TooltipAnchorPosition.Above
                     ), tooltip = extendedButtonData.tooltipContent,
                     state = extendedButtonData.tooltipState
                 ) {

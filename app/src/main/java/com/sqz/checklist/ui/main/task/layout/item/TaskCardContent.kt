@@ -30,7 +30,6 @@ import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,12 +42,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -59,6 +62,7 @@ import com.sqz.checklist.ui.common.TextTooltipBox
 import com.sqz.checklist.ui.common.dialog.InfoAlertDialog
 import com.sqz.checklist.ui.main.task.CardHeight
 import com.sqz.checklist.ui.theme.Theme
+import kotlin.math.min
 
 enum class CardClickType { Reminder, Edit, Pin, Close, Detail }
 
@@ -133,33 +137,48 @@ private fun DateText(
     modifier: Modifier,
     density: Density = LocalDensity.current,
     twoLinesHeightDp: Dp = with(density) { ((14.sp).toPx() * 2.5f).toDp() }
-) = Column(
-    modifier = modifier.heightIn(max = twoLinesHeightDp),
-    verticalArrangement = Arrangement.Bottom
 ) {
-    var overflow by remember { mutableStateOf(false) }
-    val overflowSizeValue = if (!overflow) 1f else 1.8f
-    val containerSize = LocalWindowInfo.current.containerSize
-    var rememberState by remember { mutableStateOf(containerSize) }
-    if (overflow && rememberState != containerSize) LaunchedEffect(Unit) {
-        rememberState = containerSize
-        overflow = false
+    BoxWithConstraints(
+        modifier = modifier.heightIn(max = twoLinesHeightDp),
+        contentAlignment = Alignment.BottomStart
+    ) {
+        val measurer = rememberTextMeasurer()
+        val raw = textState.dateText.replace(
+            Regex("(\\d{1,2}) (\\p{Alpha}+) (\\d{4})"), "$1\u00A0$2\u00A0$3"
+        )
+        val normalStyle = TextStyle(
+            fontWeight = FontWeight.Bold,
+            fontSize = 12.sp,
+            lineHeight = 14.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            platformStyle = PlatformTextStyle(includeFontPadding = false)
+        )
+        val smallStyle = normalStyle.copy(
+            fontSize = 12.sp / 1.8f,
+            lineHeight = 14.sp / 1.8f
+        )
+        val maxW = constraints.maxWidth
+        val maxH = min(constraints.maxHeight, with(density) { twoLinesHeightDp.roundToPx() })
+        val fitsNormal = remember(raw, maxW, maxH) {
+            val result = measurer.measure(
+                text = AnnotatedString(raw),
+                style = normalStyle,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
+                constraints = Constraints(maxWidth = maxW, maxHeight = maxH)
+            )
+            !result.hasVisualOverflow
+        }
+        val finalText = if (fitsNormal) raw else raw.replace("\n", "")
+        val finalStyle = if (fitsNormal) normalStyle else smallStyle
+        Text(
+            text = finalText,
+            style = finalStyle,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(start = 5.dp, bottom = 3.dp)
+        )
     }
-    Text(
-        text = textState.dateText.replace( // format date for only one line date
-            Regex("(\\d{1,2}) (\\p{Alpha}+) (\\d{4})"),
-            "$1\u00A0$2\u00A0$3"
-        ).let { if (!overflow) it else it.replace("\n", "") },
-        fontWeight = FontWeight.Bold,
-        fontSize = 12.sp / overflowSizeValue,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        lineHeight = 14.sp / overflowSizeValue,
-        modifier = Modifier
-            .padding(start = 5.dp, bottom = 3.dp),
-        maxLines = 3,
-        onTextLayout = { if (it.hasVisualOverflow) overflow = true },
-        overflow = TextOverflow.Ellipsis
-    )
 }
 
 @Composable
