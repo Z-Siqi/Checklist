@@ -3,7 +3,6 @@ package com.sqz.checklist.ui.main.settings
 import android.view.SoundEffectConstants
 import android.view.View
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.rememberBasicTooltipState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
@@ -13,7 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.sqz.checklist.R
 import com.sqz.checklist.ui.main.NavExtendedButtonData
-import com.sqz.checklist.ui.common.NonExtendedTooltip
+import com.sqz.checklist.ui.common.TextTooltipBox
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -29,10 +28,9 @@ fun settingsExtendedNavButton(
         Icon(icon, contentDescription = buttonText)
     }
     val label = @Composable { Text(buttonText) }
-    val tooltipContent = @Composable {
-        NonExtendedTooltip(buttonText, view)
+    val tooltipContent: @Composable ((@Composable (() -> Unit)) -> Unit) = {
+        TextTooltipBox(text = buttonText, content = it)
     }
-    val tooltipState = rememberBasicTooltipState(isPersistent = false)
     val onClick = {
         if (viewModel.getSearchState()) viewModel.resetSearchState() else viewModel.requestSearch()
         view.playSoundEffect(SoundEffectConstants.CLICK)
@@ -42,7 +40,6 @@ fun settingsExtendedNavButton(
         icon = icon,
         label = label,
         tooltipContent = tooltipContent,
-        tooltipState = tooltipState,
         onClick = onClick
     )
 }

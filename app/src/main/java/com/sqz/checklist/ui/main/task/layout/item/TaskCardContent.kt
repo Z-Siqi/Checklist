@@ -115,8 +115,7 @@ fun TaskCardContent(
             verticalAlignment = Alignment.Bottom
         ) {
             DateText(
-                modifier = Modifier
-                    .weight(1f),
+                modifier = Modifier.weight(1f),
                 textState = textState,
             )
             ButtonsRow(
@@ -291,7 +290,7 @@ private fun PinOrCloseButton(
     view: View,
     modifier: Modifier,
     iconTextId: Int = if (mode == ItemMode.RemindedTask) R.string.cancel_highlight else R.string.pin
-) = TextTooltipBox(iconTextId, modifier = modifier.requiredSize(30.dp)) {
+) = TextTooltipBox(iconTextId, modifier = modifier.requiredSizeIn(minWidth = 30.dp)) {
     IconButton(
         modifier = if (mode != ItemMode.RemindedTask) Modifier.rotate(40f) else Modifier,
         onClick = {

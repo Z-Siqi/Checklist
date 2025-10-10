@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberBasicTooltipState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -126,7 +125,7 @@ fun MainLayout(context: Context, view: View, modifier: Modifier) {
                 viewModel = settingsLayoutViewModel, view = view
             )
             // The else should never happen, never be called
-            else -> NavExtendedButtonData({}, {}, {}, rememberBasicTooltipState())
+            else -> NavExtendedButtonData()
         }
         NavBarLayout(
             mode = mode,

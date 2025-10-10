@@ -1,6 +1,5 @@
 package com.sqz.checklist.ui.common.dialog
 
-import android.annotation.SuppressLint
 import android.view.SoundEffectConstants
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Column
@@ -21,35 +20,38 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
 import com.sqz.checklist.R
+import com.sqz.checklist.ui.common.unit.pxToDpInt
 import com.sqz.checklist.ui.common.verticalColumnScrollbar
 
 @Composable
 fun InfoAlertDialog(
     onDismissRequest: () -> Unit,
+    modifier: Modifier = Modifier,
     title: String? = null,
-    text: String,
-    @SuppressLint("ModifierParameter") modifier: Modifier = Modifier
+    text: String?,
+    content: @Composable () -> Unit = {},
 ) {
     val view = LocalView.current
     val scrollState = rememberScrollState()
-    val screenHeightDp = LocalConfiguration.current.screenHeightDp
+    val containerSize = LocalWindowInfo.current.containerSize
+    val screenHeightDp = containerSize.height.pxToDpInt()
     val height = when {
         screenHeightDp >= 700 -> (screenHeightDp / 5.8).toInt()
-        screenHeightDp < (LocalConfiguration.current.screenWidthDp / 1.2) -> (screenHeightDp / 3.2).toInt()
+        screenHeightDp < (containerSize.width.pxToDpInt() / 1.2) -> (screenHeightDp / 3.2).toInt()
         else -> (screenHeightDp / 5.1).toInt()
     }
     AlertDialog(
         modifier = modifier
-            .width((LocalConfiguration.current.screenWidthDp / 1.2).dp)
+            .width((containerSize.width.pxToDpInt() / 1.2).dp)
             .sizeIn(maxWidth = 560.dp),
         onDismissRequest = onDismissRequest,
         confirmButton = {
@@ -62,7 +64,7 @@ fun InfoAlertDialog(
         },
         text = {
             val focus = LocalFocusManager.current
-            OutlinedCard(
+            if (text != null) OutlinedCard(
                 modifier = modifier.fillMaxWidth() then modifier
                     .height(height.dp)
                     .pointerInput(Unit) {
@@ -87,6 +89,7 @@ fun InfoAlertDialog(
                     }
                 }
             }
+            content()
         },
         title = { if (title != null) Text(text = title) },
         properties = DialogProperties(usePlatformDefaultWidth = false)

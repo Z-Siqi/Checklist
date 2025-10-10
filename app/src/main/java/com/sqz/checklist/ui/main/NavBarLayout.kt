@@ -2,8 +2,6 @@ package com.sqz.checklist.ui.main
 
 import android.os.Build
 import android.util.Log
-import androidx.compose.foundation.BasicTooltipBox
-import androidx.compose.foundation.BasicTooltipState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -33,8 +31,6 @@ import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.NavigationRailItemDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TooltipAnchorPosition
-import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -47,6 +43,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.sqz.checklist.R
 import com.sqz.checklist.ui.MainLayoutNav
+import com.sqz.checklist.ui.common.TextTooltipBox
 import com.sqz.checklist.ui.common.unit.isApi35AndAbove
 import com.sqz.checklist.ui.common.unit.isGestureNavigationMode
 import com.sqz.checklist.ui.theme.Theme
@@ -54,11 +51,10 @@ import com.sqz.checklist.ui.theme.Theme
 /**
  * Extended Button actions layout data for the Navigation Bar
  */
-data class NavExtendedButtonData @OptIn(ExperimentalFoundationApi::class) constructor(
+data class NavExtendedButtonData(
     val icon: @Composable () -> Unit = {},
     val label: @Composable () -> Unit = {},
-    val tooltipContent: @Composable () -> Unit = {},
-    val tooltipState: BasicTooltipState = BasicTooltipState(),
+    val tooltipContent: @Composable (@Composable () -> Unit) -> Unit = { it() },
     val onClick: () -> Unit = {},
 )
 
@@ -148,12 +144,7 @@ private fun NavBar(
             } else DividerDefaults.color
         )
         Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
-            BasicTooltipBox(
-                positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
-                    TooltipAnchorPosition.Above
-                ), tooltip = extendedButtonData.tooltipContent,
-                state = extendedButtonData.tooltipState
-            ) {
+            extendedButtonData.tooltipContent {
                 NavigationBarItem(
                     modifier = Modifier,
                     colors = NavigationBarItemDefaults.colors(MaterialTheme.colorScheme.primary),
@@ -216,12 +207,7 @@ private fun NavRailBar(
                 } else DividerDefaults.color
             )
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
-                BasicTooltipBox(
-                    positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
-                        TooltipAnchorPosition.Above
-                    ), tooltip = extendedButtonData.tooltipContent,
-                    state = extendedButtonData.tooltipState
-                ) {
+                extendedButtonData.tooltipContent {
                     NavigationRailItem(
                         modifier = Modifier,
                         colors = NavigationRailItemDefaults.colors(MaterialTheme.colorScheme.primary),
@@ -245,8 +231,7 @@ private fun NavPreview() {
         extendedButtonData = NavExtendedButtonData(
             icon = { Icon(Icons.Filled.AddCircle, "") },
             label = { Text("TEST") },
-            tooltipContent = { Text("TEST") },
-            tooltipState = BasicTooltipState(),
+            tooltipContent = { TextTooltipBox(text = "TEST", content = it) },
             onClick = {}
         ), selected = { true }, onNavClick = {}
     )
@@ -260,8 +245,7 @@ private fun NavRailPreview() {
         extendedButtonData = NavExtendedButtonData(
             icon = { Icon(Icons.Filled.AddCircle, "") },
             label = { Text("TEST") },
-            tooltipContent = { Text("TEST") },
-            tooltipState = BasicTooltipState(),
+            tooltipContent = { it() },
             onClick = {}
         ), selected = { true }, onNavClick = {}
     )

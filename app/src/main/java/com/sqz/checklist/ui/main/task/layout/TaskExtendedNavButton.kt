@@ -3,13 +3,17 @@ package com.sqz.checklist.ui.main.task.layout
 import android.view.SoundEffectConstants
 import android.view.View
 import android.widget.Toast
+import androidx.compose.foundation.BasicTooltipBox
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.rememberBasicTooltipState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.TooltipAnchorPosition
+import androidx.compose.material3.TooltipDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -28,7 +32,7 @@ import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
 import com.sqz.checklist.ui.main.task.layout.function.CreateTask
 import com.sqz.checklist.ui.main.task.layout.function.TaskDetailData
 import com.sqz.checklist.ui.main.task.layout.function.TaskModifyDialog
-import com.sqz.checklist.ui.common.NonExtendedTooltip
+import com.sqz.checklist.ui.common.TextTooltipBox
 import kotlinx.coroutines.launch
 
 /** Nav Extended Button Connect Data **/
@@ -40,7 +44,7 @@ data class NavConnectData(
     val canScrollForward: Boolean = false,
 )
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun taskExtendedNavButton(
     mode: NavMode, view: View, viewModel: TaskLayoutViewModel
@@ -53,34 +57,47 @@ fun taskExtendedNavButton(
         val icons = if (!connector.searchState) Icons.Filled.AddCircle else Icons.Filled.Close
         Icon(icons, contentDescription = buttonInfo)
     }
-    val label = @Composable { Text(buttonInfo) }
-    val extendedTooltipState = connector.canScroll && !connector.searchState
-    val tooltipState = rememberBasicTooltipState(isPersistent = extendedTooltipState)
-    val tooltipContent = @Composable {
-        if (extendedTooltipState) NavTooltipContent(
-            mode = mode, onClickType = { onClickType ->
-                when (onClickType) {
-                    OnClickType.Search -> {
-                        tooltipState.dismiss()
-                        val it = NavConnectData(searchState = true)
-                        viewModel.updateNavConnector(it, it)
-                    }
+    val label = @Composable {
+        Text(text = buttonInfo)
+    }
+    val tooltipContent: @Composable ((@Composable (() -> Unit)) -> Unit) = {
+        if (connector.canScroll && !connector.searchState) {
+            val tooltipState = rememberBasicTooltipState(isPersistent = true)
+            BasicTooltipBox(
+                positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
+                    TooltipAnchorPosition.Above
+                ),
+                tooltip = {
+                    NavTooltipContent(
+                        mode = mode, onClickType = { onClickType ->
+                            when (onClickType) {
+                                OnClickType.Search -> {
+                                    tooltipState.dismiss()
+                                    val it = NavConnectData(searchState = true)
+                                    viewModel.updateNavConnector(it, it)
+                                }
 
-                    OnClickType.ScrollUp -> coroutineScope.launch {
-                        tooltipState.dismiss()
-                        val it = NavConnectData(scrollToFirst = true)
-                        viewModel.updateNavConnector(it, it)
-                    }
+                                OnClickType.ScrollUp -> coroutineScope.launch {
+                                    tooltipState.dismiss()
+                                    val it = NavConnectData(scrollToFirst = true)
+                                    viewModel.updateNavConnector(it, it)
+                                }
 
-                    OnClickType.ScrollDown -> coroutineScope.launch {
-                        tooltipState.dismiss()
-                        val it = NavConnectData(scrollToBottom = true)
-                        viewModel.updateNavConnector(it, it)
-                    }
-                }
-            }, view = view, scrollUp = !connector.canScrollForward
-        ) else NonExtendedTooltip(
-            text = buttonInfo, view = view
+                                OnClickType.ScrollDown -> coroutineScope.launch {
+                                    tooltipState.dismiss()
+                                    val it = NavConnectData(scrollToBottom = true)
+                                    viewModel.updateNavConnector(it, it)
+                                }
+                            }
+                        }, view = view, scrollUp = !connector.canScrollForward
+                    )
+                },
+                state = tooltipState,
+                content = it
+            )
+        } else TextTooltipBox(
+            text = buttonInfo,
+            content = it
         )
     }
     val onClick = {
@@ -121,7 +138,6 @@ fun taskExtendedNavButton(
         icon = icon,
         label = label,
         tooltipContent = tooltipContent,
-        tooltipState = tooltipState,
         onClick = onClick
     )
 }

@@ -52,7 +52,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -81,7 +80,6 @@ import com.sqz.checklist.ui.common.media.AudioViewDialog
 import com.sqz.checklist.ui.common.media.PictureViewDialog
 import com.sqz.checklist.ui.common.media.VideoViewDialog
 import com.sqz.checklist.ui.theme.Theme
-import com.sqz.checklist.ui.common.unit.pxToDpInt
 import com.sqz.checklist.ui.common.unit.screenIsWidthAndAPI34Above
 import kotlinx.coroutines.delay
 import java.time.LocalDate
@@ -288,14 +286,13 @@ private fun rememberLazyListState(
     updateNavConnector: (data: NavConnectData, updateSet: NavConnectData) -> Unit,
 ): LazyListState {
     val lazyState = rememberLazyListState()
-    val screenHeight = LocalWindowInfo.current.containerSize.height.pxToDpInt()
     val rememberTopBarHeight = rememberSaveable { mutableFloatStateOf(0f) }
     LaunchedEffect(Unit) { // this LaunchedEffect is used to fix a crash when rotate screen in auto scroll
         delay(200)
         rememberTopBarHeight.floatValue = scrollBehavior.state.heightOffsetLimit
     }
     LaunchedEffect(lazyState) {
-        snapshotFlow { lazyState.layoutInfo.totalItemsCount * 120 > screenHeight }.collect {
+        snapshotFlow { lazyState.canScrollForward || lazyState.canScrollBackward }.collect {
             updateNavConnector(
                 NavConnectData(canScroll = it), NavConnectData(canScroll = true)
             )

@@ -13,8 +13,8 @@ android {
         applicationId = "com.sqz.checklist"
         minSdk = 26
         targetSdk = 36
-        versionCode = 51
-        versionName = "0.5.1-Build_CI"
+        versionCode = 5101
+        versionName = "0.5.1-Build_beta01"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

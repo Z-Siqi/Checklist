@@ -6,8 +6,11 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -16,9 +19,12 @@ import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
@@ -30,10 +36,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
@@ -42,6 +50,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -49,6 +58,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sqz.checklist.MainActivity
 import com.sqz.checklist.R
 import com.sqz.checklist.database.Task
+import com.sqz.checklist.ui.common.dialog.InfoAlertDialog
+import com.sqz.checklist.ui.main.task.CardHeight
 import com.sqz.checklist.ui.theme.Theme
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -138,6 +149,7 @@ private fun ItemBox(
     val border = if (selectState.selectedId == item.id) {
         BorderStroke(3.dp, MaterialTheme.colorScheme.tertiary)
     } else BorderStroke(1.dp, MaterialTheme.colorScheme.surfaceDim)
+    var dialogState by rememberSaveable { mutableStateOf(false) }
     Column(
         modifier = modifier
             .animateContentSize(
@@ -149,19 +161,13 @@ private fun ItemBox(
             .height(if (hide) 0.dp else Dp.Unspecified),
         verticalArrangement = Arrangement.Top,
     ) {
-        val density = LocalDensity.current
-        val twoLinesHeightDp = with(density) { ((21.sp).toPx() * 2.5f).toDp() }
-        val oneLineHeightDp = with(density) { (12.sp).toDp() }
         OutlinedCard(
             modifier = Modifier
-                .height(twoLinesHeightDp + oneLineHeightDp + 50.dp)
+                .heightIn(min = (CardHeight + 20).dp)
+                .height(IntrinsicSize.Max)
                 .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 4.dp),
             colors = CardDefaults.cardColors(colors.taskBackgroundColor),
             border = border,
-            onClick = {
-                onItemClick()
-                view.playSoundEffect(SoundEffectConstants.CLICK)
-            },
             shape = ShapeDefaults.ExtraLarge
         ) {
             val formatter = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.getDefault())
@@ -171,14 +177,21 @@ private fun ItemBox(
             val paddingModifier = Modifier.padding(
                 bottom = 8.dp, top = 12.dp, start = 12.dp, end = 11.dp
             )
-            Column(modifier = paddingModifier.fillMaxWidth()) {
-                Text(
-                    text = item.description,
-                    fontSize = 21.sp,
-                    lineHeight = 23.sp,
-                    maxLines = 2,
-                    modifier = Modifier.fillMaxWidth(0.8f),
-                    overflow = TextOverflow.Ellipsis
+            Column(
+                modifier = Modifier.combinedClickable(
+                    onLongClick = {
+                        dialogState = true
+                    },
+                    onClick = {
+                        onItemClick()
+                        view.playSoundEffect(SoundEffectConstants.CLICK)
+                    }
+                ) then paddingModifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.Top
+            ) {
+                TaskDescription(
+                    description = item.description,
+                    modifier = Modifier
                 )
                 Spacer(modifier = Modifier.weight(1f))
                 Row(modifier = Modifier, verticalAlignment = Alignment.Bottom) {
@@ -193,6 +206,40 @@ private fun ItemBox(
                 }
             }
         }
+    }
+    if (dialogState) InfoAlertDialog(
+        onDismissRequest = { dialogState = false },
+        text = item.description
+    )
+}
+
+@Composable
+private fun TaskDescription(
+    description: String,
+    modifier: Modifier,
+    density: Density = LocalDensity.current
+) = Card(
+    modifier = modifier
+        .fillMaxWidth(0.75f)
+        .height(IntrinsicSize.Min)
+        .width(IntrinsicSize.Min),
+    colors = CardDefaults.cardColors(Color.Transparent),
+) {
+    val twoLinesHeightDp = with(density) {
+        ((21.sp).toPx() * 2.5f).toDp()
+    }
+    Box(modifier = Modifier.height(twoLinesHeightDp)) {
+        Text(
+            text = description,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(start = 5.dp),
+            fontSize = 21.sp,
+            lineHeight = 21.sp,
+            overflow = TextOverflow.Ellipsis,
+            maxLines = 2,
+            fontWeight = FontWeight.Normal,
+        )
     }
 }
 
