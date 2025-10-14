@@ -209,7 +209,8 @@ private fun ItemBox(
     }
     if (dialogState) InfoAlertDialog(
         onDismissRequest = { dialogState = false },
-        text = item.description
+        text = item.description,
+        title = stringResource(R.string.task_info)
     )
 }
 

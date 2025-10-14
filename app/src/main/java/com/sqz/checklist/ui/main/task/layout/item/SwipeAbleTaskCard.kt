@@ -4,7 +4,6 @@ import android.content.Context
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
-import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
@@ -62,6 +61,7 @@ import com.sqz.checklist.database.DatabaseRepository
 import com.sqz.checklist.database.Task
 import com.sqz.checklist.ui.common.unit.isApi29AndAbove
 import com.sqz.checklist.ui.main.task.CardHeight
+import com.sqz.checklist.ui.common.unit.reminderState
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -168,18 +168,21 @@ fun SwipeAbleTaskCard(
                     Locale.getDefault()
                 ).format(getTimeInLong)
             }
+            val dateReminderText = stringResource(
+                R.string.task_reminded_time, remindTime().toString()
+            )
             val formatter = DateTimeFormatter.ofPattern(
                 stringResource(R.string.task_date_format), Locale.getDefault()
             )
-            val reminderState = reminderState(task.reminder, databaseRepository)
+            val dateText = stringResource(
+                R.string.task_creation_time, task.createDate.format(formatter)
+            )
+            val reminderState = databaseRepository.reminderState(task.reminder)
             TaskCardContent(
                 textState = TaskTextState(
                     description = task.description,
-                    dateText = if (mode == ItemMode.RemindedTask) stringResource(
-                        R.string.task_reminded_time, remindTime().toString()
-                    ) else stringResource(
-                        R.string.task_creation_time, task.createDate.format(formatter)
-                    ),
+                    dateText = dateText,
+                    dateReminderText = dateReminderText,
                     reminderTooltip = if (reminderState) remindTime() else null
                 ),
                 onClick = { type -> onTaskItemClick(task, type, context) },
@@ -284,24 +287,6 @@ private fun Vibrate(context: Context, isInTarget: Boolean, isBackable: Boolean) 
         )
         isOn = false
     }
-}
-
-/** check the reminder is set or not **/
-@Composable
-private fun reminderState(reminder: Int?, databaseRepository: DatabaseRepository): Boolean {
-    var state by remember { mutableStateOf(false) }
-    LaunchedEffect(databaseRepository.getIsRemindedNum(true)) {
-        if (reminder != 0 && reminder != null) {
-            try {
-                state = !(databaseRepository.getReminderData(reminder)?.isReminded ?: true)
-            } catch (e: Exception) {
-                if (e.message != "The coroutine scope left the composition") Log.w(
-                    "Exception: TaskItem", "$reminder, err: $e"
-                )
-            }
-        } else state = false
-    }
-    return state
 }
 
 @Composable

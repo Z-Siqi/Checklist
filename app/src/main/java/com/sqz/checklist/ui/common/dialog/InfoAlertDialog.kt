@@ -3,6 +3,9 @@ package com.sqz.checklist.ui.common.dialog
 import android.view.SoundEffectConstants
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -12,13 +15,16 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalView
@@ -37,7 +43,9 @@ fun InfoAlertDialog(
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
     title: String? = null,
+    titleRow: @Composable RowScope.() -> Unit = {},
     text: String?,
+    textBackgroundColor: Boolean = true,
     content: @Composable () -> Unit = {},
 ) {
     val view = LocalView.current
@@ -64,34 +72,47 @@ fun InfoAlertDialog(
         },
         text = {
             val focus = LocalFocusManager.current
-            if (text != null) OutlinedCard(
-                modifier = modifier.fillMaxWidth() then modifier
-                    .height(height.dp)
-                    .pointerInput(Unit) {
-                        detectTapGestures { focus.clearFocus() }
-                    },
-                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh)
-            ) {
-                Column(modifier.padding(8.dp)) {
+            val bgColor = if (!textBackgroundColor) Color.Transparent else {
+                MaterialTheme.colorScheme.surfaceContainer
+            }
+            Column {
+                if (text != null) Card(
+                    modifier = Modifier.fillMaxWidth() then Modifier
+                        .height(height.dp)
+                        .pointerInput(Unit) {
+                            detectTapGestures { focus.clearFocus() }
+                        },
+                    colors = CardDefaults.cardColors(bgColor),
+                    shape = if (title == null) ShapeDefaults.Large else ShapeDefaults.Medium
+                ) {
                     SelectionContainer(
-                        modifier = modifier.verticalColumnScrollbar(
+                        modifier = Modifier.padding(8.dp) then Modifier.verticalColumnScrollbar(
                             scrollState = scrollState, endPadding = 0f, scrollBarCornerRadius = 12f,
                             scrollBarTrackColor = MaterialTheme.colorScheme.outlineVariant,
                             scrollBarColor = MaterialTheme.colorScheme.outline,
                             showScrollBar = scrollState.canScrollBackward || scrollState.canScrollForward
-                        ) then modifier.verticalScroll(scrollState)
+                        ) then Modifier.verticalScroll(scrollState)
                     ) {
                         Text(
                             text = text,
+                            modifier = Modifier.fillMaxWidth(),
                             fontSize = 19.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
+                content()
             }
-            content()
         },
-        title = { if (title != null) Text(text = title) },
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (title != null) {
+                    Text(text = title)
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+                titleRow()
+            }
+        },
         properties = DialogProperties(usePlatformDefaultWidth = false)
     )
 }

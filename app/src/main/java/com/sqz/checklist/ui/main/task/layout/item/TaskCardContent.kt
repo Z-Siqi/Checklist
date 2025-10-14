@@ -79,6 +79,7 @@ data class TaskIconState(
 data class TaskTextState(
     val description: String,
     val dateText: String,
+    val dateReminderText: String?,
     val reminderTooltip: String? = null
 )
 
@@ -99,7 +100,10 @@ fun TaskCardContent(
         Row(modifier = Modifier, horizontalArrangement = Arrangement.Start) {
             TaskDescription(
                 textState = textState,
-                modifier = Modifier
+                mode = mode,
+                onClick = onClick,
+                iconState = iconState,
+                view = view
             )
             Spacer(modifier = Modifier.weight(1f))
             PinOrCloseButton(
@@ -115,8 +119,9 @@ fun TaskCardContent(
             verticalAlignment = Alignment.Bottom
         ) {
             DateText(
-                modifier = Modifier.weight(1f),
                 textState = textState,
+                mode = mode,
+                modifier = Modifier.weight(1f),
             )
             ButtonsRow(
                 textState = textState,
@@ -133,43 +138,50 @@ fun TaskCardContent(
 @Composable
 private fun DateText(
     textState: TaskTextState,
+    mode: ItemMode,
     modifier: Modifier,
     density: Density = LocalDensity.current,
     twoLinesHeightDp: Dp = with(density) { ((14.sp).toPx() * 2.5f).toDp() }
+) = BoxWithConstraints(
+    modifier = modifier.heightIn(max = twoLinesHeightDp),
+    contentAlignment = Alignment.BottomStart
 ) {
-    BoxWithConstraints(
-        modifier = modifier.heightIn(max = twoLinesHeightDp),
-        contentAlignment = Alignment.BottomStart
+    val measurer = rememberTextMeasurer()
+    val dateText = if (mode != ItemMode.RemindedTask) textState.dateText else {
+        textState.dateReminderText.toString()
+    }
+    val raw = dateText.replace(
+        Regex("(\\d{1,2}) (\\p{Alpha}+) (\\d{4})"), "$1\u00A0$2\u00A0$3"
+    )
+    val normalStyle = TextStyle(
+        fontWeight = FontWeight.Bold,
+        fontSize = 12.sp,
+        lineHeight = 14.sp,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        platformStyle = PlatformTextStyle(includeFontPadding = false)
+    )
+    val smallStyle = normalStyle.copy(
+        fontSize = 12.sp / 1.8f,
+        lineHeight = 14.sp / 1.8f
+    )
+    val maxW = constraints.maxWidth
+    val maxH = min(constraints.maxHeight, with(density) { twoLinesHeightDp.roundToPx() })
+    val fitsNormal = remember(raw, maxW, maxH) {
+        val result = measurer.measure(
+            text = AnnotatedString(raw),
+            style = normalStyle,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis,
+            constraints = Constraints(maxWidth = maxW, maxHeight = maxH)
+        )
+        !result.hasVisualOverflow
+    }
+    val finalText = if (fitsNormal) raw else raw.replace("\n", "")
+    val finalStyle = if (fitsNormal) normalStyle else smallStyle
+    TextTooltipBox(
+        text = textState.dateText,
+        enable = mode == ItemMode.RemindedTask
     ) {
-        val measurer = rememberTextMeasurer()
-        val raw = textState.dateText.replace(
-            Regex("(\\d{1,2}) (\\p{Alpha}+) (\\d{4})"), "$1\u00A0$2\u00A0$3"
-        )
-        val normalStyle = TextStyle(
-            fontWeight = FontWeight.Bold,
-            fontSize = 12.sp,
-            lineHeight = 14.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            platformStyle = PlatformTextStyle(includeFontPadding = false)
-        )
-        val smallStyle = normalStyle.copy(
-            fontSize = 12.sp / 1.8f,
-            lineHeight = 14.sp / 1.8f
-        )
-        val maxW = constraints.maxWidth
-        val maxH = min(constraints.maxHeight, with(density) { twoLinesHeightDp.roundToPx() })
-        val fitsNormal = remember(raw, maxW, maxH) {
-            val result = measurer.measure(
-                text = AnnotatedString(raw),
-                style = normalStyle,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
-                constraints = Constraints(maxWidth = maxW, maxHeight = maxH)
-            )
-            !result.hasVisualOverflow
-        }
-        val finalText = if (fitsNormal) raw else raw.replace("\n", "")
-        val finalStyle = if (fitsNormal) normalStyle else smallStyle
         Text(
             text = finalText,
             style = finalStyle,
@@ -241,7 +253,11 @@ private fun ButtonsRow(
 @Composable
 private fun TaskDescription(
     textState: TaskTextState,
-    modifier: Modifier,
+    mode: ItemMode,
+    onClick: (CardClickType) -> Unit,
+    iconState: TaskIconState,
+    view: View,
+    modifier: Modifier = Modifier,
     density: Density = LocalDensity.current
 ) = Card(
     modifier = modifier
@@ -278,7 +294,26 @@ private fun TaskDescription(
     }
     if (overflowInfo) InfoAlertDialog(
         onDismissRequest = { overflowInfo = false },
-        text = textState.description
+        title = stringResource(R.string.task_info),
+        titleRow = {
+            if (mode == ItemMode.RemindedTask) TextTooltipBox(
+                textRid = R.string.pin, modifier = Modifier.requiredSizeIn(minWidth = 30.dp)
+            ) {
+                IconButton(
+                    modifier = Modifier.rotate(40f),
+                    onClick = {
+                        onClick(CardClickType.Pin)
+                        view.playSoundEffect(SoundEffectConstants.CLICK)
+                    }
+                ) {
+                    val iconId = if (iconState.isPinned) R.drawable.pinned else R.drawable.pin
+                    Icon(
+                        painter = painterResource(iconId),
+                        contentDescription = stringResource(R.string.pin)
+                    )
+                }
+            }
+        }, text = textState.description
     )
 }
 

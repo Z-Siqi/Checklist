@@ -86,6 +86,7 @@
     <string name="click_select_audio">Click to select a audio</string>
     <string name="video_compression_rate">Video compression rate of task detail</string>
     <string name="failed_add_video">Failed to add video!</string>
+    <string name="task_info">Task Info</string>
 
     <!-- Notification -->
     <string name="task_reminder">Task Reminder</string>

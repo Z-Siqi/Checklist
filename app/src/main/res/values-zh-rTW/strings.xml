@@ -87,6 +87,7 @@
     <string name="click_select_audio">點選選擇音訊</string>
     <string name="video_compression_rate">任務詳細視訊壓縮率</string>
     <string name="failed_add_video">新增影片失敗!</string>
+    <string name="task_info">任務資訊</string>
 
     <!-- Notification -->
     <string name="task_reminder">提醒</string>
