@@ -19,6 +19,24 @@ import java.util.UUID
  * This class is use to create delayed notification for Checklist.
  */
 class NotifyManager : Exception() {
+    companion object {
+        fun isNotificationExist(
+            notifyId: Int,
+            context: Context,
+            getNotification: (channelId: String, postTime: Long) -> Unit = { _, _ -> }
+        ): Boolean {
+            val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            for (sbn in nm.activeNotifications) {
+                if (sbn.id == notifyId) {
+                    val old = sbn.notification
+                    getNotification(old.channelId, sbn.postTime)
+                    return true
+                }
+            }
+            return false
+        }
+    }
+
     private var permissionChecker: Boolean
     private var notificationPermission: Boolean
     private var alarmPermission: Boolean
@@ -49,9 +67,9 @@ class NotifyManager : Exception() {
     }
 
     fun createNotification(
-        channelId: String, channelName: String, channelDescription: String,
-        description: String, content: String = "",
-        notifyId: Int, delayDuration: Long, timeUnit: java.util.concurrent.TimeUnit,
+        notifyId: Int,
+        delayDuration: Long,
+        timeUnit: java.util.concurrent.TimeUnit,
         context: Context
     ): String {
         if (!this.permissionChecker) throw Exception("Permission not check! run requestPermission() first!")
@@ -62,14 +80,15 @@ class NotifyManager : Exception() {
         val notificationCreator = NotificationCreator(context)
         if (this.alarmPermission) {
             notificationCreator.createAlarmed(
-                channelId, channelName, channelDescription, description, content,
-                notifyId, delayDuration
+                notifyId = notifyId,
+                delayDuration = delayDuration
             )
             return notifyId.toString()
         } else {
             return notificationCreator.createWorker(
-                channelId, channelName, channelDescription, description, content,
-                notifyId, delayDuration, timeUnit
+                notifyId = notifyId,
+                delayDuration = delayDuration,
+                timeUnit = timeUnit
             ).toString()
         }
     }

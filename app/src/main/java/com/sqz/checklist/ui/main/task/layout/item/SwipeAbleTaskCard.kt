@@ -37,7 +37,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -55,13 +54,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat.getSystemService
-import com.sqz.checklist.MainActivity
 import com.sqz.checklist.R
-import com.sqz.checklist.database.DatabaseRepository
 import com.sqz.checklist.database.Task
+import com.sqz.checklist.database.TaskViewData
 import com.sqz.checklist.ui.common.unit.isApi29AndAbove
 import com.sqz.checklist.ui.main.task.CardHeight
-import com.sqz.checklist.ui.common.unit.reminderState
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -73,16 +70,16 @@ import kotlin.math.abs
  */
 @Composable
 fun SwipeAbleTaskCard(
-    task: Task,
-    onTaskItemClick: (task: Task, type: CardClickType, context: Context) -> Unit,
+    taskView: TaskViewData,
+    onTaskItemClick: (task: TaskViewData, type: CardClickType, context: Context) -> Unit,
     checked: (id: Long) -> Unit,
     getIsHistory: Boolean,
     context: Context,
     mode: ItemMode,
     allowSwipe: Boolean,
     modifier: Modifier = Modifier,
-    databaseRepository: DatabaseRepository,
 ) { // Process card action
+    val task = taskView.task
     val screenWidthPx = LocalWindowInfo.current.containerSize.width * 0.35f
     val itemState = rememberSwipeToDismissBoxState(
         positionalThreshold = { screenWidthPx } // This seems like not work anymore in material3 1.4.0 ~ 1.5.0-alpha06 or maybe above
@@ -160,8 +157,7 @@ fun SwipeAbleTaskCard(
             animationStartThreshold = weight * 1.5f,
         ) { // front of card
             val remindTime = @Composable { // The text of reminder time
-                val getTimeInLong =
-                    if (task.reminder != null) getReminderTime(task.reminder) else 0L
+                val getTimeInLong = taskView.reminderTime ?: 0L
                 val fullDateShort = stringResource(R.string.full_date_short)
                 if (getTimeInLong <= 1000L) null else SimpleDateFormat(
                     fullDateShort,
@@ -177,19 +173,19 @@ fun SwipeAbleTaskCard(
             val dateText = stringResource(
                 R.string.task_creation_time, task.createDate.format(formatter)
             )
-            val reminderState = databaseRepository.reminderState(task.reminder)
+            //val reminderState = databaseRepository.reminderState(task.reminder)
             TaskCardContent(
                 textState = TaskTextState(
                     description = task.description,
                     dateText = dateText,
                     dateReminderText = dateReminderText,
-                    reminderTooltip = if (reminderState) remindTime() else null
+                    reminderTooltip = if (taskView.reminderTime != null) remindTime() else null
                 ),
-                onClick = { type -> onTaskItemClick(task, type, context) },
+                onClick = { type -> onTaskItemClick(taskView, type, context) },
                 iconState = TaskIconState(
                     isPinned = task.isPin,
-                    isReminderSet = reminderState,
-                    isDetailExist = task.detail
+                    isReminderSet = !taskView.isReminded && taskView.reminderTime != null,
+                    isDetailExist = taskView.isDetailExist
                 ),
                 modifier = Modifier
                     .padding(start = startEnd, end = startEnd, top = 4.dp, bottom = 4.dp)
@@ -300,22 +296,13 @@ private fun AnimateInFinishedTask(visible: Boolean = false, alignment: Alignment
     }
 }
 
-@Composable
-private fun getReminderTime(id: Int): Long {
-    var data by rememberSaveable { mutableLongStateOf(0L) }
-    LaunchedEffect(Unit) {
-        val databaseRepository = DatabaseRepository(MainActivity.taskDatabase)
-        data = databaseRepository.getReminderData(id)?.reminderTime ?: 0L
-    }
-    return data
-}
-
 @Preview
 @Composable
 private fun Preview() {
+    val task = Task(0, "The quick brown fox jumps over the lazy dog.", LocalDate.now())
     SwipeAbleTaskCard(
-        Task(0, "The quick brown fox jumps over the lazy dog.", LocalDate.now()),
+        TaskViewData(task, isDetailExist = false, false, null),
         { _, _, _ -> }, {}, false, LocalContext.current, ItemMode.NormalTask,
-        true, databaseRepository = DatabaseRepository(null)
+        true,
     )
 }

@@ -64,23 +64,22 @@ import com.sqz.checklist.R
 import com.sqz.checklist.database.Task
 import com.sqz.checklist.database.TaskDetail
 import com.sqz.checklist.database.TaskDetailType
-import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
-import com.sqz.checklist.ui.main.task.TaskLayoutViewModelPreview
-import com.sqz.checklist.ui.main.task.layout.function.CheckTaskAction
-import com.sqz.checklist.ui.main.task.layout.function.EditTask
-import com.sqz.checklist.ui.main.task.layout.function.ReminderHandlerListener
-import com.sqz.checklist.ui.main.task.layout.function.TaskDetailData
-import com.sqz.checklist.ui.main.task.layout.function.TaskModifyDialog
-import com.sqz.checklist.ui.main.task.layout.item.LazyList
-import com.sqz.checklist.ui.main.task.layout.item.ListData
+import com.sqz.checklist.database.TaskViewData
 import com.sqz.checklist.ui.common.dialog.InfoAlertDialog
 import com.sqz.checklist.ui.common.dialog.InfoDialogWithURL
 import com.sqz.checklist.ui.common.dialog.OpenExternalAppDialog
 import com.sqz.checklist.ui.common.media.AudioViewDialog
 import com.sqz.checklist.ui.common.media.PictureViewDialog
 import com.sqz.checklist.ui.common.media.VideoViewDialog
-import com.sqz.checklist.ui.theme.Theme
 import com.sqz.checklist.ui.common.unit.screenIsWidthAndAPI34Above
+import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
+import com.sqz.checklist.ui.main.task.TaskLayoutViewModelPreview
+import com.sqz.checklist.ui.main.task.layout.dialog.TaskModifyDialog
+import com.sqz.checklist.ui.main.task.layout.function.CheckTaskAction
+import com.sqz.checklist.ui.main.task.layout.function.ReminderHandlerListener
+import com.sqz.checklist.ui.main.task.layout.item.LazyList
+import com.sqz.checklist.ui.main.task.layout.item.ListData
+import com.sqz.checklist.ui.theme.Theme
 import kotlinx.coroutines.delay
 import java.time.LocalDate
 
@@ -150,17 +149,11 @@ fun TaskLayout(
     }
     taskState.modifyHandler.inModifyTask.collectAsState().value.let { // Edit Task
         if (it != null) TaskModifyDialog(
-            editTask = EditTask(
-                it.inModifyTask!!.id, it.inModifyTask.description, it.inModifyDetail
-            ),
-            confirm = { confirm ->
-                taskState.modifyHandler.editTask(
-                    confirm.description, confirm.detail?.type, confirm.detail?.dataString,
-                    confirm.detail?.dataByte, view.context
-                )
-                TaskDetailData.instance().releaseMemory()
+            editTask = it,
+            confirm = taskState.modifyHandler::editTask,
+            onDismissRequest = {
+                taskState.modifyHandler.requestEditTask(null, view.context)
             },
-            onDismissRequest = { taskState.modifyHandler.requestEditTask(null) },
             view = view
         )
     }
@@ -177,38 +170,41 @@ fun TaskLayout(
 }
 
 @Composable
-private fun TaskDetailInfoDialog(onDismissRequest: () -> Unit, detail: TaskDetail) {
-    if (detail.id != 0L) when (detail.type) {
+private fun TaskDetailInfoDialog(onDismissRequest: () -> Unit, detail: TaskDetail?) {
+    if (detail != null) when (detail.type) {
         TaskDetailType.Text -> InfoAlertDialog(
             onDismissRequest = onDismissRequest,
-            text = detail.dataString, title = stringResource(R.string.detail)
+            text = detail.dataByte.toString(Charsets.UTF_8),
+            title = stringResource(R.string.detail)
         )
 
         TaskDetailType.URL -> InfoDialogWithURL(
             onDismissRequest = onDismissRequest,
-            url = detail.dataString, title = stringResource(R.string.url)
+            url = detail.dataByte.toString(Charsets.UTF_8),
+            title = stringResource(R.string.url)
         )
 
         TaskDetailType.Application -> OpenExternalAppDialog(
             onDismissRequest = onDismissRequest,
-            packageName = detail.dataString, title = stringResource(R.string.application)
+            packageName = detail.dataByte.toString(Charsets.UTF_8),
+            title = stringResource(R.string.application)
         )
 
         TaskDetailType.Picture -> PictureViewDialog(
             onDismissRequest = onDismissRequest,
-            byteArray = detail.dataByte!!, imageName = detail.dataString,
+            byteArray = detail.dataByte, imageName = detail.dataString!!,
             title = stringResource(R.string.picture)
         )
 
         TaskDetailType.Video -> VideoViewDialog(
             onDismissRequest = onDismissRequest,
-            byteArray = detail.dataByte!!, videoName = detail.dataString,
+            byteArray = detail.dataByte, videoName = detail.dataString!!,
             title = stringResource(R.string.video)
         )
 
         TaskDetailType.Audio -> AudioViewDialog(
             onDismissRequest = onDismissRequest,
-            byteArray = detail.dataByte!!, audioName = detail.dataString,
+            byteArray = detail.dataByte, audioName = detail.dataString!!,
             title = stringResource(R.string.audio)
         )
     }
@@ -334,7 +330,8 @@ private fun rememberLazyListState(
 @Preview
 @Composable
 private fun Preview() {
-    val item = listOf(Task(0, "The quick brown fox jumps over the lazy dog.", LocalDate.now()))
+    val task = Task(0, "The quick brown fox jumps over the lazy dog.", LocalDate.now())
+    val item = listOf(TaskViewData(task, isDetailExist = false, false, null))
     TaskLayout(
         TopAppBarDefaults.exitUntilCollapsedScrollBehavior(),
         LocalContext.current, LocalView.current, listState = ListData(false, item, item, item),

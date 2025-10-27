@@ -72,6 +72,7 @@ fun EditableContentDialog(
     numberOnly: Boolean = false,
     disableConform: Boolean = false,
     onDisableConformClick: () -> Unit = {},
+    onDismissClick: () -> Unit = onDismissRequest,
 ) {
     val view = LocalView.current
     var defData: String? by rememberSaveable { mutableStateOf(null) }
@@ -81,10 +82,10 @@ fun EditableContentDialog(
     }
     var clearFocus by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
-    fun releaseFocusAndDismiss() = coroutineScope.launch {
+    fun releaseFocusAndDismiss(isClick: Boolean = false) = coroutineScope.launch {
         clearFocus = true
         delay(80)
-        onDismissRequest()
+       if (isClick) onDismissClick() else onDismissRequest()
     }
 
     val scrollState = rememberScrollState()
@@ -99,7 +100,7 @@ fun EditableContentDialog(
                 contentProperties.extraButtonBottom()
                 Spacer(modifier = modifier.weight(1f))
                 TextButton(onClick = {
-                    releaseFocusAndDismiss()
+                    releaseFocusAndDismiss(true)
                     view.playSoundEffect(SoundEffectConstants.CLICK)
                 }) {
                     Text(text = stringResource(R.string.cancel))

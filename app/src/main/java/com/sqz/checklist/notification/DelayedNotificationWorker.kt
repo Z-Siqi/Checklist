@@ -11,26 +11,10 @@ class DelayedNotificationWorker(
     workerParams: WorkerParameters,
 ) : Worker(appContext, workerParams) {
     override fun doWork(): Result {
-        val channelId = inputData.getString("channelId")
-        val channelName = inputData.getString("channelName")
-        val channelDescription = inputData.getString("channelDescription")
-        val title = inputData.getString("title")
-        val content = inputData.getString("content")
-        val notifyId = inputData.getInt("notifyId", -1)
-        if (channelId != null &&
-            channelName != null &&
-            channelDescription != null &&
-            title != null &&
-            content != null &&
-            notifyId != -1
-        ) {
+        val notifyId = inputData.getInt("NotificationId", Int.MAX_VALUE)
+        if (notifyId != 0) {
             val intent = Intent(applicationContext, NotificationReceiver::class.java).apply {
-                putExtra("channelId", channelId)
-                putExtra("channelName", channelName)
-                putExtra("channelDescription", channelDescription)
-                putExtra("title", title)
-                putExtra("content", content)
-                putExtra("notifyId", notifyId)
+                putExtra("NotificationId", notifyId)
             }
             PendingIntent.getBroadcast( // Use NotificationReceiver to send notification
                 applicationContext, notifyId, intent,

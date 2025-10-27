@@ -23,15 +23,16 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import com.sqz.checklist.R
+import com.sqz.checklist.cache.deleteAllFileWhichInProcessFilesPath
 import com.sqz.checklist.notification.PermissionState
+import com.sqz.checklist.preferences.PreferencesInCache
 import com.sqz.checklist.ui.main.NavExtendedButtonData
 import com.sqz.checklist.ui.main.NavMode
 import com.sqz.checklist.ui.main.NavTooltipContent
 import com.sqz.checklist.ui.main.OnClickType
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
-import com.sqz.checklist.ui.main.task.layout.function.CreateTask
-import com.sqz.checklist.ui.main.task.layout.function.TaskDetailData
-import com.sqz.checklist.ui.main.task.layout.function.TaskModifyDialog
+import com.sqz.checklist.ui.main.task.layout.dialog.CreateTask
+import com.sqz.checklist.ui.main.task.layout.dialog.TaskModifyDialog
 import com.sqz.checklist.ui.common.TextTooltipBox
 import kotlinx.coroutines.launch
 
@@ -111,24 +112,24 @@ fun taskExtendedNavButton(
 
     // to add task
     if (taskAddCard) TaskAddCard(
-        onDismissRequest = { taskAddCard = false },
+        onDismissRequest = {
+            coroutineScope.launch { deleteAllFileWhichInProcessFilesPath(view.context) }
+            taskAddCard = false
+        },
         confirm = {
-            coroutineScope.launch {
-                viewModel.modifyHandler.insertTask(
-                    it.description, it.pin,
-                    it.detail?.type, it.detail?.dataString, it.detail?.dataByte
-                ).let { taskId ->
-                    if (it.reminder) viewModel.reminderHandler.requestReminder(taskId, false).also {
-                        Toast.makeText(
-                            view.context,
-                            view.context.getString(R.string.task_is_created),
-                            Toast.LENGTH_LONG
-                        ).show()
-                    }
-                }
-                viewModel.modifyHandler.taskDetailDataSaver().releaseMemory()
-                taskAddCard = false
+            viewModel.modifyHandler.createTask(
+                task = it.task,
+                detail = it.detail,
+                prefsCache = PreferencesInCache(view.context),
+                requestReminder = it.requestReminder
+            ) {
+                Toast.makeText(
+                    view.context,
+                    view.context.getString(R.string.task_is_created),
+                    Toast.LENGTH_LONG
+                ).show()
             }
+            taskAddCard = false
         },
         permissionState = viewModel.reminderHandler.notificationInitState(view.context),
         view = view,
@@ -153,10 +154,7 @@ private fun TaskAddCard(
         reminderButton = permissionState.let {
             it == PermissionState.Notification || it == PermissionState.Both
         },
-        confirm = {
-            confirm(it)
-            TaskDetailData.instance().releaseMemory()
-        },
+        confirm = confirm,
         onDismissRequest = onDismissRequest,
         view = view
     )

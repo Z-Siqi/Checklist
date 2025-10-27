@@ -11,9 +11,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sqz.checklist.MainActivity
 import com.sqz.checklist.database.DatabaseRepository
-import com.sqz.checklist.database.Task
 import com.sqz.checklist.database.TaskDetail
-import com.sqz.checklist.database.TaskDetailType
+import com.sqz.checklist.database.TaskViewData
 import com.sqz.checklist.preferences.PreferencesInCache
 import com.sqz.checklist.preferences.PrimaryPreferences
 import com.sqz.checklist.ui.main.task.handler.ModifyHandler
@@ -73,15 +72,11 @@ open class TaskLayoutViewModel : ViewModel() {
         if (_isUpdateRunning.get()) return else _isUpdateRunning.set(true)
         viewModelScope.launch {
             _listState.update { lists ->
-                val remindedList = MainActivity.taskDatabase.taskDao().getIsRemindedList().filter {
-                    if (it.reminder != null) database().getReminderData(it.reminder)?.isReminded
-                        ?: false
-                    else false
-                }
+                val taskDao = MainActivity.taskDatabase.taskDao()
                 lists.copy(
-                    item = MainActivity.taskDatabase.taskDao().getAll(),
-                    pinnedItem = MainActivity.taskDatabase.taskDao().getAll(0),
-                    isRemindedItem = remindedList,
+                    item = taskDao.getAll(),
+                    pinnedItem = taskDao.getAll(0),
+                    isRemindedItem = taskDao.getIsRemindedList(1),
                     unLoading = false
                 )
             }.also { Log.d("ViewModel", "List is Update") }
@@ -169,15 +164,17 @@ open class TaskLayoutViewModel : ViewModel() {
     }
 
     /** Task click action **/
-    fun onTaskItemClick(task: Task, type: CardClickType, context: Context) {
+    fun onTaskItemClick(taskViewData: TaskViewData, type: CardClickType, context: Context) {
+        val task = taskViewData.task
         when (type) {
             CardClickType.Pin -> modifyHandler.pinState(task.id, !task.isPin)
             CardClickType.Detail -> this.taskDetailData(task.id)
             CardClickType.Reminder -> reminderHandler.requestReminder(task.id)
             CardClickType.Edit -> modifyHandler.requestEditTask(task)
             CardClickType.Close -> viewModelScope.launch {
+                val reminder = database().getReminderData(task.id)
                 if (!primaryPreferences(context).disableRemoveNotifyInReminded()) try {
-                    reminderHandler.notifyManager.removeShowedNotification(task.reminder!!, context)
+                    reminderHandler.notifyManager.removeShowedNotification(reminder!!.id, context)
                     database().deleteReminderData(task.id)
                     updateListState()
                 } catch (e: Exception) {
@@ -192,17 +189,12 @@ open class TaskLayoutViewModel : ViewModel() {
         }
     }
 
-    private var _emptyTaskDetail = TaskDetail(0, TaskDetailType.Text, "", null)
-    private var _taskDetailId = MutableStateFlow(_emptyTaskDetail)
-    fun taskDetailData(setter: Long? = null): MutableStateFlow<TaskDetail> {
+    private var _taskDetailId: MutableStateFlow<TaskDetail?> = MutableStateFlow(null)
+    fun taskDetailData(setter: Long? = null): MutableStateFlow<TaskDetail?> {
         if (setter != null) viewModelScope.launch {
-            if (setter >= 1) _taskDetailId.update {
-                val data = database().getDetailData(setter)!!
-                it.copy(
-                    id = data.id, type = data.type,
-                    dataString = data.dataString, dataByte = data.dataByte
-                )
-            } else _taskDetailId.value = _emptyTaskDetail
+            if (setter >= 1) {
+                _taskDetailId.value = database().getDetailData(setter)!![0] //TODO: support listed
+            } else _taskDetailId.value = null
         }
         return _taskDetailId
     }
@@ -213,19 +205,18 @@ open class TaskLayoutViewModel : ViewModel() {
             val primaryPreferences = PrimaryPreferences(context)
             if (primaryPreferences.recentlyRemindedKeepTime() > 0L) try {
                 for (data in _listState.value.isRemindedItem) {
-                    val timeMillisData =
-                        if (data.reminder != null) database().getReminderData(data.reminder)?.reminderTime
-                            ?: -1L
-                        else -1L
-                    val delReminderTime =
-                        timeMillisData < System.currentTimeMillis() - primaryPreferences.recentlyRemindedKeepTime()
-                    if (timeMillisData != -1L && delReminderTime) {
-                        if (primaryPreferences.removeNoticeInAutoDelReminded()) {
+                    try {
+                        val getReminder = database().getReminderData(data.task.id)!!
+                        val timeMillisData = getReminder.reminderTime
+                        val delReminderTime: Boolean =
+                            timeMillisData < (System.currentTimeMillis() - primaryPreferences.recentlyRemindedKeepTime())
+                        if (delReminderTime && primaryPreferences.removeNoticeInAutoDelReminded()) {
                             reminderHandler.notifyManager.removeShowedNotification(
-                                data.reminder!!, context
+                                getReminder.id, context
                             )
                         }
-                        database().deleteReminderData(data.id)
+                        if (delReminderTime) database().deleteReminderData(data.task.id)
+                    } catch (_: NullPointerException) {
                     }
                 }
                 updateListState()
@@ -273,13 +264,12 @@ open class TaskLayoutViewModel : ViewModel() {
     fun updateInSearch(
         searchText: String = "", reset: Boolean = false, initWithAll: Boolean = false
     ) {
-        suspend fun returnList(): List<Task> {
-            if (searchText.isNotEmpty()) {
-                return MainActivity.taskDatabase.taskDao().searchedList(searchText)
-            }
+        suspend fun returnList(): List<TaskViewData> {
+            val taskDao = MainActivity.taskDatabase.taskDao()
+            if (searchText.isNotEmpty()) return taskDao.searchedList(searchText)
             if (initWithAll || searchingText.isEmpty()) {
                 searchingText = ""
-                return MainActivity.taskDatabase.taskDao().getAll()
+                return taskDao.getAll()
             }
             if (reset) searchingText = ""
             return listOf()

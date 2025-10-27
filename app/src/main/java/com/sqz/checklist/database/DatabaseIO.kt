@@ -12,22 +12,19 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.core.content.FileProvider
 import androidx.core.net.toUri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
 import com.sqz.checklist.MainActivity.Companion.taskDatabase
-import com.sqz.checklist.R
 import com.sqz.checklist.notification.NotifyManager
 import com.sqz.checklist.preferences.PreferencesInCache
-import com.sqz.checklist.ui.main.task.layout.function.toUri
+import com.sqz.checklist.ui.common.media.toUri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -88,7 +85,7 @@ class DatabaseIO private constructor(application: Application) : AndroidViewMode
                 TaskDetailType.Text -> {}
                 TaskDetailType.URL -> {}
                 TaskDetailType.Application -> {}
-                else -> data.dataByte?.let {
+                else -> data.dataByte.let {
                     dataList = dataList + it.toUri(context.filesDir.absolutePath)
                 }
             }
@@ -245,7 +242,7 @@ class DatabaseIO private constructor(application: Application) : AndroidViewMode
                                 File(mediaDir, entryName.removePrefix("media/"))
                             }
                             outputFile.parentFile?.mkdirs()
-                            if (entry!!.isDirectory) {
+                            if (entry.isDirectory) {
                                 outputFile.mkdirs()
                             } else {
                                 outputFile.outputStream().use { output ->
@@ -325,7 +322,7 @@ class DatabaseIO private constructor(application: Application) : AndroidViewMode
                     while (zipIn.nextEntry.also { entry = it } != null) {
                         val entryName = entry!!.name
                         // check zip work
-                        if (entry!!.method == ZipEntry.DEFLATED && entry!!.extra != null) {
+                        if (entry.method == ZipEntry.DEFLATED && entry.extra != null) {
                             Log.e("DatabaseIO", "Cannot unzip!")
                             return false
                         }
@@ -339,7 +336,7 @@ class DatabaseIO private constructor(application: Application) : AndroidViewMode
                         }
                         // check directory
                         if (!entryName.contains("/")) {
-                            if (entry!!.isDirectory) {
+                            if (entry.isDirectory) {
                                 rootFolderCount++
                             } else {
                                 rootFileCount++
@@ -388,7 +385,7 @@ fun ExportTaskDatabase(
 ) {
     val exportName = "Checklist_Backup"
     val databaseIO = DatabaseIO.instance(Application())
-    var canceled by remember { mutableStateOf(false) }
+    val canceled = remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/zip")
@@ -402,7 +399,7 @@ fun ExportTaskDatabase(
             ) {
                 databaseIO.setLoading(100)
                 Log.d("ExportTaskDatabase", "Export canceled")
-                canceled = true
+                canceled.value = true
             }
         }
     }
@@ -421,11 +418,11 @@ fun ExportTaskDatabase(
         databaseIO.getIOdbState().collectAsState(IOdbState.Default).value,
         databaseIO.getLoadingState().collectAsState(0).value
     )
-    if (canceled || databaseIO.getIOdbState().collectAsState(IOdbState.Default).value
+    if (canceled.value || databaseIO.getIOdbState().collectAsState(IOdbState.Default).value
         == IOdbState.Finished && state
     ) {
         databaseIO.releaseMemory()
-        canceled = false
+        canceled.value = false
     }
 }
 
@@ -435,13 +432,13 @@ fun ImportTaskDatabase(
     selected: (text: String?) -> Unit, dbState: (IOdbState, loading: Int) -> Unit,
     view: View
 ) {
-    var uri by rememberSaveable { mutableStateOf<Uri?>(null) }
+    val uri = rememberSaveable { mutableStateOf<Uri?>(null) }
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { selectedUri: Uri? ->
-        uri = selectedUri
-        val text = if (uri == null) null else try {
-            uri!!.path.toString().replace("/document/primary:", "")
+        uri.value = selectedUri
+        val text = if (uri.value == null) null else try {
+            uri.value!!.path.toString().replace("/document/primary:", "")
         } catch (e: Exception) {
             Log.w("ChecklistDataImport", "Failed to show selected file: $e")
             ""
@@ -453,14 +450,14 @@ fun ImportTaskDatabase(
     }
     val databaseIO = DatabaseIO.instance(Application())
     val getIOdbState = databaseIO.getIOdbState().collectAsState(IOdbState.Default).value
-    if (importClicked && uri != null) {
-        databaseIO.importDatabase(uri!!, view.context)
+    if (importClicked && uri.value != null) {
+        databaseIO.importDatabase(uri.value!!, view.context)
         if (getIOdbState == IOdbState.Finished) {
             databaseIO.releaseMemory()
-            uri = null
+            uri.value = null
         }
         dbState(getIOdbState, databaseIO.getLoadingState().collectAsState(0).value)
-    } else if (uri == null) {
+    } else if (uri.value == null) {
         dbState(IOdbState.Default, 100)
     }
 }
@@ -471,22 +468,20 @@ private suspend fun restoreNotification(dbInstance: TaskDatabase, context: Conte
     notificationManager.value.requestPermission(context)
     val databaseRepository = DatabaseRepository(dbInstance)
     for (data in dbInstance.taskReminderDao().getAll()) {
-        if (!data.isReminded) try {
+        if (!data.reminder.isReminded) try {
             val restore = notificationManager.value.createNotification(
-                channelId = context.getString(R.string.tasks),
-                channelName = context.getString(R.string.task_reminder),
-                channelDescription = context.getString(R.string.description),
-                description = data.description, notifyId = data.id,
-                delayDuration = data.reminderTime,
-                timeUnit = TimeUnit.MILLISECONDS, context = context
-            ).also { Log.d("RestoreReminder", "Restore NotifyId: ${data.id}") }
+                notifyId = data.reminder.id,
+                delayDuration = data.reminder.reminderTime,
+                timeUnit = TimeUnit.MILLISECONDS,
+                context = context
+            ).also { Log.d("RestoreReminder", "Restore NotifyId: ${data.reminder.id}") }
             val mode =
                 if (notificationManager.value.getAlarmPermission()) ReminderModeType.AlarmManager else {
                     ReminderModeType.Worker
                 }
-            dbInstance.taskReminderDao().updateMode(data.id, mode, restore)
-            if (data.reminderTime < System.currentTimeMillis()) {
-                databaseRepository.setIsReminded(data.id, true)
+            dbInstance.taskReminderDao().updateMode(data.reminder.id, mode, restore)
+            if (data.reminder.reminderTime < System.currentTimeMillis()) {
+                databaseRepository.setIsReminded(data.reminder.id, true)
             }
         } catch (e: Exception) {
             Log.w("RestoreReminder", "Exception: $e")
@@ -500,13 +495,13 @@ private suspend fun cancelAllNotification(dbInstance: TaskDatabase, context: Con
         val notificationManager = MutableStateFlow(NotifyManager())
         notificationManager.value.requestPermission(context)
         for (data in dbInstance.taskReminderDao().getAll()) {
-            when (data.mode) {
+            when (data.reminder.mode) {
                 ReminderModeType.AlarmManager -> notificationManager.value.cancelNotification(
-                    data.id.toString(), context, data.id
+                    data.reminder.id.toString(), context, data.reminder.id
                 )
 
                 ReminderModeType.Worker -> notificationManager.value.cancelNotification(
-                    data.extraData!!, context, data.id, true
+                    data.reminder.extraData!!, context, data.reminder.id, true
                 )
             }
         }

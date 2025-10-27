@@ -29,6 +29,7 @@ import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,8 +39,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
@@ -49,9 +50,11 @@ import com.sqz.checklist.R
 import com.sqz.checklist.cache.deleteCacheFileByName
 import com.sqz.checklist.preferences.PreferencesInCache
 import com.sqz.checklist.preferences.PrimaryPreferences
-import com.sqz.checklist.ui.main.task.layout.function.TaskDetailData
-import com.sqz.checklist.ui.main.task.layout.function.toUri
+import com.sqz.checklist.ui.common.unit.pxToDpInt
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileInputStream
@@ -61,11 +64,11 @@ import java.lang.IllegalStateException
 
 @Composable
 fun PictureSelector(
-    detailData: TaskDetailData,
+    selector: PictureSelector,
     view: View,
     modifier: Modifier = Modifier,
 ) {
-    val detailDataUri by detailData.detailUri().collectAsState()
+    val dataUri by selector.dataUri.collectAsState()
     var checkSize by remember { mutableStateOf<Long?>(null) }
     val launcher =
         rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
@@ -78,13 +81,13 @@ fun PictureSelector(
                         }
                         val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
                         if (nameIndex != -1 && cursor.moveToFirst()) {
-                            detailData.detailString(cursor.getString(nameIndex))
+                            selector.setPictureName(cursor.getString(nameIndex))
                         }
                     }
-                    detailData.detailUri(uri)
+                    selector.setDataUri(uri)
                 }
             } catch (e: Exception) {
-                detailData.releaseMemory()
+                selector.clear()
                 Log.e("PictureHelper", "Failed to select a picture: $e")
                 Toast.makeText(
                     view.context, view.context.getString(R.string.failed_large_file_size, "50"),
@@ -106,22 +109,51 @@ fun PictureSelector(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        if (detailDataUri != null) Image(
-            rememberAsyncImagePainter(detailDataUri),
+        if (dataUri != null) Image(
+            rememberAsyncImagePainter(dataUri),
             stringResource(R.string.selected_picture), modifier.fillMaxSize()
         ) else Text(
             stringResource(R.string.click_select_picture), color = MaterialTheme.colorScheme.outline
         )
     }
-    if (checkSize != null) {
+    val pictureSizeLimitStr = stringResource(R.string.picture_size_limit)
+    if (checkSize != null) LaunchedEffect(Unit) {
         val size = checkSize ?: 1
         if ((size / 1024 / 1024) > 50) {
-            detailData.releaseMemory()
+            selector.clear()
             Toast.makeText(
-                view.context, stringResource(R.string.picture_size_limit), Toast.LENGTH_SHORT
+                view.context, pictureSizeLimitStr, Toast.LENGTH_SHORT
             ).show()
         }
         checkSize = null
+    }
+}
+
+class PictureSelector {
+    constructor() // default constructor
+
+    constructor(uriIn: Uri?, nameIn: String?) { // constructor with parameters
+        this._dataUri.value = uriIn
+        this._pictureName.value = nameIn
+    }
+
+    private var _dataUri: MutableStateFlow<Uri?> = MutableStateFlow(null)
+    val dataUri = _dataUri.asStateFlow()
+
+    fun setDataUri(uri: Uri) {
+        this._dataUri.update { uri }
+    }
+
+    private var _pictureName: MutableStateFlow<String?> = MutableStateFlow(null)
+    val pictureName = _pictureName.asStateFlow()
+
+    fun setPictureName(string: String) {
+        this._pictureName.update { string }
+    }
+
+    fun clear() {
+        this._dataUri.value = null
+        this._pictureName.value = null
     }
 }
 
@@ -135,10 +167,11 @@ fun PictureViewDialog(
 ) {
     if (byteArray.size <= 1) throw IllegalStateException("Invalid byteArray data!")
     val view = LocalView.current
-    val screenHeightDp = LocalConfiguration.current.screenHeightDp
+    val containerSize = LocalWindowInfo.current.containerSize
+    val screenHeightDp = containerSize.height.pxToDpInt()
     val height = when {
         screenHeightDp >= 700 -> (screenHeightDp / 5.8).toInt()
-        screenHeightDp < (LocalConfiguration.current.screenWidthDp / 1.2) -> (screenHeightDp / 3.2).toInt()
+        screenHeightDp < (containerSize.width.pxToDpInt() / 1.2) -> (screenHeightDp / 3.2).toInt()
         else -> (screenHeightDp / 5.1).toInt()
     }
     AlertDialog(
@@ -207,7 +240,7 @@ fun openImageBySystem(imageName: String, byteArray: ByteArray, context: Context)
         }
         context.startActivity(Intent.createChooser(intent, context.getString(R.string.open_with)))
         cache.waitingDeletedCacheName(name)
-    } catch (e: FileNotFoundException) {
+    } catch (_: FileNotFoundException) {
         Toast.makeText(context, context.getString(R.string.failed_open), Toast.LENGTH_SHORT).show()
     } catch (e: Exception) {
         e.printStackTrace()
@@ -251,7 +284,7 @@ private fun insertPicture(context: Context, uri: Uri, compression: Int): Uri? {
             cache.errFileNameSaver(null)
         }
         Uri.fromFile(file)
-    } catch (e: FileNotFoundException) {
+    } catch (_: FileNotFoundException) {
         Toast.makeText(
             context, context.getString(R.string.detail_file_not_found), Toast.LENGTH_LONG
         ).show()

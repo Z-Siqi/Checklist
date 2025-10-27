@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
 import com.sqz.checklist.R
 import com.sqz.checklist.database.Task
+import com.sqz.checklist.database.TaskViewData
 import com.sqz.checklist.ui.common.unit.navBarsBottomDp
 import com.sqz.checklist.ui.main.task.CardHeight
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
@@ -97,9 +98,9 @@ fun LazyList(
                 }
             }
             item { Spacer(modifier = modifier.height(20.dp)) }
-            items(listState.item, key = { it.id }) { task ->
+            items(listState.item, key = { it.task.id }) { taskView ->
                 MainListItem(
-                    task = task,
+                    taskView = taskView,
                     context = context,
                     taskState = taskState,
                     allowSwipe = allowSwipe,
@@ -108,9 +109,9 @@ fun LazyList(
             }
         } else {
             item { Spacer(modifier = modifier.height(searchBarSpace.dp)) }
-            items(listState.inSearchItem, key = { it.id }) { task ->
+            items(listState.inSearchItem, key = { it.task.id }) { taskView ->
                 MainListItem(
-                    task = task,
+                    taskView = taskView,
                     context = context,
                     taskState = taskState,
                     allowSwipe = allowSwipe,
@@ -169,22 +170,21 @@ private fun AutoScrollList(
  */
 @Composable
 private fun MainListItem(
-    task: Task,
+    taskView: TaskViewData,
     context: Context,
     allowSwipe: Boolean,
     taskState: TaskLayoutViewModel,
     modifier: Modifier = Modifier,
 ) {
     SwipeAbleTaskCard(
-        task = task,
+        taskView = taskView,
         onTaskItemClick = taskState::onTaskItemClick,
         checked = { taskState.taskChecked(it) },
-        getIsHistory = taskState.getIsHistory(task.id),
+        getIsHistory = taskState.getIsHistory(taskView.task.id),
         context = context,
         mode = ItemMode.NormalTask,
         allowSwipe = allowSwipe,
         modifier = modifier,
-        databaseRepository = taskState.database()
     )
 }
 
@@ -193,7 +193,7 @@ private val colors: Theme @Composable get() = Theme.color
 /** Reminded item list **/
 @Composable
 private fun RemindedItem(
-    isRemindedItem: List<Task>,
+    isRemindedItem: List<TaskViewData>,
     context: Context,
     allowSwipe: Boolean,
     modifier: Modifier = Modifier,
@@ -207,16 +207,15 @@ private fun RemindedItem(
         modifier = modifier,
         border = BorderStroke((1.2).dp, colors.remindedBorderColor)
     ) { entity ->
-        val task = entity as Task
+        val taskView = entity as TaskViewData
         SwipeAbleTaskCard(
-            task = task,
+            taskView = taskView,
             onTaskItemClick = taskState::onTaskItemClick,
             checked = { taskState.taskChecked(it) },
-            getIsHistory = taskState.getIsHistory(task.id),
+            getIsHistory = taskState.getIsHistory(taskView.task.id),
             context = context,
             mode = ItemMode.RemindedTask,
             allowSwipe = allowSwipe,
-            databaseRepository = taskState.database()
         )
     }
 }
@@ -224,7 +223,7 @@ private fun RemindedItem(
 /** Pinned item list **/
 @Composable
 private fun PinnedItem(
-    pinnedItem: List<Task>,
+    pinnedItem: List<TaskViewData>,
     context: Context,
     allowSwipe: Boolean,
     modifier: Modifier = Modifier,
@@ -237,16 +236,15 @@ private fun PinnedItem(
         containerColor = colors.pinnedBackgroundColor,
         modifier = modifier
     ) { entity ->
-        val task = entity as Task
+        val taskView = entity as TaskViewData
         SwipeAbleTaskCard(
-            task = task,
+            taskView = taskView,
             onTaskItemClick = taskState::onTaskItemClick,
             checked = { taskState.taskChecked(it) },
-            getIsHistory = taskState.getIsHistory(task.id),
+            getIsHistory = taskState.getIsHistory(taskView.task.id),
             context = context,
             mode = ItemMode.PinnedTask,
             allowSwipe = allowSwipe,
-            databaseRepository = taskState.database(),
         )
     }
 }
@@ -305,7 +303,8 @@ private fun HighlightItems(
 @Preview(showBackground = true)
 @Composable
 private fun Preview() {
-    val item = listOf(Task(0, "The quick brown fox jumps over the lazy dog.", LocalDate.now()))
+    val task = Task(0, "The quick brown fox jumps over the lazy dog.", LocalDate.now())
+    val item = listOf(TaskViewData(task, isDetailExist = false, false, null))
     val context = LocalContext.current
     LazyList(
         ListData(false, item, item, item), rememberLazyListState(),

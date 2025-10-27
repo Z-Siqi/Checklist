@@ -34,6 +34,7 @@ import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -61,8 +62,6 @@ import com.sqz.checklist.R
 import com.sqz.checklist.cache.deleteCacheFileByName
 import com.sqz.checklist.preferences.PreferencesInCache
 import com.sqz.checklist.preferences.PrimaryPreferences
-import com.sqz.checklist.ui.main.task.layout.function.TaskDetailData
-import com.sqz.checklist.ui.main.task.layout.function.toUri
 import com.sqz.checklist.ui.common.TextTooltipBox
 import com.sqz.checklist.ui.common.unit.pxToDpInt
 import io.sanghun.compose.video.RepeatMode
@@ -70,6 +69,9 @@ import io.sanghun.compose.video.VideoPlayer
 import io.sanghun.compose.video.controller.VideoPlayerControllerConfig
 import io.sanghun.compose.video.uri.VideoPlayerMediaItem
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileInputStream
@@ -78,12 +80,12 @@ import java.io.FileOutputStream
 
 @Composable
 fun VideoSelector(
-    detailData: TaskDetailData,
+    handler: VideoSelector,
     view: View,
     modifier: Modifier = Modifier,
 ) {
-    val detailDataUri by detailData.detailUri().collectAsState()
-    val detailDataString by detailData.detailString().collectAsState()
+    val dataUri by handler.dataUri.collectAsState()
+    val videoName by handler.videoName.collectAsState()
     var checkSize by remember { mutableStateOf<Long?>(null) }
     val launcher =
         rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
@@ -96,13 +98,13 @@ fun VideoSelector(
                         }
                         val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
                         if (nameIndex != -1 && cursor.moveToFirst()) {
-                            detailData.detailString(cursor.getString(nameIndex))
+                            handler.setVideoName(cursor.getString(nameIndex))
                         }
                     }
-                    detailData.detailUri(uri)
+                    handler.setDataUri(uri)
                 }
             } catch (e: Exception) {
-                detailData.releaseMemory()
+                handler.clear()
                 Log.e("VideoHelper", "Failed to select a video: $e")
                 Toast.makeText(
                     view.context, view.context.getString(R.string.failed_large_file_size, "350"),
@@ -124,9 +126,9 @@ fun VideoSelector(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        val inPreviewState by detailData.inPreviewState().collectAsState()
+        val inPreviewState by handler.inPreviewState.collectAsState()
         val inPreviewVideo = inPreviewState ?: false
-        if (detailDataUri != null) detailDataUri?.let {
+        if (dataUri != null) dataUri?.let {
             if (!inPreviewVideo) Box(
                 modifier = modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
@@ -137,27 +139,63 @@ fun VideoSelector(
                 )
                 Button(modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(8.dp), onClick = { detailData.inPreviewState(true) }) {
+                    .padding(8.dp), onClick = { handler.setInPreviewState(true) }) {
                     Text(stringResource(R.string.play_video))
                 }
             } else VideoViewDialog(
-                onDismissRequest = { detailData.inPreviewState(false) },
-                videoName = detailDataString, videoUri = it, title = detailDataString
+                onDismissRequest = { handler.setInPreviewState(false) },
+                videoName = videoName ?: "Unknown", videoUri = it, title = videoName ?: "Unknown"
             )
         } else Text(
             stringResource(R.string.click_select_video), color = MaterialTheme.colorScheme.outline
         )
     }
-    @Suppress("AssignedValueIsNeverRead")
-    if (checkSize != null) {
+    val videoSizeLimitStr = stringResource(R.string.video_size_limit)
+    if (checkSize != null) LaunchedEffect(Unit) {
         val size = checkSize ?: 1
         if ((size / 1024 / 1024) > 350) {
-            detailData.releaseMemory()
+            handler.clear()
             Toast.makeText(
-                view.context, stringResource(R.string.video_size_limit), Toast.LENGTH_SHORT
+                view.context, videoSizeLimitStr, Toast.LENGTH_SHORT
             ).show()
         }
         checkSize = null
+    }
+}
+
+class VideoSelector {
+    constructor() // default constructor
+
+    constructor(uriIn: Uri?, nameIn: String?) { // constructor with parameters
+        this._dataUri.value = uriIn
+        this._videoName.value = nameIn
+    }
+
+    private var _dataUri: MutableStateFlow<Uri?> = MutableStateFlow(null)
+    val dataUri = _dataUri.asStateFlow()
+
+    fun setDataUri(uri: Uri) {
+        this._dataUri.update { uri }
+    }
+
+    private var _videoName: MutableStateFlow<String?> = MutableStateFlow(null)
+    val videoName = _videoName.asStateFlow()
+
+    fun setVideoName(string: String) {
+        this._videoName.update { string }
+    }
+
+    private var _inPreviewState: MutableStateFlow<Boolean?> = MutableStateFlow(null)
+    val inPreviewState = _inPreviewState.asStateFlow()
+
+    fun setInPreviewState(boolean: Boolean) {
+        this._inPreviewState.update { boolean }
+    }
+
+    fun clear() {
+        this._dataUri.value = null
+        this._videoName.value = null
+        this._inPreviewState.value = null
     }
 }
 

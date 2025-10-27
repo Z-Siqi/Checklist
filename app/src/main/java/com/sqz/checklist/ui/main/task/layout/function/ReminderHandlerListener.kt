@@ -142,7 +142,7 @@ fun ReminderHandlerListener(
                 var data by rememberSaveable { mutableLongStateOf(-1L) }
                 LaunchedEffect(Unit) {
                     reminderHandler.getReminderData()?.let {
-                        data = it.reminderTime
+                        data = it.reminder.reminderTime
                     }
                 }
                 Text(

@@ -16,6 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.coroutineScope
 import com.sqz.checklist.cache.clearExpiredCache
 import com.sqz.checklist.cache.clearOldCacheIfNeeded
+import com.sqz.checklist.cache.deleteAllFileWhichInProcessFilesPath
+import com.sqz.checklist.cache.dropEmptyInProcessFilesPath
 import com.sqz.checklist.database.DatabaseRepository
 import com.sqz.checklist.database.TaskDatabase
 import com.sqz.checklist.database.buildDatabase
@@ -27,6 +29,7 @@ import com.sqz.checklist.ui.theme.ChecklistTheme
 import com.sqz.checklist.ui.theme.SystemBarsColor
 import com.sqz.checklist.ui.theme.Theme
 import com.sqz.checklist.ui.theme.ThemePreference
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -40,6 +43,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         taskDatabase = buildDatabase(applicationContext) // load database
         appDir = applicationContext.filesDir.absolutePath // load app dir location
+        super.lifecycle.coroutineScope.launch {
+            deleteAllFileWhichInProcessFilesPath(applicationContext)
+        }
         setContent {
             ChecklistTheme {
                 SystemBarsColor.CreateSystemBars(window) // if nav mode is not gesture mode
@@ -77,13 +83,16 @@ class MainActivity : ComponentActivity() {
     @Override
     override fun onDestroy() {
         super.onDestroy()
-        clearHistoryWhenLeaved()
+        this.clearHistoryWhenLeaved()
     }
 
     @Override
     override fun onStart() {
         super.onStart()
-        clearHistoryWhenLeaved()
+        super.lifecycle.coroutineScope.launch(Dispatchers.IO) {
+            dropEmptyInProcessFilesPath(applicationContext)
+        }
+        this.clearHistoryWhenLeaved()
     }
 
     private fun clearHistoryWhenLeaved() {

@@ -26,6 +26,12 @@ class PreferencesInCache(context: Context) : PreferencesAccess(context) {
         return readPreferencesState(preferences, null)
     }
 
+    fun inProcessFilesPath(setter: String? = nullStringName): String? {
+        val preferences = "in_process_files_path"
+        if (setter != nullStringName) writePreferencesState(preferences, setter)
+        return readPreferencesState(preferences, null)
+    }
+
     fun backupSettings(setter: Boolean? = null): Boolean {
         val preferences = "backup_settings"
         if (setter != null) writePreferencesState(preferences, setter)

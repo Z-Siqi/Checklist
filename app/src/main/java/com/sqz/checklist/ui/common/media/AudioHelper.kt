@@ -52,8 +52,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -67,11 +67,13 @@ import com.sqz.checklist.MainActivity
 import com.sqz.checklist.R
 import com.sqz.checklist.cache.deleteCacheFileByName
 import com.sqz.checklist.preferences.PreferencesInCache
-import com.sqz.checklist.ui.main.task.layout.function.TaskDetailData
-import com.sqz.checklist.ui.main.task.layout.function.toUri
 import com.sqz.checklist.ui.common.TextTooltipBox
+import com.sqz.checklist.ui.common.unit.pxToDpInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileInputStream
@@ -80,12 +82,12 @@ import java.io.FileOutputStream
 
 @Composable
 fun AudioSelector(
-    detailData: TaskDetailData,
+    handler: AudioSelector,
     view: View,
     modifier: Modifier = Modifier,
 ) {
-    val detailDataUri by detailData.detailUri().collectAsState()
-    val detailDataString by detailData.detailString().collectAsState()
+    val dataUri by handler.dataUri.collectAsState()
+    val audioName by handler.audioName.collectAsState()
     var checkSize by remember { mutableStateOf<Long?>(null) }
     val launcher =
         rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
@@ -98,13 +100,13 @@ fun AudioSelector(
                         }
                         val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
                         if (nameIndex != -1 && cursor.moveToFirst()) {
-                            detailData.detailString(cursor.getString(nameIndex))
+                            handler.setPictureName(cursor.getString(nameIndex))
                         }
                     }
-                    detailData.detailUri(uri)
+                    handler.setDataUri(uri)
                 }
             } catch (e: Exception) {
-                detailData.releaseMemory()
+                handler.clear()
                 Log.e("AudioHelper", "Failed to select a audio: $e")
                 Toast.makeText(
                     view.context, view.context.getString(R.string.failed_large_file_size, "55"),
@@ -126,9 +128,9 @@ fun AudioSelector(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        val inPreviewState by detailData.inPreviewState().collectAsState()
+        val inPreviewState by handler.inPreviewState.collectAsState()
         val inPreviewAudio = inPreviewState ?: false
-        if (detailDataUri != null) detailDataUri?.let {
+        if (dataUri != null) dataUri?.let {
             if (!inPreviewAudio) Box(
                 modifier = modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
@@ -136,26 +138,63 @@ fun AudioSelector(
                 AlbumArtCard(it, view.context)
                 Button(modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(8.dp), onClick = { detailData.inPreviewState(true) }) {
+                    .padding(8.dp), onClick = { handler.setInPreviewState(true) }) {
                     Text(stringResource(R.string.play_audio))
                 }
             } else AudioViewDialog(
-                onDismissRequest = { detailData.inPreviewState(false) },
-                audioName = detailDataString, audioUri = it, title = detailDataString
+                onDismissRequest = { handler.setInPreviewState(false) },
+                audioName = audioName ?: "Unknown", audioUri = it, title = audioName ?: "Unknown"
             )
         } else Text(
             stringResource(R.string.click_select_audio), color = MaterialTheme.colorScheme.outline
         )
     }
-    if (checkSize != null) {
+    val audioSizeLimitStr = stringResource(R.string.audio_size_limit)
+    if (checkSize != null) LaunchedEffect(Unit) {
         val size = checkSize ?: 1
         if ((size / 1024 / 1024) > 55) {
-            detailData.releaseMemory()
+            handler.clear()
             Toast.makeText(
-                view.context, stringResource(R.string.audio_size_limit), Toast.LENGTH_SHORT
+                view.context, audioSizeLimitStr, Toast.LENGTH_SHORT
             ).show()
         }
         checkSize = null
+    }
+}
+
+class AudioSelector {
+    constructor() // default constructor
+
+    constructor(uriIn: Uri?, nameIn: String?) { // constructor with parameters
+        this._dataUri.value = uriIn
+        this._audioName.value = nameIn
+    }
+
+    private var _dataUri: MutableStateFlow<Uri?> = MutableStateFlow(null)
+    val dataUri = _dataUri.asStateFlow()
+
+    fun setDataUri(uri: Uri) {
+        this._dataUri.update { uri }
+    }
+
+    private var _audioName: MutableStateFlow<String?> = MutableStateFlow(null)
+    val audioName = _audioName.asStateFlow()
+
+    fun setPictureName(string: String) {
+        this._audioName.update { string }
+    }
+
+    private var _inPreviewState: MutableStateFlow<Boolean?> = MutableStateFlow(null)
+    val inPreviewState = _inPreviewState.asStateFlow()
+
+    fun setInPreviewState(boolean: Boolean) {
+        this._inPreviewState.update { boolean }
+    }
+
+    fun clear() {
+        this._dataUri.value = null
+        this._audioName.value = null
+        this._inPreviewState.value = null
     }
 }
 
@@ -192,8 +231,8 @@ private fun AlbumArtCard(
 
 @Composable
 private fun AudioPlayer(uri: Uri, context: Context) = Row {
-    val config = LocalConfiguration.current
-    val isLandScape = config.screenWidthDp > config.screenHeightDp && config.screenWidthDp > 400
+    val containerSize = LocalWindowInfo.current.containerSize
+    val isLandScape = containerSize.width > containerSize.height && containerSize.width.pxToDpInt() > 400
     val exoPlayer = remember(uri) {
         ExoPlayer.Builder(context).build().apply {
             val mediaItem = MediaItem.fromUri(uri)
@@ -267,10 +306,11 @@ fun AudioViewDialog(
     openBySystem: Boolean = false,
 ) {
     val view = LocalView.current
-    val screenHeightDp = LocalConfiguration.current.screenHeightDp
+    val containerSize = LocalWindowInfo.current.containerSize
+    val screenHeightDp = containerSize.height.pxToDpInt()
     val height = when {
         screenHeightDp >= 700 -> (screenHeightDp / 3.8).toInt()
-        screenHeightDp < (LocalConfiguration.current.screenWidthDp / 1.2) -> (screenHeightDp / 2.1).toInt()
+        screenHeightDp < (containerSize.width.pxToDpInt() / 1.2) -> (screenHeightDp / 2.1).toInt()
         else -> (screenHeightDp / 3.1).toInt()
     }
     val coroutineScope = rememberCoroutineScope()
@@ -311,7 +351,7 @@ fun AudioViewDialog(
                 )
             }
         }, title = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-        modifier = Modifier.widthIn(max = (LocalConfiguration.current.screenWidthDp * 0.9).dp),
+        modifier = Modifier.widthIn(max = (containerSize.width.pxToDpInt() * 0.9).dp),
         properties = DialogProperties(usePlatformDefaultWidth = false)
     )
 }
@@ -381,7 +421,7 @@ fun openAudioBySystem(audioName: String, uri: Uri, context: Context) {
         }
         context.startActivity(Intent.createChooser(intent, context.getString(R.string.open_with)))
         cache.waitingDeletedCacheName(name)
-    } catch (e: FileNotFoundException) {
+    } catch (_: FileNotFoundException) {
         Toast.makeText(context, context.getString(R.string.failed_open), Toast.LENGTH_SHORT).show()
     } catch (e: Exception) {
         e.printStackTrace()
@@ -410,7 +450,7 @@ private fun insertAudio(context: Context, uri: Uri, filesDir: String): Uri {
         outputStream.close()
         cache.errFileNameSaver(null)
         Uri.fromFile(file)
-    } catch (e: FileNotFoundException) {
+    } catch (_: FileNotFoundException) {
         Toast.makeText(
             context, context.getString(R.string.detail_file_not_found), Toast.LENGTH_LONG
         ).show()

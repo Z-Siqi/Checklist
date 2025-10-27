@@ -24,7 +24,7 @@ suspend fun mergeDatabaseCheckpoint(database: RoomDatabase) {
 @Database(
     entities = [
         Task::class, TaskDetail::class, TaskReminder::class
-    ], version = 3, exportSchema = false
+    ], version = 4, exportSchema = false
 )
 @TypeConverters(LocalDateConverter::class)
 abstract class TaskDatabase : RoomDatabase() {
@@ -32,6 +32,7 @@ abstract class TaskDatabase : RoomDatabase() {
     abstract fun taskReminderDao(): TaskReminderDao
 }
 
+@Suppress("TYPE_INTERSECTION_AS_REIFIED_WARNING")
 private val MIGRATION_1_2 = object : Migration(1, 2) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL("CREATE TABLE taskDetail(id INTEGER NOT NULL, type TEXT NOT NULL, dataString TEXT NOT NULL, PRIMARY KEY(id))")
@@ -59,7 +60,7 @@ private val MIGRATION_1_2 = object : Migration(1, 2) {
                     reminderTime = rightPart.toLongOrNull()
                     try {
                         reminderId = leftPart.toInt()
-                    } catch (e: NumberFormatException) {
+                    } catch (_: NumberFormatException) {
                         uuid = leftPart
                         reminderId = id
                     }
@@ -96,10 +97,68 @@ private val MIGRATION_2_3 = object : Migration(2, 3) {
     }
 }
 
+private val MIGRATION_3_4 = object : Migration(3, 4) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        // Update taskDetail below
+        db.execSQL("""
+            CREATE TABLE IF NOT EXISTS `taskDetail_new` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `taskId` INTEGER NOT NULL,
+                `type` TEXT NOT NULL,
+                `description` TEXT,
+                `dataString` TEXT,
+                `dataByte` BLOB NOT NULL,
+                FOREIGN KEY(`taskId`) REFERENCES `task`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+            )
+        """.trimIndent())
+        db.execSQL("""
+            INSERT INTO `taskDetail_new` (`taskId`, `type`, `description`, `dataString`, `dataByte`)
+            SELECT 
+                `id` AS taskId, `type`, NULL AS description, 
+                IF(`type` = "Text" OR `type` = "URL" OR `type` = "Application", NULL, `dataString`) AS dataString,
+                IF(`type` = "Text" OR `type` = "URL" OR `type` = "Application", CAST(`dataString` AS BLOB), `dataByte`) AS dataByte
+            FROM `taskDetail`
+        """.trimIndent())
+        db.execSQL("DROP TABLE `taskDetail`")
+        db.execSQL("ALTER TABLE `taskDetail_new` RENAME TO `taskDetail`")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_taskDetail_taskId` ON `taskDetail` (`taskId`)")
+        // Update reminder below
+        db.execSQL("""
+            CREATE TABLE IF NOT EXISTS `reminder_new` (
+                `id` INTEGER NOT NULL,
+                `taskId` INTEGER NOT NULL,
+                `reminderTime` INTEGER NOT NULL,
+                `mode` TEXT NOT NULL,
+                `isReminded` INTEGER NOT NULL,
+                `extraText` TEXT,
+                `extraData` TEXT,
+                `longAsDelay` INTEGER NOT NULL,
+                PRIMARY KEY(`id`),
+                FOREIGN KEY(`taskId`) REFERENCES `task`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+            )
+        """.trimIndent())
+        db.execSQL("""
+            INSERT INTO `reminder_new` (`id`,`taskId`,`reminderTime`,`mode`,`isReminded`,`extraText`,`extraData`,`longAsDelay`)
+            SELECT r.`id`, t.`id` AS taskId, r.`reminderTime`, r.`mode`, r.`isReminded`, r.`extraText`, r.`extraData`, r.`longAsDelay`
+            FROM `reminder` r
+            JOIN `task` t ON t.`reminder` = r.`id`
+        """.trimIndent())
+        db.execSQL("DROP TABLE `reminder`")
+        db.execSQL("ALTER TABLE `reminder_new` RENAME TO `reminder`")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_reminder_taskId` ON `reminder` (`taskId`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_reminder_isReminded` ON `reminder` (`isReminded`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_reminder_reminderTime` ON `reminder` (`reminderTime`)")
+        // Update task below
+        db.execSQL("ALTER TABLE task DROP COLUMN `detail`")
+        db.execSQL("ALTER TABLE task DROP COLUMN `reminder`")
+    }
+}
+
 fun buildDatabase(context: Context): TaskDatabase {
     val database = Room.databaseBuilder(context, TaskDatabase::class.java, taskDatabaseName)
         .addMigrations(MIGRATION_1_2)
         .addMigrations(MIGRATION_2_3)
+        .addMigrations(MIGRATION_3_4)
         .build()
     return database
 }
