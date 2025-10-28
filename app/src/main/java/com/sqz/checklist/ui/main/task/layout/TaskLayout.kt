@@ -36,12 +36,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -81,6 +79,7 @@ import com.sqz.checklist.ui.main.task.layout.item.LazyList
 import com.sqz.checklist.ui.main.task.layout.item.ListData
 import com.sqz.checklist.ui.theme.Theme
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 
 /**
@@ -281,12 +280,8 @@ private fun rememberLazyListState(
     scrollBehavior: TopAppBarScrollBehavior,
     updateNavConnector: (data: NavConnectData, updateSet: NavConnectData) -> Unit,
 ): LazyListState {
+    val coroutineScope = rememberCoroutineScope()
     val lazyState = rememberLazyListState()
-    val rememberTopBarHeight = rememberSaveable { mutableFloatStateOf(0f) }
-    LaunchedEffect(Unit) { // this LaunchedEffect is used to fix a crash when rotate screen in auto scroll
-        delay(200)
-        rememberTopBarHeight.floatValue = scrollBehavior.state.heightOffsetLimit
-    }
     LaunchedEffect(lazyState) {
         snapshotFlow { lazyState.canScrollForward || lazyState.canScrollBackward }.collect {
             updateNavConnector(
@@ -310,7 +305,14 @@ private fun rememberLazyListState(
     }
     if (navConnector.scrollToBottom) LaunchedEffect(Unit) {
         lazyState.animateScrollToItem(lazyState.layoutInfo.totalItemsCount)
-        scrollBehavior.state.heightOffset = rememberTopBarHeight.floatValue
+        try { // try to fix a crash when rotate screen in auto scroll
+            scrollBehavior.state.heightOffset = scrollBehavior.state.heightOffsetLimit
+        } catch (_: Exception) {
+            coroutineScope.launch {
+                delay(220)
+                scrollBehavior.state.heightOffset = scrollBehavior.state.heightOffsetLimit
+            }
+        }
         updateNavConnector(
             NavConnectData(scrollToBottom = false), NavConnectData(scrollToBottom = true)
         )

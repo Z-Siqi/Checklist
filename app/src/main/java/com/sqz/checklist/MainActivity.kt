@@ -4,7 +4,6 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
@@ -28,7 +27,6 @@ import com.sqz.checklist.ui.main.appScreenSizeLimit
 import com.sqz.checklist.ui.theme.ChecklistTheme
 import com.sqz.checklist.ui.theme.SystemBarsColor
 import com.sqz.checklist.ui.theme.Theme
-import com.sqz.checklist.ui.theme.ThemePreference
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
@@ -43,39 +41,32 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         taskDatabase = buildDatabase(applicationContext) // load database
         appDir = applicationContext.filesDir.absolutePath // load app dir location
-        super.lifecycle.coroutineScope.launch {
-            deleteAllFileWhichInProcessFilesPath(applicationContext)
-        }
         setContent {
             ChecklistTheme {
-                SystemBarsColor.CreateSystemBars(window) // if nav mode is not gesture mode
+                SystemBarsColor.CreateSystemBars(window) {
+                    Theme.SetSystemBarsColorByPreference()
+                }
                 val windowInsetsPadding = if (isGestureNavigationMode()) Modifier else {
                     Modifier.windowInsetsPadding(WindowInsets.navigationBars)
                 }
+                val statusBarsInsetsPadding = Modifier.windowInsetsPadding(WindowInsets.statusBars)
                 if (!appScreenSizeLimit()) Surface(
-                    modifier = Modifier
-                        .windowInsetsPadding(WindowInsets.statusBars) // Do not override state bar area
-                        .fillMaxSize() then windowInsetsPadding,
-                    color = MaterialTheme.colorScheme.background
+                    modifier = Modifier.fillMaxSize()
+                            then statusBarsInsetsPadding // Do not override state bar area
+                            then windowInsetsPadding,
+                    color = MaterialTheme.colorScheme.background,
                 ) { // Main app UI
                     MainLayout(
+                        modifier = Modifier,
                         context = applicationContext,
                         view = window.decorView,
-                        modifier = Modifier
                     )
                 }
-                val theme = Theme.color
-                SystemBarsColor.current.setNavBarColor(theme.navBarBgColor)
-                SystemBarsColor.current.setStateBarColor(theme.sysStateBarBgColor)
-                if (ThemePreference.preference() == 0) {
-                    SystemBarsColor.current.setLightBars(
-                        lightNav = isSystemInDarkTheme(), lightState = isSystemInDarkTheme()
-                    )
-                } else {
-                    SystemBarsColor.current.setLightBars(
-                        lightNav = true, lightState = !isSystemInDarkTheme()
-                    )
-                }
+            }
+        }
+        if (savedInstanceState == null) {
+            super.lifecycle.coroutineScope.launch(Dispatchers.IO) {
+                deleteAllFileWhichInProcessFilesPath(applicationContext)
             }
         }
     }

@@ -39,6 +39,7 @@ import com.sqz.checklist.ui.common.dialog.EditableContentDialog
 import com.sqz.checklist.ui.theme.ThemePreference
 import com.sqz.checklist.ui.common.unit.pxToDpInt
 import androidx.core.net.toUri
+import com.sqz.checklist.ui.theme.Theme
 
 class GeneralSettingItems(private val view: View) : SettingsList() {
 
@@ -58,7 +59,9 @@ class GeneralSettingItems(private val view: View) : SettingsList() {
                 },
                 initSetter = selectedIndex,
                 modifier = modifier
-            ).let { ThemePreference.updatePreference(preferences.appTheme(it)) }
+            ).let {
+                ThemePreference.updatePreference(preferences.appTheme(it))
+            }.also { Theme.SetSystemBarsColorByPreference() }
         }
         return SettingsItem(SettingsType.General, stringResource(R.string.theme)) {
             Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {

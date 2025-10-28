@@ -90,6 +90,14 @@ fun TaskLayoutTopBar(
     val year = "YYYY"
     val week = "EEEE"
 
+    val isLandscape = screenIsWidth()
+    LaunchedEffect(Unit) {
+        // Fix top bar UI broken when not expanded and rotate screen then rotate back
+        if (!isLandscape && topBarState.collapsedFraction > 0f && topBarState.heightOffset != topBarState.heightOffsetLimit) {
+            topBarState.heightOffset = topBarState.heightOffsetLimit
+        }
+    }
+
     val title = @Composable {
         if (topBarState.heightOffset <= topBarState.heightOffsetLimit * 0.7 && !topBarForLowScreen) {
             Row(

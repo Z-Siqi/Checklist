@@ -20,8 +20,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -54,6 +54,10 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.coroutineScope
+import chaintech.videoplayer.host.MediaPlayerHost
+import chaintech.videoplayer.model.ScreenResize
+import chaintech.videoplayer.model.VideoPlayerConfig
+import chaintech.videoplayer.ui.video.VideoPlayerComposable
 import com.otaliastudios.transcoder.Transcoder
 import com.otaliastudios.transcoder.TranscoderListener
 import com.otaliastudios.transcoder.strategy.DefaultVideoStrategy
@@ -64,10 +68,6 @@ import com.sqz.checklist.preferences.PreferencesInCache
 import com.sqz.checklist.preferences.PrimaryPreferences
 import com.sqz.checklist.ui.common.TextTooltipBox
 import com.sqz.checklist.ui.common.unit.pxToDpInt
-import io.sanghun.compose.video.RepeatMode
-import io.sanghun.compose.video.VideoPlayer
-import io.sanghun.compose.video.controller.VideoPlayerControllerConfig
-import io.sanghun.compose.video.uri.VideoPlayerMediaItem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -133,13 +133,25 @@ fun VideoSelector(
                 modifier = modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                VideoPlayer(
-                    mediaItems = listOf(VideoPlayerMediaItem.StorageMediaItem(it)),
-                    repeatMode = RepeatMode.ALL, usePlayerController = false, volume = 0f
-                )
-                Button(modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(8.dp), onClick = { handler.setInPreviewState(true) }) {
+                var rememberUri by remember { mutableStateOf(it) }
+                var previewView by remember { mutableStateOf(false) }
+                if (rememberUri != it) LaunchedEffect(Unit) {
+                    previewView = !previewView
+                    rememberUri = it
+                }
+                if (previewView) {
+                    VideoPreviewView(rememberUri)
+                } else {
+                    VideoPreviewView(rememberUri)
+                }
+                Spacer(modifier = Modifier.fillMaxSize() then Modifier.clickable {
+                    view.playSoundEffect(SoundEffectConstants.CLICK)
+                    launcher.launch("video/*")
+                })
+                Button(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(8.dp), onClick = { handler.setInPreviewState(true) }) {
                     Text(stringResource(R.string.play_video))
                 }
             } else VideoViewDialog(
@@ -161,6 +173,29 @@ fun VideoSelector(
         }
         checkSize = null
     }
+}
+
+@Composable
+private fun VideoPreviewView(uri: Uri) {
+    val playerHost = remember {
+        MediaPlayerHost(
+            mediaUrl = uri.toString(),
+            isLooping = true,
+            isMuted = true,
+            initialVideoFitMode = ScreenResize.FIT
+        )
+    }
+    val playerConfig = VideoPlayerConfig(
+        showControls = false,
+        isZoomEnabled = false,
+        isFullScreenEnabled = false,
+        enablePIPControl = false,
+    )
+    VideoPlayerComposable(
+        modifier = Modifier.fillMaxSize(),
+        playerHost = playerHost,
+        playerConfig = playerConfig
+    )
 }
 
 class VideoSelector {
@@ -246,21 +281,31 @@ fun VideoViewDialog(
         }, text = {
             Column {
                 OutlinedCard(
-                    modifier = modifier.fillMaxWidth() then modifier.height(height.dp),
-                    colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh)
+                    modifier = Modifier.size(
+                        width = (containerSize.width.pxToDpInt() * 0.8).dp,
+                        height = height.dp
+                    ),
+                    colors = CardDefaults.cardColors(MaterialTheme.colorScheme.inverseSurface)
                 ) {
-                    VideoPlayer(
-                        modifier = modifier.fillMaxSize(),
-                        mediaItems = listOf(VideoPlayerMediaItem.StorageMediaItem(videoUri)),
-                        autoPlay = false,
-                        controllerConfig = VideoPlayerControllerConfig(
-                            showSpeedAndPitchOverlay = true, showSubtitleButton = false,
-                            showCurrentTimeAndTotalTime = true, showBufferingProgress = false,
-                            showForwardIncrementButton = true, showBackwardIncrementButton = true,
-                            showBackTrackButton = false, showNextTrackButton = false,
-                            showRepeatModeButton = false, controllerShowTimeMilliSeconds = 5_000,
-                            controllerAutoShow = true, showFullScreenButton = false,
-                        ),
+                    val playerHost = remember {
+                        MediaPlayerHost(
+                            mediaUrl = videoUri.toString(),
+                            isLooping = false,
+                            initialVideoFitMode = ScreenResize.FIT
+                        )
+                    }
+                    val playerConfig = VideoPlayerConfig(
+                        isZoomEnabled = false,
+                        isFullScreenEnabled = false,
+                        showVideoQualityOptions = false,
+                        enableFullEdgeToEdge = false,
+                        enablePIPControl = false,
+                        fastForwardBackwardIntervalSeconds = 5,
+                    )
+                    VideoPlayerComposable(
+                        modifier = Modifier.fillMaxSize(),
+                        playerHost = playerHost,
+                        playerConfig = playerConfig
                     )
                 }
                 if (openBySystem) Text(
@@ -372,6 +417,7 @@ private fun insertVideo(
                 Log.d("VideoBitrate", "Failed to get! Use default: 5800000L")
                 5800000L
             }
+
             fun targetBitrate(bitrate: Long, rate: Int): Long {
                 val recursion = (rate / 1.5).toInt()
                 return if (recursion > 1) targetBitrate(

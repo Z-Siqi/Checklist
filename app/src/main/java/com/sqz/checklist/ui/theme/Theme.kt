@@ -93,6 +93,21 @@ class Theme private constructor(preference: Int) {
 
     companion object {
         val color: Theme @Composable get() = Theme(ThemePreference.preference())
+
+        @Composable
+        fun SetSystemBarsColorByPreference() {
+            SystemBarsColor.current.setNavBarColor(color.navBarBgColor)
+            SystemBarsColor.current.setStateBarColor(color.sysStateBarBgColor)
+            if (ThemePreference.preference() == 0) {
+                SystemBarsColor.current.setLightBars(
+                    lightNav = isSystemInDarkTheme(), lightState = isSystemInDarkTheme()
+                )
+            } else {
+                SystemBarsColor.current.setLightBars(
+                    lightNav = true, lightState = !isSystemInDarkTheme()
+                )
+            }
+        }
     }
 
     val sysStateBarBgColor: Color

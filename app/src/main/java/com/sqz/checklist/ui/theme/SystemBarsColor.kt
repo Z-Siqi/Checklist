@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -75,9 +76,11 @@ class SystemBarsColor private constructor() {
         }
         // Set system bars UI light or dark mode
         val barsColor = barsColor.collectAsState().value
-        val controller = WindowInsetsControllerCompat(window, window.decorView)
-        controller.isAppearanceLightStatusBars = !barsColor.lightStateBar
-        controller.isAppearanceLightNavigationBars = !barsColor.lightNavBar
+        LaunchedEffect(Unit, barsColor) {
+            val controller = WindowInsetsControllerCompat(window, window.decorView)
+            controller.isAppearanceLightStatusBars = !barsColor.lightStateBar
+            controller.isAppearanceLightNavigationBars = !barsColor.lightNavBar
+        }
     }
 
     @RequiresApi(35)
@@ -88,7 +91,9 @@ class SystemBarsColor private constructor() {
             modifier = Modifier.fillMaxSize() then Modifier.background(barsColor.stateBgColor)
         )
         @Suppress("DEPRECATION") // Set nav bar color for non-gesture nav mode
-        window.navigationBarColor = barsColor.navBgColor.toArgb()
+        LaunchedEffect(Unit, barsColor) {
+            window.navigationBarColor = barsColor.navBgColor.toArgb()
+        }
     }
 
     @Suppress("DEPRECATION")
@@ -96,7 +101,9 @@ class SystemBarsColor private constructor() {
     private fun SetSystemBarsColor(window: Window) {
         // set state bar color for low android version
         val barsColor = barsColor.collectAsState().value
-        window.statusBarColor = barsColor.stateBgColor.toArgb()
-        window.navigationBarColor = barsColor.navBgColor.toArgb()
+        LaunchedEffect(Unit, barsColor) {
+            window.statusBarColor = barsColor.stateBgColor.toArgb()
+            window.navigationBarColor = barsColor.navBgColor.toArgb()
+        }
     }
 }

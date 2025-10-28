@@ -62,7 +62,7 @@ enum class MainLayoutNav {
 /** Top level of MainLayout **/
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun MainLayout(context: Context, view: View, modifier: Modifier) {
+fun MainLayout(modifier: Modifier, context: Context, view: View) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route

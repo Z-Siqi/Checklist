@@ -138,8 +138,13 @@ fun LazyList(
 private fun AutoScrollList(
     lazyState: LazyListState, listState: ListData, reminderHandler: ReminderHandler
 ) {
+    fun isScrollAllowed(): Boolean {
+        val isInListTop = lazyState.firstVisibleItemIndex in 1..2
+        val isCloseToTop = lazyState.firstVisibleItemScrollOffset < 175
+        return lazyState.canScrollBackward && isInListTop && isCloseToTop
+    }
     LaunchedEffect(listState.pinnedItem) { // Auto scroll to pinned area when first pin is set
-        if (listState.pinnedItem.size == 1 && lazyState.canScrollBackward && lazyState.firstVisibleItemIndex in 1..2) {
+        if (listState.pinnedItem.size == 1 && isScrollAllowed()) {
             delay(50)
             lazyState.animateScrollToItem(0)
         }
@@ -152,7 +157,7 @@ private fun AutoScrollList(
             if (value >= 1 && init) {
                 reminderHandler.requestUpdateList()
                 // Auto scroll to reminded area when first notification is arrived and at top
-                if (value == 1 && lazyState.canScrollBackward && lazyState.firstVisibleItemIndex in 1..2) {
+                if (value == 1 && isScrollAllowed()) {
                     delay(50)
                     lazyState.animateScrollToItem(0)
                     Log.d("LazyListScroll", "Scroll to top (item index 0)")
