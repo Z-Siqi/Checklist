@@ -87,7 +87,7 @@ class DatabaseRepository(
         val db: TaskDatabase = this.databaseInstance!!
         return when (table) {
             Table.Task -> listOf(db.taskDao().getTask(id = taskId))
-            Table.TaskDetail -> db.taskDao().getTaskDetail(taskId = taskId)!!
+            Table.TaskDetail -> db.taskDao().getTaskDetail(taskId = taskId)
             Table.TaskReminder -> listOf(db.taskReminderDao().getByTaskId(taskId = taskId)!!)
         }
     }
@@ -242,7 +242,8 @@ class DatabaseRepository(
      */
     private suspend fun deleteAllMediaByTaskId(taskId: Long) {
         val taskDao = this.databaseInstance!!.taskDao()
-        taskDao.getTaskDetail(taskId)?.let {
+        taskDao.getTaskDetail(taskId).let {
+            if (it.isEmpty()) return
             for (getTaskDetail in it) {
                 try {
                     this@DatabaseRepository.taskDetailType(

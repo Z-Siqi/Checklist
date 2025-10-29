@@ -136,9 +136,10 @@ fun AudioSelector(
                 contentAlignment = Alignment.Center
             ) {
                 AlbumArtCard(it, view.context)
-                Button(modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(8.dp), onClick = { handler.setInPreviewState(true) }) {
+                Button(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(8.dp), onClick = { handler.setInPreviewState(true) }) {
                     Text(stringResource(R.string.play_audio))
                 }
             } else AudioViewDialog(
@@ -232,7 +233,8 @@ private fun AlbumArtCard(
 @Composable
 private fun AudioPlayer(uri: Uri, context: Context) = Row {
     val containerSize = LocalWindowInfo.current.containerSize
-    val isLandScape = containerSize.width > containerSize.height && containerSize.width.pxToDpInt() > 400
+    val isLandScape =
+        containerSize.width > containerSize.height && containerSize.width.pxToDpInt() > 400
     val exoPlayer = remember(uri) {
         ExoPlayer.Builder(context).build().apply {
             val mediaItem = MediaItem.fromUri(uri)
@@ -306,13 +308,6 @@ fun AudioViewDialog(
     openBySystem: Boolean = false,
 ) {
     val view = LocalView.current
-    val containerSize = LocalWindowInfo.current.containerSize
-    val screenHeightDp = containerSize.height.pxToDpInt()
-    val height = when {
-        screenHeightDp >= 700 -> (screenHeightDp / 3.8).toInt()
-        screenHeightDp < (containerSize.width.pxToDpInt() / 1.2) -> (screenHeightDp / 2.1).toInt()
-        else -> (screenHeightDp / 3.1).toInt()
-    }
     val coroutineScope = rememberCoroutineScope()
     var openAudioBySystem by rememberSaveable { mutableStateOf(false) }
     if (openAudioBySystem) ProcessingDialog {
@@ -343,7 +338,7 @@ fun AudioViewDialog(
         }, text = {
             Column {
                 OutlinedCard(
-                    modifier = modifier.fillMaxWidth() then modifier.height(height.dp),
+                    modifier = modifier.fillMaxWidth() then modifier.height(mediaDialogContentHeight()),
                     colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh)
                 ) { AudioPlayer(audioUri, view.context) }
                 if (openBySystem) Text(
@@ -351,7 +346,7 @@ fun AudioViewDialog(
                 )
             }
         }, title = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-        modifier = Modifier.widthIn(max = (containerSize.width.pxToDpInt() * 0.9).dp),
+        modifier = Modifier.widthIn(max = mediaDialogWidth()),
         properties = DialogProperties(usePlatformDefaultWidth = false)
     )
 }

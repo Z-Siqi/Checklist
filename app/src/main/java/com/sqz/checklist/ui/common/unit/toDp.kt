@@ -18,3 +18,11 @@ fun Int.pxToDp(): Dp {
 fun Int.pxToDpInt(): Int {
     return this.pxToDp().value.toInt()
 }
+
+@ReadOnlyComposable
+@Composable
+fun Float.pxToDp(): Dp {
+    val it = this
+    val density = LocalDensity.current
+    return with(density) { it.toDp() }
+}

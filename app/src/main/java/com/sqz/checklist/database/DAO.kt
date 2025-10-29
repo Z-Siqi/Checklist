@@ -102,7 +102,7 @@ interface TaskDao {
      * @return the [TaskDetail] list by task id
      */
     @Query("SELECT * FROM taskDetail WHERE taskId = :taskId")
-    suspend fun getTaskDetail(taskId: Long): List<TaskDetail>?
+    suspend fun getTaskDetail(taskId: Long): List<TaskDetail>
 
 
     /* Insert & Edit Actions */

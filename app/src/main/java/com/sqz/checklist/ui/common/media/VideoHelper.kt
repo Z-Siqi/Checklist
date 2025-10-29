@@ -20,8 +20,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -45,7 +45,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -67,7 +66,6 @@ import com.sqz.checklist.cache.deleteCacheFileByName
 import com.sqz.checklist.preferences.PreferencesInCache
 import com.sqz.checklist.preferences.PrimaryPreferences
 import com.sqz.checklist.ui.common.TextTooltipBox
-import com.sqz.checklist.ui.common.unit.pxToDpInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -244,13 +242,6 @@ fun VideoViewDialog(
     openBySystem: Boolean = false,
 ) {
     val view = LocalView.current
-    val containerSize = LocalWindowInfo.current.containerSize
-    val screenHeightDp = containerSize.height.pxToDpInt()
-    val height = when {
-        screenHeightDp >= 700 -> (screenHeightDp / 3.8).toInt()
-        screenHeightDp < (containerSize.width.pxToDpInt() / 1.2) -> (screenHeightDp / 2.1).toInt()
-        else -> (screenHeightDp / 3.1).toInt()
-    }
     val coroutineScope = rememberCoroutineScope()
     var openVideoBySystem by rememberSaveable { mutableStateOf(false) }
     if (openVideoBySystem) ProcessingDialog {
@@ -281,10 +272,7 @@ fun VideoViewDialog(
         }, text = {
             Column {
                 OutlinedCard(
-                    modifier = Modifier.size(
-                        width = (containerSize.width.pxToDpInt() * 0.8).dp,
-                        height = height.dp
-                    ),
+                    modifier = Modifier.height(mediaDialogContentHeight()),
                     colors = CardDefaults.cardColors(MaterialTheme.colorScheme.inverseSurface)
                 ) {
                     val playerHost = remember {
@@ -313,7 +301,7 @@ fun VideoViewDialog(
                 )
             }
         }, title = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-        modifier = Modifier.widthIn(max = (containerSize.width.pxToDpInt() * 0.9).dp),
+        modifier = Modifier.widthIn(max = mediaDialogWidth()),
         properties = DialogProperties(usePlatformDefaultWidth = false)
     )
 }

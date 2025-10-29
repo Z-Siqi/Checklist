@@ -16,3 +16,4 @@ local.properties
 /.idea/codeStyles/codeStyleConfig.xml
 /.idea/deviceManager.xml
 /.kotlin/errors/*
+/.kotlin/sessions/*

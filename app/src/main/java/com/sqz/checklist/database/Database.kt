@@ -99,8 +99,31 @@ private val MIGRATION_2_3 = object : Migration(2, 3) {
 
 private val MIGRATION_3_4 = object : Migration(3, 4) {
     override fun migrate(db: SupportSQLiteDatabase) {
+        // Update task below
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `task_new` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `description` TEXT NOT NULL,
+                `createDate` TEXT NOT NULL,
+                `doingState` TEXT,
+                `isPin` INTEGER NOT NULL,
+                `isHistoryId` INTEGER NOT NULL
+            )
+        """.trimIndent()
+        )
+        db.execSQL(
+            """
+            INSERT INTO `task_new` (`id`, `description`, `createDate`, `doingState`, `isPin`, `isHistoryId`)
+            SELECT `id`, `description`, `createDate`, `doingState`, `isPin`, `isHistoryId`
+            FROM `task`
+        """.trimIndent()
+        )
+        db.execSQL("ALTER TABLE `task` RENAME TO `task_old`")
+        db.execSQL("ALTER TABLE `task_new` RENAME TO `task`")
         // Update taskDetail below
-        db.execSQL("""
+        db.execSQL(
+            """
             CREATE TABLE IF NOT EXISTS `taskDetail_new` (
                 `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                 `taskId` INTEGER NOT NULL,
@@ -110,20 +133,32 @@ private val MIGRATION_3_4 = object : Migration(3, 4) {
                 `dataByte` BLOB NOT NULL,
                 FOREIGN KEY(`taskId`) REFERENCES `task`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
             )
-        """.trimIndent())
-        db.execSQL("""
+        """.trimIndent()
+        )
+        db.execSQL(
+            """
             INSERT INTO `taskDetail_new` (`taskId`, `type`, `description`, `dataString`, `dataByte`)
             SELECT 
-                `id` AS taskId, `type`, NULL AS description, 
-                IF(`type` = "Text" OR `type` = "URL" OR `type` = "Application", NULL, `dataString`) AS dataString,
-                IF(`type` = "Text" OR `type` = "URL" OR `type` = "Application", CAST(`dataString` AS BLOB), `dataByte`) AS dataByte
+                `id` AS taskId, `type`, NULL AS description,
+                CASE
+                    WHEN `type` = 'Text' OR `type` = 'URL' OR `type` = 'Application'
+                        THEN NULL
+                    ELSE `dataString`
+                END AS dataString,
+                CASE
+                    WHEN `type` = 'Text' OR `type` = 'URL' OR `type` = 'Application'
+                        THEN CAST(`dataString` AS BLOB)
+                    ELSE `dataByte`
+                END AS dataByte
             FROM `taskDetail`
-        """.trimIndent())
+        """.trimIndent()
+        )
         db.execSQL("DROP TABLE `taskDetail`")
         db.execSQL("ALTER TABLE `taskDetail_new` RENAME TO `taskDetail`")
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_taskDetail_taskId` ON `taskDetail` (`taskId`)")
         // Update reminder below
-        db.execSQL("""
+        db.execSQL(
+            """
             CREATE TABLE IF NOT EXISTS `reminder_new` (
                 `id` INTEGER NOT NULL,
                 `taskId` INTEGER NOT NULL,
@@ -136,21 +171,22 @@ private val MIGRATION_3_4 = object : Migration(3, 4) {
                 PRIMARY KEY(`id`),
                 FOREIGN KEY(`taskId`) REFERENCES `task`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
             )
-        """.trimIndent())
-        db.execSQL("""
+        """.trimIndent()
+        )
+        db.execSQL(
+            """
             INSERT INTO `reminder_new` (`id`,`taskId`,`reminderTime`,`mode`,`isReminded`,`extraText`,`extraData`,`longAsDelay`)
             SELECT r.`id`, t.`id` AS taskId, r.`reminderTime`, r.`mode`, r.`isReminded`, r.`extraText`, r.`extraData`, r.`longAsDelay`
             FROM `reminder` r
-            JOIN `task` t ON t.`reminder` = r.`id`
-        """.trimIndent())
+            JOIN `task_old` t ON t.`reminder` = r.`id`
+        """.trimIndent()
+        )
+        db.execSQL("DROP TABLE `task_old`") // Delete task_old
         db.execSQL("DROP TABLE `reminder`")
         db.execSQL("ALTER TABLE `reminder_new` RENAME TO `reminder`")
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_reminder_taskId` ON `reminder` (`taskId`)")
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_reminder_isReminded` ON `reminder` (`isReminded`)")
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_reminder_reminderTime` ON `reminder` (`reminderTime`)")
-        // Update task below
-        db.execSQL("ALTER TABLE task DROP COLUMN `detail`")
-        db.execSQL("ALTER TABLE task DROP COLUMN `reminder`")
     }
 }
 

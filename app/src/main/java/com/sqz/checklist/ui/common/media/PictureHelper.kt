@@ -12,18 +12,28 @@ import android.view.View
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.VectorConverter
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.rememberTransformableState
+import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
@@ -32,6 +42,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -39,10 +50,16 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.FileProvider
 import coil.compose.rememberAsyncImagePainter
 import com.sqz.checklist.MainActivity
@@ -50,7 +67,7 @@ import com.sqz.checklist.R
 import com.sqz.checklist.cache.deleteCacheFileByName
 import com.sqz.checklist.preferences.PreferencesInCache
 import com.sqz.checklist.preferences.PrimaryPreferences
-import com.sqz.checklist.ui.common.unit.pxToDpInt
+import com.sqz.checklist.ui.common.TextTooltipBox
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -60,8 +77,16 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
-import java.lang.IllegalStateException
+import kotlin.math.max
 
+/**
+ * A composable that allows the user to select a picture from their device.
+ * It displays the selected picture or a prompt to select one. It also handles file size validation.
+ *
+ * @param selector The [PictureSelector] instance to manage the state of the selected picture.
+ * @param view The current [View] to access context and play sound effects.
+ * @param modifier The modifier to be applied to the layout.
+ */
 @Composable
 fun PictureSelector(
     selector: PictureSelector,
@@ -129,24 +154,47 @@ fun PictureSelector(
     }
 }
 
+/**
+ * A class that holds the state for [PictureSelector].
+ * It manages the URI and name of the selected picture.
+ */
 class PictureSelector {
+    /**
+     * Default constructor for creating an empty PictureSelector.
+     */
     constructor() // default constructor
 
+    /**
+     * Constructor to initialize PictureSelector with a predefined URI and name.
+     *
+     * @param uriIn The initial URI of the picture.
+     * @param nameIn The initial name of the picture.
+     */
     constructor(uriIn: Uri?, nameIn: String?) { // constructor with parameters
         this._dataUri.value = uriIn
         this._pictureName.value = nameIn
     }
 
+    // Holds the URI of the selected picture.
     private var _dataUri: MutableStateFlow<Uri?> = MutableStateFlow(null)
     val dataUri = _dataUri.asStateFlow()
 
+    /**
+     * Sets the URI of the selected picture.
+     *
+     * @param uri The new [Uri] for the picture.
+     */
     fun setDataUri(uri: Uri) {
         this._dataUri.update { uri }
     }
 
+    // Holds the name of the selected picture file.
     private var _pictureName: MutableStateFlow<String?> = MutableStateFlow(null)
     val pictureName = _pictureName.asStateFlow()
 
+    /**
+     * Sets the name of the selected picture file.
+     */
     fun setPictureName(string: String) {
         this._pictureName.update { string }
     }
@@ -157,6 +205,16 @@ class PictureSelector {
     }
 }
 
+/**
+ * A dialog that displays a picture from a byte array.
+ * The picture can be opened in an external application by clicking on it.
+ *
+ * @param onDismissRequest Callback to be invoked when the dialog is dismissed.
+ * @param byteArray The byte array of the image to be displayed.
+ * @param imageName The name of the image, used for display and when opening externally.
+ * @param title The title of the dialog.
+ * @param modifier The modifier to be applied to the dialog.
+ */
 @Composable
 fun PictureViewDialog(
     onDismissRequest: () -> Unit,
@@ -167,46 +225,132 @@ fun PictureViewDialog(
 ) {
     if (byteArray.size <= 1) throw IllegalStateException("Invalid byteArray data!")
     val view = LocalView.current
-    val containerSize = LocalWindowInfo.current.containerSize
-    val screenHeightDp = containerSize.height.pxToDpInt()
-    val height = when {
-        screenHeightDp >= 700 -> (screenHeightDp / 5.8).toInt()
-        screenHeightDp < (containerSize.width.pxToDpInt() / 1.2) -> (screenHeightDp / 3.2).toInt()
-        else -> (screenHeightDp / 5.1).toInt()
+    val scope = rememberCoroutineScope()
+    // zoom image
+    var scale by remember { mutableFloatStateOf(1f) }
+    var offset by remember { mutableStateOf(Offset.Zero) }
+    var size by remember { mutableStateOf(IntSize.Zero) }
+    val animatableScale = remember { Animatable(scale) }
+    val animatableOffset = remember { Animatable(offset, Offset.VectorConverter) }
+    val state = rememberTransformableState { zoomChange, panChange, _ ->
+        scale *= zoomChange
+        scale = scale.coerceIn(0.5f, 5f) // Limit scale
+        val newOffset = offset + panChange
+        offset = newOffset.coerceIn(size, scale) // Coerce offset during gesture
+        scope.launch { // Use scope to update animates for smooth visual feedback
+            // Snap to the new values without animation
+            launch { animatableScale.snapTo(scale) }
+            launch { animatableOffset.snapTo(offset) }
+        }
     }
-    AlertDialog(
-        onDismissRequest = onDismissRequest,
-        confirmButton = {
-            TextButton(onClick = {
-                onDismissRequest()
-                view.playSoundEffect(SoundEffectConstants.CLICK)
-            }) {
-                Text(text = stringResource(R.string.cancel))
+    LaunchedEffect(state.isTransformInProgress) {
+        if (!state.isTransformInProgress) {
+            // When the gesture ends, animate scale back to a minimum of 1f
+            if (scale < 1f) {
+                scope.launch {
+                    launch { animatableScale.animateTo(1f, spring()) }
+                    launch { animatableOffset.animateTo(Offset.Zero, spring()) }
+                }
+                scale = 1f
             }
-        },
-        text = {
+
+            // Animate offset back within bounds
+            val boundOffset = offset.coerceIn(size, scale)
+            scope.launch { animatableOffset.animateTo(boundOffset, spring()) }
+            offset = boundOffset
+        }
+    }
+    // dialog
+    AlertDialog(
+        onDismissRequest = onDismissRequest, confirmButton = {
+            Row {
+                TextTooltipBox(R.string.open_with) {
+                    IconButton(onClick = {
+                        openImageBySystem(imageName, byteArray, view.context)
+                        view.playSoundEffect(SoundEffectConstants.CLICK)
+                    }) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                painterResource(R.drawable.open_in_new),
+                                stringResource(R.string.open_with)
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier.weight(1f))
+                TextButton(onClick = {
+                    onDismissRequest()
+                    view.playSoundEffect(SoundEffectConstants.CLICK)
+                }) { Text(text = stringResource(R.string.cancel)) }
+            }
+        }, text = {
             OutlinedCard(
-                modifier = modifier.fillMaxWidth() then modifier.height(height.dp),
-                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh)
+                modifier = modifier
+                    .fillMaxWidth()
+                    .height(mediaDialogContentHeight()),
+                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.inverseSurface)
             ) {
                 Column(
                     modifier = modifier
                         .fillMaxSize()
-                        .clickable { openImageBySystem(imageName, byteArray, view.context) },
+                        .transformable(state = state)
+                        .pointerInput(Unit) {
+                            detectTapGestures(
+                                onDoubleTap = {
+                                    scope.launch {
+                                        launch { animatableScale.animateTo(1f, spring()) }
+                                        launch { animatableOffset.animateTo(Offset.Zero, spring()) }
+                                    }
+                                    scale = 1f
+                                    offset = Offset.Zero
+                                }
+                            )
+                        }
+                        .onSizeChanged { size = it },
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Image(
-                        rememberAsyncImagePainter(byteArray.toUri(MainActivity.appDir)),
-                        imageName
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .graphicsLayer(
+                                scaleX = animatableScale.value,
+                                scaleY = animatableScale.value,
+                                translationX = animatableOffset.value.x,
+                                translationY = animatableOffset.value.y
+                            ),
+                        painter = rememberAsyncImagePainter(byteArray.toUri(MainActivity.appDir)),
+                        contentDescription = imageName
                     )
                 }
             }
-        },
-        title = { Text(title) },
+        }, title = { Text(title) },
+        modifier = Modifier.widthIn(max = mediaDialogWidth()),
+        properties = DialogProperties(usePlatformDefaultWidth = false)
     )
 }
 
+
+/** Coerces the offset to keep the scaled image within the view bounds **/
+private fun Offset.coerceIn(size: IntSize, scale: Float): Offset {
+    val imageWidth = size.width * scale
+    val imageHeight = size.height * scale
+    val maxTx = max(0f, (imageWidth - size.width) / 2f + (size.width / 2f * (1 - 1 / scale)))
+    val maxTy = max(0f, (imageHeight - size.height) / 2f + (size.height / 2f * (1 - 1 / scale)))
+    return Offset(
+        x = x.coerceIn(-maxTx, maxTx),
+        y = y.coerceIn(-maxTy, maxTy)
+    )
+}
+
+/**
+ * Opens an image using an external application via an Intent.
+ * It creates a temporary cache file to share the image with other apps.
+ *
+ * @param imageName The name for the temporary image file.
+ * @param byteArray The image data.
+ * @param context The application context.
+ */
 fun openImageBySystem(imageName: String, byteArray: ByteArray, context: Context) {
     val convertUri = byteArray.toUri(MainActivity.appDir)
     val name = if (imageName == "") "unknown_name" else {
@@ -247,6 +391,7 @@ fun openImageBySystem(imageName: String, byteArray: ByteArray, context: Context)
     }
 }
 
+/** Saves a picture from a URI to the app's internal storage, with optional compression. **/
 private fun insertPicture(context: Context, uri: Uri, compression: Int): Uri? {
     val mediaDir = File(context.filesDir, pictureMediaPath)
     if (!mediaDir.exists()) mediaDir.mkdirs()
@@ -297,6 +442,15 @@ private fun insertPicture(context: Context, uri: Uri, compression: Int): Uri? {
     }
 }
 
+/**
+ * A composable function that handles the insertion of a picture into the app's storage.
+ * It displays a processing dialog while the operation is in progress.
+ *
+ * @param context The application context.
+ * @param uri The URI of the picture to be inserted.
+ * @param ignoreCompressSettings If true, the picture will be saved without compression, ignoring user preferences.
+ * @return The [Uri] of the saved picture file, or null if the operation fails or is in progress.
+ */
 @Composable
 fun insertPicture(context: Context, uri: Uri, ignoreCompressSettings: Boolean = false): Uri? {
     val coroutineScope = rememberCoroutineScope()
