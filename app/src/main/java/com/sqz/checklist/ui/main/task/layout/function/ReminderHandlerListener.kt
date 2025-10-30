@@ -18,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -139,10 +140,13 @@ fun ReminderHandlerListener(
             },
             onDismissButtonClick = { resetState() },
             text = {
-                var data by rememberSaveable { mutableLongStateOf(-1L) }
+                var errNotifyId by rememberSaveable { mutableIntStateOf(Int.MAX_VALUE) }
+                var time by rememberSaveable { mutableLongStateOf(-1L) }
                 LaunchedEffect(Unit) {
                     reminderHandler.getReminderData()?.let {
-                        data = it.reminder.reminderTime
+                        time = it.reminder.reminderTime
+                        val isSet = reminderHandler.checkAlarmNotification(it.reminder.id, context)
+                        if (isSet == false) errNotifyId = it.reminder.id
                     }
                 }
                 Text(
@@ -152,12 +156,17 @@ fun ReminderHandlerListener(
                 val fullDateShort = stringResource(R.string.full_date_short)
                 val formatter = remember { SimpleDateFormat(fullDateShort, Locale.getDefault()) }
                 Text(
-                    text = if (data != -1L) stringResource(
-                        R.string.remind_at,
-                        formatter.format(data)
-                    ) else stringResource(R.string.loading),
+                    text = when {
+                        time != -1L -> stringResource(R.string.remind_at, formatter.format(time))
+                        errNotifyId != Int.MAX_VALUE -> stringResource(R.string.no_reminder_set_err)
+                        else -> stringResource(R.string.loading)
+                    },
                     fontSize = 15.sp
                 )
+                if (errNotifyId != Int.MAX_VALUE) LaunchedEffect(Unit) {
+                    reminderHandler.restoreNotification(context)
+                    errNotifyId = Int.MAX_VALUE
+                }
             }
         )
 

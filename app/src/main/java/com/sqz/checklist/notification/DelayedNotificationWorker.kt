@@ -11,8 +11,11 @@ class DelayedNotificationWorker(
     workerParams: WorkerParameters,
 ) : Worker(appContext, workerParams) {
     override fun doWork(): Result {
-        val notifyId = inputData.getInt("NotificationId", Int.MAX_VALUE)
-        if (notifyId != 0) {
+        val notifyIdDeprecated = inputData.getInt("notifyId", Int.MAX_VALUE)
+        val notifyId = if (notifyIdDeprecated != Int.MAX_VALUE) notifyIdDeprecated else {
+            inputData.getInt("NotificationId", Int.MAX_VALUE)
+        }
+        if (notifyId != Int.MAX_VALUE) {
             val intent = Intent(applicationContext, NotificationReceiver::class.java).apply {
                 putExtra("NotificationId", notifyId)
             }

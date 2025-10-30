@@ -108,6 +108,7 @@
     <string name="unable_sent_cause_no_permission">由於沒有權限，無法發送通知!</string>
     <string name="no_SCHEDULE_EXACT_ALARM_permission_explain"><![CDATA[由於沒有 鬧鐘和提醒 權限，提醒可能會延遲到達]]></string>
     <string name="permission_lost_toast"><![CDATA[由於您取消了鬧鐘和提醒或通知權限，因此請不要妄想正常顯示提醒!]]></string>
+    <string name="no_reminder_set_err">通知遺失，這不應該發生，請向開發者報告！正在嘗試恢復，請再次開啟此對話方塊…</string>
 
     <!-- Backup & Restore -->
     <string name="backup_restore"><![CDATA[備份 & 恢復]]></string>

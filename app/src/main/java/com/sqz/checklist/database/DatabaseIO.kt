@@ -462,7 +462,7 @@ fun ImportTaskDatabase(
     }
 }
 
-private suspend fun restoreNotification(dbInstance: TaskDatabase, context: Context) {
+suspend fun restoreNotification(dbInstance: TaskDatabase, context: Context) {
     Log.d("RestoreReminder", "trying to restore all reminder")
     val notificationManager = MutableStateFlow(NotifyManager())
     notificationManager.value.requestPermission(context)

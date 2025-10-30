@@ -314,6 +314,23 @@ class ReminderHandler private constructor(
         return if (id != null) database().getReminderData(id) else null
     }
 
+
+    /** Checks if a specific alarm notification is active. */
+    fun checkAlarmNotification(notifyId: Int, context: Context): Boolean? {
+        if (notifyManager.requestPermission(context) == PermissionState.Alarm) {
+            return NotificationCreator(context).getAlarmNotificationState(notifyId)
+        }
+        return null
+    }
+
+    /** Force restores all scheduled notifications which cause by unexpected reason */
+    fun restoreNotification(context: Context) {
+        Log.e("ReminderHandler", "trying to call restoreNotification")
+        coroutineScope.launch(Dispatchers.Main) {
+            com.sqz.checklist.database.restoreNotification(MainActivity.taskDatabase, context)
+        }
+    }
+
     /** Gets the number of tasks that have been reminded. */
     fun getIsRemindedNum(): Flow<Int>? {
         return if (!initState.value) flowOf(0) else {

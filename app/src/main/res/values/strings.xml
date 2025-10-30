@@ -107,6 +107,7 @@
     <string name="unable_sent_cause_no_permission">Notification is unable to send due to no permission!</string>
     <string name="no_SCHEDULE_EXACT_ALARM_permission_explain"><![CDATA[The reminder may arrive late due to no alarms & reminders permission]]></string>
     <string name="permission_lost_toast"><![CDATA[Notification or Alarm Permission lost! Reminder is unable to send!]]></string>
+    <string name="no_reminder_set_err">Notification is lost, this should not happen, plz report to developer! Trying to restore, please open this dialog again…</string>
 
     <!-- Backup & Restore -->
     <string name="backup_restore"><![CDATA[Backup & Restore]]></string>

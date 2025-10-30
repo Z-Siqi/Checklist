@@ -30,7 +30,13 @@ class NotificationReceiver : BroadcastReceiver() {
 
     @OptIn(DelicateCoroutinesApi::class)
     override fun onReceive(context: Context, intent: Intent) {
-        val notificationId = intent.getIntExtra("NotificationId", Int.MAX_VALUE)
+        val notifyIdDeprecated = intent.getIntExtra("notifyId", Int.MAX_VALUE)
+        val notificationId = if (notifyIdDeprecated != Int.MAX_VALUE) {
+            Log.w("NotificationReceiver", "Deprecated notifyId!")
+            notifyIdDeprecated
+        } else {
+            intent.getIntExtra("NotificationId", Int.MAX_VALUE)
+        }
         GlobalScope.launch {
             val db: TaskDatabase = try {
                 MainActivity.taskDatabase

@@ -19,7 +19,10 @@ import java.util.concurrent.TimeUnit
 class BootReceiver : BroadcastReceiver() {
     @OptIn(DelicateCoroutinesApi::class)
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
+        if (intent.action == Intent.ACTION_BOOT_COMPLETED ||
+            intent.action == Intent.ACTION_MY_PACKAGE_REPLACED
+        ) {
+            Log.d("BootReceiver", "intent.action: ${intent.action}")
             val notificationManager = MutableStateFlow(NotifyManager())
             GlobalScope.launch {
                 notificationManager.value.requestPermission(context)

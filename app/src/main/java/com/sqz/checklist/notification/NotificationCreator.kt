@@ -46,7 +46,7 @@ class NotificationCreator(private val context: Context) {
         val builder = NotificationCompat.Builder(context, channel.id)
             .setSmallIcon(R.drawable.task_icon)
             .setContentTitle(notifyData.title)
-            .setContentText(notifyData.text)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(notifyData.text))
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .setCategory(NotificationCompat.CATEGORY_MESSAGE)
@@ -125,6 +125,14 @@ class NotificationCreator(private val context: Context) {
         return notifyId
     }
 
+    /**
+     * Check if an alarm notification is set.
+     *
+     * This function checks if a `PendingIntent` for a specific notification ID exists,
+     * which indicates whether an alarm for that notification is scheduled.
+     * @param notifyId The unique identifier of the notification to check.
+     * @return `true` if the alarm is set, `false` otherwise.
+     */
     fun getAlarmNotificationState(notifyId: Int): Boolean {
         val intent = Intent(context, NotificationReceiver::class.java).apply {
             putExtra("NotificationId", notifyId)
