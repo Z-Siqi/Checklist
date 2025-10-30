@@ -180,6 +180,33 @@ class TaskDetailDialogViewModel : ViewModel() {
         }
     }
 
+    private val ipv4Regex = Regex(
+        """^(?:25[0-5]|2[0-4]\d|1?\d?\d)(?:\.(?:25[0-5]|2[0-4]\d|1?\d?\d)){3}$"""
+    )
+
+    private val ipv6UrlRegex = Regex(
+        """^[A-Za-z][A-Za-z0-9+.\-]*://""" +
+                """(?:[A-Za-z0-9._~!$&'()*+,;=:%\-]+@)?""" +
+                """\[""" +
+                """(?:(?:[0-9A-Fa-f]{1,4}:){7}[0-9A-Fa-f]{1,4}|""" +
+                """(?:[0-9A-Fa-f]{1,4}:){1,7}:|""" +
+                """(?:[0-9A-Fa-f]{1,4}:){1,6}:[0-9A-Fa-f]{1,4}|""" +
+                """(?:[0-9A-Fa-f]{1,4}:){1,5}(?::[0-9A-Fa-f]{1,4}){1,2}|""" +
+                """(?:[0-9A-Fa-f]{1,4}:){1,4}(?::[0-9A-Fa-f]{1,4}){1,3}|""" +
+                """(?:[0-9A-Fa-f]{1,4}:){1,3}(?::[0-9A-Fa-f]{1,4}){1,4}|""" +
+                """(?:[0-9A-Fa-f]{1,4}:){1,2}(?::[0-9A-Fa-f]{1,4}){1,5}|""" +
+                """[0-9A-Fa-f]{1,4}:(?::[0-9A-Fa-f]{1,4}){1,6}|""" +
+                """:(?::[0-9A-Fa-f]{1,4}){1,7}|::|""" +
+                """(?:[0-9A-Fa-f]{1,4}:){6}(?:25[0-5]|2[0-4]\d|1?\d?\d)(?:\.(?:25[0-5]|2[0-4]\d|1?\d?\d)){3}|""" +
+                """(?:[0-9A-Fa-f]{1,4}:){0,5}:(?:25[0-5]|2[0-4]\d|1?\d?\d)(?:\.(?:25[0-5]|2[0-4]\d|1?\d?\d)){3}|""" +
+                """::(?:[0-9A-Fa-f]{1,4}:){0,5}(?:25[0-5]|2[0-4]\d|1?\d?\d)(?:\.(?:25[0-5]|2[0-4]\d|1?\d?\d)){3})""" +
+                """(?:%25[0-9A-Za-z._~\-]+)?""" +
+                """]""" +
+                """(?::\d{1,5})?""" +
+                """(?:[/?#]\S*)?$""",
+        RegexOption.IGNORE_CASE
+    )
+
     /**
      * Handle [TaskDetailDialog] non-listed dialog confirm function
      * @param getType from the [com.sqz.checklist.ui.common.dialog.DialogWithMenu] confirm lambda,
@@ -199,11 +226,13 @@ class TaskDetailDialogViewModel : ViewModel() {
         if (type != null) {
             when (type) {
                 TaskDetailType.URL -> {
-                    if (!Patterns.WEB_URL.matcher(textFieldState.text.toString()).matches()) {
-                        onIssue(TaskDetailType.URL)
-                    } else {
-                        val getStr = if (getTextStateStr().startsWith("http")) {
-                            textFieldState.edit { insert(0, "http://") }
+                    val isIpv6URL = getTextStateStr().matches(ipv6UrlRegex)
+                    val isURL = Patterns.WEB_URL.matcher(getTextStateStr()).matches() || isIpv6URL
+                    if (!isURL) onIssue(TaskDetailType.URL) else {
+                        val getStr = if (!getTextStateStr().startsWith("http") && !isIpv6URL) {
+                            if (getTextStateStr().matches(ipv4Regex)) {
+                                textFieldState.edit { insert(0, "http://") }
+                            } else textFieldState.edit { insert(0, "https://") }
                             getTextStateStr()
                         } else getTextStateStr()
                         this.setTaskDetail { update ->

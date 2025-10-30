@@ -76,7 +76,7 @@ fun InfoAlertDialog(
                 MaterialTheme.colorScheme.surfaceContainer
             }
             Column {
-                if (text != null) Card(
+                Card(
                     modifier = Modifier.fillMaxWidth() then Modifier
                         .height(height.dp)
                         .pointerInput(Unit) {
@@ -85,7 +85,7 @@ fun InfoAlertDialog(
                     colors = CardDefaults.cardColors(bgColor),
                     shape = if (title == null) ShapeDefaults.Large else ShapeDefaults.Medium
                 ) {
-                    SelectionContainer(
+                    if (text == null) content() else SelectionContainer(
                         modifier = Modifier.padding(8.dp) then Modifier.verticalColumnScrollbar(
                             scrollState = scrollState, endPadding = 0f, scrollBarCornerRadius = 12f,
                             scrollBarTrackColor = MaterialTheme.colorScheme.outlineVariant,
@@ -101,7 +101,6 @@ fun InfoAlertDialog(
                         )
                     }
                 }
-                content()
             }
         },
         title = {
