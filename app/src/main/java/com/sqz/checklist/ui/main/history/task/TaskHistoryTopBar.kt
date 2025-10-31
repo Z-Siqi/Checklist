@@ -1,5 +1,6 @@
 package com.sqz.checklist.ui.main.history.task
 
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -34,7 +35,7 @@ fun HistoryTopBar(
         navigationIcon = {
             TextTooltipBox(
                 textRid = R.string.back,
-                topLeftExtraPadding = true,
+                extraPadding = PaddingValues(top = 25.dp, bottom = 20.dp),
             ) {
                 IconButton(onClick = { onClick() }) {
                     Icon(

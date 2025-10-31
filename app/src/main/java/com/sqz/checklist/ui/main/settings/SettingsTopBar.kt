@@ -2,11 +2,13 @@ package com.sqz.checklist.ui.main.settings
 
 import android.view.SoundEffectConstants
 import android.view.View
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TooltipAnchorPosition
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -38,8 +40,9 @@ fun SettingsTopBar(
         ),
         navigationIcon = {
             TextTooltipBox(
-                textRid = R.string.back,
-                topLeftExtraPadding = true,
+                text = stringResource(R.string.back),
+                extraPadding = PaddingValues(top = 16.dp),
+                positioning = TooltipAnchorPosition.Below
             ) {
                 IconButton(onClick = {
                     onBack()

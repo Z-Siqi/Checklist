@@ -4,6 +4,7 @@ import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.view.SoundEffectConstants
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.PlainTooltip
@@ -20,18 +21,37 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TextTooltipBox(
     textRid: Int,
     modifier: Modifier = Modifier,
-    topLeftExtraPadding: Boolean = false,
-    topRightExtraPadding: Boolean = false,
+    extraPadding: PaddingValues = PaddingValues(0.dp),
+    enable: Boolean = true,
     content: @Composable () -> Unit,
 ) = TextTooltipBox(
     text = stringResource(id = textRid),
     modifier = modifier,
-    topLeftExtraPadding = topLeftExtraPadding,
-    topRightExtraPadding = topRightExtraPadding,
+    extraPadding = extraPadding,
+    enable = enable,
+    content = content
+)
+
+/** This method no need `@OptIn(ExperimentalMaterial3Api::class)` on called method **/
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TextTooltipBox(
+    text: String,
+    modifier: Modifier = Modifier,
+    extraPadding: PaddingValues = PaddingValues(0.dp),
+    enable: Boolean = true,
+    content: @Composable () -> Unit,
+) = TextTooltipBox(
+    text = text,
+    modifier = modifier,
+    extraPadding = extraPadding,
+    positioning = TooltipAnchorPosition.Above,
+    enable = enable,
     content = content
 )
 
@@ -40,33 +60,30 @@ fun TextTooltipBox(
 fun TextTooltipBox(
     text: String,
     modifier: Modifier = Modifier,
-    topLeftExtraPadding: Boolean = false,
-    topRightExtraPadding: Boolean = false,
+    extraPadding: PaddingValues = PaddingValues(0.dp),
+    positioning: TooltipAnchorPosition = TooltipAnchorPosition.Above,
     enable: Boolean = true,
-    content: @Composable () -> Unit,
-) = TooltipBox(
-    positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
-        TooltipAnchorPosition.Above
-    ),
-    tooltip = {
-        val extraPaddingValue = if (topLeftExtraPadding) {
-            modifier.padding(top = 25.dp, bottom = 20.dp)
-        } else if (topRightExtraPadding) {
-            modifier.padding(top = 25.dp, end = 20.dp)
-        } else modifier
-        PlainTooltip(modifier = extraPaddingValue) {
-            Text(text = text)
-            val view = LocalView.current
-            LaunchedEffect(true) { // click feedback
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) ContextCompat.getSystemService(
-                    view.context, Vibrator::class.java
-                )?.vibrate(
-                    VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK)
-                ) else view.playSoundEffect(SoundEffectConstants.CLICK)
+    content: @Composable (() -> Unit),
+) {
+    val rememberTooltipState = rememberTooltipState()
+    val view = LocalView.current
+    if (rememberTooltipState.isVisible) LaunchedEffect(Unit) {
+        // click feedback
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) ContextCompat.getSystemService(
+            view.context, Vibrator::class.java
+        )?.vibrate(
+            VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK)
+        ) else view.playSoundEffect(SoundEffectConstants.CLICK)
+    }
+    TooltipBox(
+        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(positioning),
+        tooltip = {
+            PlainTooltip(modifier = modifier.padding(extraPadding)) {
+                Text(text = text)
             }
-        }
-    },
-    state = rememberTooltipState(),
-    enableUserInput = enable,
-    content = content
-)
+        },
+        state = rememberTooltipState,
+        enableUserInput = enable,
+        content = content
+    )
+}

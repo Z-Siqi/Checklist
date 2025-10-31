@@ -9,6 +9,7 @@ import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -25,6 +26,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MediumTopAppBar
 import androidx.compose.material3.Text
+import androidx.compose.material3.TooltipAnchorPosition
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.TopAppBarState
@@ -148,8 +150,9 @@ fun TaskLayoutTopBar(
 
     val actionButton = @Composable {
         TextTooltipBox(
-            textRid = R.string.more_options,
-            topRightExtraPadding = true
+            text = stringResource(R.string.more_options),
+            extraPadding = PaddingValues(end = 20.dp),
+            positioning = TooltipAnchorPosition.Below
         ) {
             IconButton(onClick = {
                 menu.value = true
