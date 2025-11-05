@@ -2,7 +2,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
-    id("com.google.devtools.ksp") version "2.2.10-2.0.2"
+    id("com.google.devtools.ksp") version "2.2.21-2.0.4"
 }
 
 android {
@@ -85,7 +85,7 @@ dependencies {
     implementation("androidx.room:room-ktx:2.8.3")
     testImplementation("androidx.room:room-testing:2.8.3")
     // Media
-    implementation("network.chaintech:compose-multiplatform-media-player:1.0.48")
+    implementation("network.chaintech:compose-multiplatform-media-player:1.0.49")
     implementation("io.coil-kt:coil-compose:2.7.0")
     implementation("androidx.media3:media3-exoplayer:1.8.0")
     implementation("com.otaliastudios:transcoder:0.11.2")
