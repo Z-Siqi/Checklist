@@ -2,7 +2,6 @@ package com.sqz.checklist.ui.common.dialog
 
 import android.view.SoundEffectConstants
 import androidx.compose.foundation.layout.Column
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -23,12 +22,12 @@ fun WarningAlertDialog(
     text: @Composable () -> Unit = {},
 ) {
     val view = LocalView.current
-    AlertDialog(
+    PrimaryDialog(
         onDismissRequest = {
             onDismissRequest()
             view.playSoundEffect(SoundEffectConstants.CLICK)
         },
-        confirmButton = {
+        actionButton = {
             TextButton(onClick = onConfirmButtonClick) {
                 Text(text = stringResource(R.string.confirm))
             }
@@ -48,7 +47,7 @@ fun WarningAlertDialog(
             )
         },
         title = { Text(text = stringResource(R.string.warning)) },
-        text = {
+        content = {
             Column { if (textString == "") text() else Text(text = textString, fontSize = 17.sp) }
         }
     )

@@ -22,12 +22,12 @@ import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredHeightIn
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CardDefaults
@@ -68,6 +68,7 @@ import com.sqz.checklist.cache.deleteCacheFileByName
 import com.sqz.checklist.preferences.PreferencesInCache
 import com.sqz.checklist.preferences.PrimaryPreferences
 import com.sqz.checklist.ui.common.TextTooltipBox
+import com.sqz.checklist.ui.common.dialog.PrimaryDialog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -261,31 +262,30 @@ fun PictureViewDialog(
         }
     }
     // dialog
-    AlertDialog(
-        onDismissRequest = onDismissRequest, confirmButton = {
-            Row {
-                TextTooltipBox(R.string.open_with) {
-                    IconButton(onClick = {
-                        openImageBySystem(imageName, byteArray, view.context)
-                        view.playSoundEffect(SoundEffectConstants.CLICK)
-                    }) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(
-                                painterResource(R.drawable.open_in_new),
-                                stringResource(R.string.open_with)
-                            )
-                        }
+    PrimaryDialog(
+        onDismissRequest = onDismissRequest, actionButton = {
+            TextTooltipBox(R.string.open_with) {
+                IconButton(onClick = {
+                    openImageBySystem(imageName, byteArray, view.context)
+                    view.playSoundEffect(SoundEffectConstants.CLICK)
+                }) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            painterResource(R.drawable.open_in_new),
+                            stringResource(R.string.open_with)
+                        )
                     }
                 }
-                Spacer(modifier.weight(1f))
-                TextButton(onClick = {
-                    onDismissRequest()
-                    view.playSoundEffect(SoundEffectConstants.CLICK)
-                }) { Text(text = stringResource(R.string.cancel)) }
             }
-        }, text = {
+            Spacer(modifier.weight(1f))
+            TextButton(onClick = {
+                onDismissRequest()
+                view.playSoundEffect(SoundEffectConstants.CLICK)
+            }) { Text(text = stringResource(R.string.cancel)) }
+        }, content = {
             OutlinedCard(
                 modifier = modifier
+                    .requiredHeightIn(min = 100.dp)
                     .fillMaxWidth()
                     .height(mediaDialogContentHeight()),
                 colors = CardDefaults.cardColors(MaterialTheme.colorScheme.inverseSurface)

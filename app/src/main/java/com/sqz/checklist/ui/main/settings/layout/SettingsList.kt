@@ -54,7 +54,7 @@ import com.sqz.checklist.ui.common.TextTooltipBox
 import com.sqz.checklist.ui.common.UrlText
 import com.sqz.checklist.ui.common.verticalColumnScrollbar
 import com.sqz.checklist.ui.common.unit.pxToDpInt
-import com.sqz.checklist.ui.common.unit.screenIsWidth
+import com.sqz.checklist.ui.common.unit.isLandscape
 import androidx.compose.ui.platform.LocalConfiguration
 
 open class SettingsList {
@@ -67,7 +67,7 @@ open class SettingsList {
     ) = Box {
         val config = LocalWindowInfo.current.containerSize
         val width = config.width.pxToDpInt()
-        val sizeModifierWidth = if (screenIsWidth()) width * 0.5 else width * 0.7
+        val sizeModifierWidth = if (isLandscape()) width * 0.5 else width * 0.7
         val fontSize = when {
             miniTitle -> if (width >= 385) 14.sp else 11.sp
             else -> if (width >= 385) 15.sp else 12.sp

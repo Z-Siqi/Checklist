@@ -11,10 +11,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredHeightIn
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -45,6 +47,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
+import com.sqz.checklist.ui.common.unit.pxToDp
 import com.sqz.checklist.ui.common.unit.pxToDpInt
 import com.sqz.checklist.ui.common.verticalColumnScrollbar
 import kotlinx.coroutines.delay
@@ -89,6 +92,7 @@ fun DialogWithMenu(
     }
 
     val containerSize = LocalWindowInfo.current.containerSize
+    val density = LocalDensity.current
     val isLandScape =
         containerSize.width > containerSize.height && containerSize.width.pxToDpInt() > 400
     val shortScreen = containerSize.height.pxToDpInt() <= 358
@@ -99,7 +103,6 @@ fun DialogWithMenu(
             shape = ShapeDefaults.Small
         ) {
             var parentWidthDp by remember { mutableStateOf(0.dp) }
-            val density = LocalDensity.current
             Column(
                 modifier = Modifier
                     .heightIn(min = 47.dp)
@@ -113,9 +116,13 @@ fun DialogWithMenu(
                 }, verticalArrangement = Arrangement.Center
             ) {
                 Text(
-                    modifier = Modifier.padding(start = 12.dp, end = 12.dp),
+                    modifier = Modifier
+                        .heightIn(max = (containerSize.height * 0.17f).pxToDp())
+                        .padding(start = 12.dp, end = 12.dp),
                     text = menuText(type),
                     fontSize = 18.sp,
+                    maxLines = 2,
+                    autoSize = TextAutoSize.StepBased(minFontSize = 5.sp, maxFontSize = 18.sp),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 val scrollState = rememberScrollState()
@@ -153,19 +160,33 @@ fun DialogWithMenu(
             else -> (screenHeightDp / 5.1).toInt()
         }
         OutlinedCard(
-            modifier = Modifier.fillMaxWidth() then Modifier.height(height.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .requiredHeightIn(min = 50.dp)
+                .height(height.dp),
             colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainer)
         ) {
             functionalContent(type)
         }
     }
 
-    AlertDialog(
+    PrimaryDialog(
         onDismissRequest = { releaseFocusAndDismiss(false) },
-        confirmButton = {
-            Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        actionButton = {
+            val screenWidth = containerSize.width.pxToDp()
+            var parentWidthDp by remember { mutableStateOf(screenWidth) }
+            Row(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .onGloballyPositioned { layoutCoordinates ->
+                        val widthPx = layoutCoordinates.size.width
+                        parentWidthDp = with(density) { widthPx.toDp() }
+                    },
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 dialogWithMenuView.extensionActionButton()
                 Spacer(modifier = modifier.weight(1f))
+                val autoSize = TextAutoSize.StepBased(minFontSize = 5.sp, maxFontSize = 14.sp)
                 TextButton(onClick = {
                     coroutineScope.launch {
                         focus.clearFocus()
@@ -173,7 +194,13 @@ fun DialogWithMenu(
                         releaseFocusAndDismiss(true)
                     }
                     view.playSoundEffect(SoundEffectConstants.CLICK)
-                }) { Text(text = dismissText) }
+                }) {
+                    Text(
+                        text = dismissText,
+                        modifier = Modifier.widthIn(max = parentWidthDp / 4),
+                        maxLines = 1, autoSize = autoSize
+                    )
+                }
                 Spacer(modifier = modifier.width(8.dp))
                 TextButton(onClick = {
                     coroutineScope.launch {
@@ -183,7 +210,13 @@ fun DialogWithMenu(
                         releaseFocusAndDismiss(false, ignoreRequest = true)
                     }
                     view.playSoundEffect(SoundEffectConstants.CLICK)
-                }) { Text(text = confirmText) }
+                }) {
+                    Text(
+                        text = confirmText,
+                        modifier = Modifier.widthIn(max = parentWidthDp / 4),
+                        maxLines = 1, autoSize = autoSize
+                    )
+                }
             }
         },
         modifier = modifier.sizeIn(
@@ -191,12 +224,16 @@ fun DialogWithMenu(
         ) then modifier.width((containerSize.width.pxToDpInt() / 1.2).dp),
         title = {
             Row {
-                Text(text = title)
+                Text(
+                    text = title,
+                    modifier = Modifier.heightIn(max = (containerSize.height * 0.1f).pxToDp()),
+                    autoSize = TextAutoSize.StepBased(minFontSize = 10.sp, maxFontSize = 22.sp),
+                )
                 Spacer(modifier = Modifier.weight(1f))
                 dialogWithMenuView.extensionTitleButton()
             }
         },
-        text = {
+        content = {
             val paddingValue = if (shortScreen) 5.dp else 16.dp
             if (isLandScape) Row {
                 selectContent()

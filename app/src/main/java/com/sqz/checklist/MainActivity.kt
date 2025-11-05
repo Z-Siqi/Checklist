@@ -23,10 +23,10 @@ import com.sqz.checklist.database.buildDatabase
 import com.sqz.checklist.preferences.PrimaryPreferences
 import com.sqz.checklist.ui.MainLayout
 import com.sqz.checklist.ui.common.unit.isGestureNavigationMode
-import com.sqz.checklist.ui.main.appScreenSizeLimit
 import com.sqz.checklist.ui.theme.ChecklistTheme
 import com.sqz.checklist.ui.theme.SystemBarsColor
 import com.sqz.checklist.ui.theme.Theme
+import com.sqz.checklist.ui.theme.UISizeLimit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
@@ -46,21 +46,26 @@ class MainActivity : ComponentActivity() {
                 SystemBarsColor.CreateSystemBars(window) {
                     Theme.SetSystemBarsColorByPreference()
                 }
-                val windowInsetsPadding = if (isGestureNavigationMode()) Modifier else {
+                val windowInsetsPadding = if (isGestureNavigationMode()) {
+                    Modifier
+                } else {
                     Modifier.windowInsetsPadding(WindowInsets.navigationBars)
                 }
-                val statusBarsInsetsPadding = Modifier.windowInsetsPadding(WindowInsets.statusBars)
-                if (!appScreenSizeLimit()) Surface(
+                val statusBarsInsetsPadding =
+                    Modifier.windowInsetsPadding(WindowInsets.statusBars)
+                Surface(
                     modifier = Modifier.fillMaxSize()
                             then statusBarsInsetsPadding // Do not override state bar area
                             then windowInsetsPadding,
                     color = MaterialTheme.colorScheme.background,
                 ) { // Main app UI
-                    MainLayout(
-                        modifier = Modifier,
-                        context = applicationContext,
-                        view = window.decorView,
-                    )
+                    UISizeLimit {
+                        MainLayout(
+                            modifier = Modifier,
+                            context = applicationContext,
+                            view = window.decorView,
+                        )
+                    }
                 }
             }
         }

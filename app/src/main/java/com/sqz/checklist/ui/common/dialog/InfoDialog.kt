@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -39,7 +38,7 @@ import com.sqz.checklist.ui.common.unit.pxToDpInt
 import com.sqz.checklist.ui.common.verticalColumnScrollbar
 
 @Composable
-fun InfoAlertDialog(
+fun InfoDialog(
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
     title: String? = null,
@@ -57,12 +56,12 @@ fun InfoAlertDialog(
         screenHeightDp < (containerSize.width.pxToDpInt() / 1.2) -> (screenHeightDp / 3.2).toInt()
         else -> (screenHeightDp / 5.1).toInt()
     }
-    AlertDialog(
+    PrimaryDialog(
         modifier = modifier
             .width((containerSize.width.pxToDpInt() / 1.2).dp)
             .sizeIn(maxWidth = 560.dp),
         onDismissRequest = onDismissRequest,
-        confirmButton = {
+        actionButton = {
             TextButton(onClick = {
                 onDismissRequest()
                 view.playSoundEffect(SoundEffectConstants.CLICK)
@@ -70,7 +69,7 @@ fun InfoAlertDialog(
                 Text(text = stringResource(R.string.cancel))
             }
         },
-        text = {
+        content = {
             val focus = LocalFocusManager.current
             val bgColor = if (!textBackgroundColor) Color.Transparent else {
                 MaterialTheme.colorScheme.surfaceContainer
@@ -118,8 +117,8 @@ fun InfoAlertDialog(
 
 @Preview
 @Composable
-private fun InfoAlertDialogPreview() {
-    InfoAlertDialog(
+private fun InfoDialogPreview() {
+    InfoDialog(
         onDismissRequest = {},
         text = "TEST"
     )

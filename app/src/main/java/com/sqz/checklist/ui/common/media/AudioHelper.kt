@@ -68,6 +68,7 @@ import com.sqz.checklist.R
 import com.sqz.checklist.cache.deleteCacheFileByName
 import com.sqz.checklist.preferences.PreferencesInCache
 import com.sqz.checklist.ui.common.TextTooltipBox
+import com.sqz.checklist.ui.common.dialog.PrimaryDialog
 import com.sqz.checklist.ui.common.unit.pxToDpInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -316,26 +317,24 @@ fun AudioViewDialog(
             openAudioBySystem = false
         }
     }
-    AlertDialog(
-        onDismissRequest = onDismissRequest, confirmButton = {
-            Row {
-                if (openBySystem) TextTooltipBox(R.string.open_with) {
-                    IconButton(onClick = { openAudioBySystem = true }) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(
-                                painterResource(R.drawable.open_in_new),
-                                stringResource(R.string.open_with)
-                            )
-                        }
+    PrimaryDialog(
+        onDismissRequest = onDismissRequest, actionButton = {
+            if (openBySystem) TextTooltipBox(R.string.open_with) {
+                IconButton(onClick = { openAudioBySystem = true }) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            painterResource(R.drawable.open_in_new),
+                            stringResource(R.string.open_with)
+                        )
                     }
                 }
-                Spacer(modifier.weight(1f))
-                TextButton(onClick = {
-                    onDismissRequest()
-                    view.playSoundEffect(SoundEffectConstants.CLICK)
-                }) { Text(text = stringResource(R.string.cancel)) }
             }
-        }, text = {
+            Spacer(modifier.weight(1f))
+            TextButton(onClick = {
+                onDismissRequest()
+                view.playSoundEffect(SoundEffectConstants.CLICK)
+            }) { Text(text = stringResource(R.string.cancel)) }
+        }, content = {
             Column {
                 OutlinedCard(
                     modifier = modifier.fillMaxWidth() then modifier.height(mediaDialogContentHeight()),

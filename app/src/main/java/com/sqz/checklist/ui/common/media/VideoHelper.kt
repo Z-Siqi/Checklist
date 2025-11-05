@@ -16,12 +16,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredHeightIn
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -66,6 +66,7 @@ import com.sqz.checklist.cache.deleteCacheFileByName
 import com.sqz.checklist.preferences.PreferencesInCache
 import com.sqz.checklist.preferences.PrimaryPreferences
 import com.sqz.checklist.ui.common.TextTooltipBox
+import com.sqz.checklist.ui.common.dialog.PrimaryDialog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -250,29 +251,29 @@ fun VideoViewDialog(
             openVideoBySystem = false
         }
     }
-    AlertDialog(
-        onDismissRequest = onDismissRequest, confirmButton = {
-            Row {
-                if (openBySystem) TextTooltipBox(R.string.open_with) {
-                    IconButton(onClick = { openVideoBySystem = true }) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(
-                                painterResource(R.drawable.open_in_new),
-                                stringResource(R.string.open_with)
-                            )
-                        }
+    PrimaryDialog(
+        onDismissRequest = onDismissRequest, actionButton = {
+            if (openBySystem) TextTooltipBox(R.string.open_with) {
+                IconButton(onClick = { openVideoBySystem = true }) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            painterResource(R.drawable.open_in_new),
+                            stringResource(R.string.open_with)
+                        )
                     }
                 }
-                Spacer(modifier.weight(1f))
-                TextButton(onClick = {
-                    onDismissRequest()
-                    view.playSoundEffect(SoundEffectConstants.CLICK)
-                }) { Text(text = stringResource(R.string.cancel)) }
             }
-        }, text = {
+            Spacer(modifier.weight(1f))
+            TextButton(onClick = {
+                onDismissRequest()
+                view.playSoundEffect(SoundEffectConstants.CLICK)
+            }) { Text(text = stringResource(R.string.cancel)) }
+        }, content = {
             Column {
                 OutlinedCard(
-                    modifier = Modifier.height(mediaDialogContentHeight()),
+                    modifier = Modifier
+                        .requiredHeightIn(min = 100.dp)
+                        .height(mediaDialogContentHeight()),
                     colors = CardDefaults.cardColors(MaterialTheme.colorScheme.inverseSurface)
                 ) {
                     val playerHost = remember {

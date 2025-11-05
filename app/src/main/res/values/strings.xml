@@ -26,8 +26,6 @@
     <string name="scroll_to_top">Scroll\nto top</string>
     <string name="failed_large_file_size">Failed! File size cannot be larger than %1$sMB</string>
     <string name="report_normal_file_size">Please report to developer if file size not larger than %1$sMB</string>
-    <string name="unsupported_screen_size">Unsupported screen size</string>
-    <string name="unsupported_screen_size_describe">Sorry, your device\'s screen size is too small; the app cannot display the UI correctly.</string>
 
     <!-- TaskLayout -->
     <string name="task_date_format">dd MMM yyyy</string>

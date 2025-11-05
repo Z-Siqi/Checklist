@@ -13,6 +13,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,8 +28,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -65,10 +67,12 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.getString
 import com.sqz.checklist.R
+import com.sqz.checklist.ui.theme.UISizeLimit
 import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.LocalDate
@@ -109,12 +113,12 @@ fun TimeSelectDialog(
 
     CheckPermission(context = context, onFailed = onFailed)
     val widthIn: Int = (getScreenWidthDpInt() * 0.8).toInt().let { if (it > 730) it else 630 }
-    AlertDialog(
+    PrimaryDialog(
         modifier = modifier
             .widthIn(min = widthIn.dp)
             .windowInsetsPadding(WindowInsets.navigationBars),
         onDismissRequest = { if (allowDismissRequest) onDismissRequest() },
-        confirmButton = {
+        actionButton = {
             Row(modifier = modifier.fillMaxWidth()) {
                 if (!timePickLimit) IconButton(onClick = {
                     isTimeInput = !isTimeInput
@@ -130,18 +134,21 @@ fun TimeSelectDialog(
                     )
                 }
                 Spacer(modifier = modifier.weight(1f))
-                TextButton(onClick = onDismissRequest) {
-                    Text(text = stringResource(R.string.dismiss))
-                }
+                TextActionButton(
+                    textId = R.string.dismiss,
+                    modifier = Modifier.widthIn(max = (getScreenWidthDpInt() / 4f).dp),
+                    onClick = onDismissRequest
+                )
                 Spacer(modifier = modifier.width(10.dp))
-                TextButton(onClick = {
+                TextActionButton(
+                    textId = R.string.confirm,
+                    modifier = Modifier.widthIn(max = (getScreenWidthDpInt() / 4f).dp)
+                ) {
                     onConfirmClick((cal.timeInMillis - now.timeInMillis))
-                }) {
-                    Text(text = stringResource(R.string.confirm))
                 }
             }
         },
-        text = {
+        content = {
             Column(
                 modifier = modifier.verticalScroll(rememberScrollState()) then if (isLandscape()) {
                     modifier.border(
@@ -217,6 +224,7 @@ fun TimeSelectDialog(
                 Spacer(modifier = if (isLandscape()) modifier.height(8.dp) else modifier)
             }
         },
+        contentScrollModifier = Modifier,
         properties = DialogProperties(usePlatformDefaultWidth = !isLandscape())
     )
     if (datePickDialog) {
@@ -253,30 +261,25 @@ private fun DatePickDialog(
     var tooLarge by remember { mutableStateOf(false) }
     var dialog by remember { mutableStateOf(false) }
     DatePickerDialog(
-        modifier = modifier.verticalScroll(rememberScrollState()),
+        modifier = modifier
+            .verticalScroll(rememberScrollState())
+            .horizontalScroll(rememberScrollState()),
         onDismissRequest = onDismissRequest,
         confirmButton = {
-            TextButton(
-                onClick = {
-                    if (!invalid) onConfirm()
-                    if (tooLarge) dialog = true
-                    if (invalid && !tooLarge) Toast.makeText(
-                        view.context, getString(view.context, R.string.cannot_set_past),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                },
-                colors = if (invalid) {
+            TextActionButton(
+                textId = R.string.confirm, colors = if (invalid) {
                     ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.outlineVariant)
                 } else ButtonDefaults.textButtonColors()
             ) {
-                Text(text = stringResource(R.string.confirm))
+                if (!invalid) onConfirm()
+                if (tooLarge) dialog = true
+                if (invalid && !tooLarge) Toast.makeText(
+                    view.context, getString(view.context, R.string.cannot_set_past),
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         },
-        dismissButton = {
-            TextButton(onClick = onDismissRequest) {
-                Text(text = stringResource(R.string.dismiss))
-            }
-        },
+        dismissButton = { TextActionButton(R.string.dismiss, onClick = onDismissRequest) },
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
         val datePickerState = rememberDatePickerState()
@@ -322,21 +325,44 @@ private fun DatePickDialog(
                 textString = stringResource(R.string.setting_remind_warning)
             )
         }
-        Column(
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            DatePicker(
-                state = datePickerState,
-                showModeToggle = if (getScreenHeightDpInt() < 565) {
-                    datePickerState.displayMode = DisplayMode.Input
-                    false
-                } else {
-                    datePickerState.displayMode = DisplayMode.Picker
-                    true
-                }
-            )
+        UISizeLimit {
+            Column(
+                modifier = Modifier,
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                DatePicker(
+                    state = datePickerState,
+                    showModeToggle = if (getScreenHeightDpInt() < 565) {
+                        datePickerState.displayMode = DisplayMode.Input
+                        false
+                    } else {
+                        datePickerState.displayMode = DisplayMode.Picker
+                        true
+                    }
+                )
+            }
         }
+    }
+}
+
+@Composable
+private fun TextActionButton(
+    textId: Int,
+    modifier: Modifier = Modifier,
+    colors: ButtonColors = ButtonDefaults.textButtonColors(),
+    onClick: () -> Unit
+) = UISizeLimit {
+    TextButton(onClick = onClick, colors = colors) {
+        Text(
+            text = stringResource(textId),
+            modifier = modifier,
+            maxLines = 1,
+            autoSize = TextAutoSize.StepBased(
+                minFontSize = 5.sp,
+                maxFontSize = 14.sp,
+            )
+        )
     }
 }
 

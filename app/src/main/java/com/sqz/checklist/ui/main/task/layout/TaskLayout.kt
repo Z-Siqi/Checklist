@@ -63,7 +63,7 @@ import com.sqz.checklist.database.Task
 import com.sqz.checklist.database.TaskDetail
 import com.sqz.checklist.database.TaskDetailType
 import com.sqz.checklist.database.TaskViewData
-import com.sqz.checklist.ui.common.dialog.InfoAlertDialog
+import com.sqz.checklist.ui.common.dialog.InfoDialog
 import com.sqz.checklist.ui.common.dialog.InfoDialogWithURL
 import com.sqz.checklist.ui.common.dialog.OpenExternalAppDialog
 import com.sqz.checklist.ui.common.media.AudioViewDialog
@@ -171,7 +171,7 @@ fun TaskLayout(
 @Composable
 private fun TaskDetailInfoDialog(onDismissRequest: () -> Unit, detail: TaskDetail?) {
     if (detail != null) when (detail.type) {
-        TaskDetailType.Text -> InfoAlertDialog(
+        TaskDetailType.Text -> InfoDialog(
             onDismissRequest = onDismissRequest,
             text = detail.dataByte.toString(Charsets.UTF_8),
             title = stringResource(R.string.detail)

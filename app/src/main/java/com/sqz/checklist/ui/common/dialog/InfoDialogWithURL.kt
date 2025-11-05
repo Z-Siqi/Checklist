@@ -26,7 +26,7 @@ fun InfoDialogWithURL(
 ) {
     val view = LocalView.current
     val scrollState = rememberScrollState()
-    InfoAlertDialog(
+    InfoDialog(
         onDismissRequest = onDismissRequest,
         title = title,
         text = null,

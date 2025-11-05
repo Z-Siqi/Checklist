@@ -144,8 +144,12 @@ class DatabaseRepository(
             withoutMedia = { db.taskDao().update(update) },
             withMedia = {
                 val uri = original.dataByte.toUri(MainActivity.appDir)
-                val file = File(uri.path!!)
-                file.delete()
+                try {
+                    val file = File(uri.path!!)
+                    file.delete()
+                } catch (e: NullPointerException) {
+                    e.printStackTrace()
+                }
                 db.taskDao().update(update)
             },
             taskDetail = original

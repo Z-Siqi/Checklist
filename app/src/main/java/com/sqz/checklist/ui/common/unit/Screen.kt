@@ -15,15 +15,18 @@ import androidx.compose.ui.unit.dp
 
 @ReadOnlyComposable
 @Composable
-fun screenIsWidth(): Boolean {
+fun isLandscape(minWidthDp: Dp? = null): Boolean {
     val localConfig = LocalWindowInfo.current.containerSize
-    return localConfig.width.pxToDpInt() > localConfig.height.pxToDpInt() * 1.1
+    val minWidthRequired: Boolean = if (minWidthDp == null) true else {
+        localConfig.width.pxToDp() > minWidthDp
+    }
+    return localConfig.width.pxToDpInt() > localConfig.height.pxToDpInt() * 1.1 && minWidthRequired
 }
 
 @ReadOnlyComposable
 @Composable
 fun screenIsWidthAndAPI34Above(): Boolean {
-    return isApi35AndAbove && screenIsWidth()
+    return isApi35AndAbove && isLandscape()
 }
 
 /** if screenIsWidthAndAPI34Above return WindowInsets.navigationBars.getBottom dp **/

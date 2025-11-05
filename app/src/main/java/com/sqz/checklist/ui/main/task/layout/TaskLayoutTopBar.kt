@@ -11,6 +11,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -43,6 +45,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -50,7 +53,7 @@ import com.sqz.checklist.R
 import com.sqz.checklist.ui.common.TextTooltipBox
 import com.sqz.checklist.ui.theme.Theme
 import com.sqz.checklist.ui.common.unit.pxToDpInt
-import com.sqz.checklist.ui.common.unit.screenIsWidth
+import com.sqz.checklist.ui.common.unit.isLandscape
 import com.sqz.checklist.ui.main.task.CardHeight
 import kotlinx.coroutines.delay
 import java.time.LocalDate
@@ -85,14 +88,14 @@ fun TaskLayoutTopBar(
     val left = WindowInsets.displayCutout.asPaddingValues()
         .calculateLeftPadding(LocalLayoutDirection.current)
     val safePaddingForFullscreen = if (
-        Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE && screenIsWidth()
+        Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE && isLandscape()
     ) modifier.padding(start = left - if (left > 8.dp) 5.dp else 0.dp) else modifier
 
     val topAppBarTitle = stringResource(R.string.time_format)
     val year = "YYYY"
     val week = "EEEE"
 
-    val isLandscape = screenIsWidth()
+    val isLandscape = isLandscape()
     LaunchedEffect(Unit) {
         // Fix top bar UI broken when not expanded and rotate screen then rotate back
         if (!isLandscape && topBarState.collapsedFraction > 0f && topBarState.heightOffset != topBarState.heightOffsetLimit) {
@@ -115,7 +118,8 @@ fun TaskLayoutTopBar(
                 Text(
                     text = topBarContent(year),
                     maxLines = 1,
-                    fontSize = 15.sp,
+                    style = TextStyle(fontSize = 15.sp),
+                    autoSize = TextAutoSize.StepBased(minFontSize = 5.sp, maxFontSize = 15.sp),
                     overflow = TextOverflow.Visible,
                 )
             }
@@ -141,14 +145,15 @@ fun TaskLayoutTopBar(
                     text = topBarContent(year),
                     modifier = modifier.height(28.dp),
                     maxLines = 1,
-                    fontSize = 15.sp,
+                    style = TextStyle(fontSize = 15.sp),
+                    autoSize = TextAutoSize.StepBased(minFontSize = 5.sp, maxFontSize = 15.sp),
                     overflow = TextOverflow.Visible,
                 )
             }
         }
     }
 
-    val actionButton = @Composable {
+    val moreButton: @Composable (RowScope.() -> Unit) = {
         TextTooltipBox(
             text = stringResource(R.string.more_options),
             extraPadding = PaddingValues(end = 20.dp),
@@ -173,7 +178,7 @@ fun TaskLayoutTopBar(
 
     if (topBarForLowScreen) TopAppBar(
         title = title,
-        actions = { actionButton() },
+        actions = moreButton,
         colors = colors.topBarBgColors(true),
         scrollBehavior = scrollBehavior,
         modifier = shadow,
@@ -182,7 +187,7 @@ fun TaskLayoutTopBar(
         MediumTopAppBar(
             colors = colors.topBarBgColors(false),
             title = title,
-            actions = { actionButton() },
+            actions = moreButton,
             scrollBehavior = scrollBehavior,
             windowInsets = WindowInsets(),
             modifier = if (topBarState.heightOffset == topBarState.heightOffsetLimit) shadow else modifier

@@ -29,7 +29,7 @@ import androidx.compose.ui.unit.dp
 import com.sqz.checklist.R
 import com.sqz.checklist.preferences.PrimaryPreferences
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
-import com.sqz.checklist.ui.common.unit.screenIsWidth
+import com.sqz.checklist.ui.common.unit.isLandscape
 import kotlinx.coroutines.delay
 
 @Composable
@@ -62,7 +62,7 @@ fun CheckTaskAction(
 @Composable
 private fun UndoButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
     val safeBottomForFullscreen =
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE && screenIsWidth()
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE && isLandscape()
         ) modifier.windowInsetsPadding(WindowInsets.navigationBars) else modifier
     Box(modifier = modifier.fillMaxSize() then safeBottomForFullscreen) {
         FloatingActionButton(

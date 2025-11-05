@@ -58,7 +58,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sqz.checklist.MainActivity
 import com.sqz.checklist.R
 import com.sqz.checklist.database.Task
-import com.sqz.checklist.ui.common.dialog.InfoAlertDialog
+import com.sqz.checklist.ui.common.dialog.InfoDialog
 import com.sqz.checklist.ui.main.task.CardHeight
 import com.sqz.checklist.ui.theme.Theme
 import java.time.LocalDate
@@ -207,7 +207,7 @@ private fun ItemBox(
             }
         }
     }
-    if (dialogState) InfoAlertDialog(
+    if (dialogState) InfoDialog(
         onDismissRequest = { dialogState = false },
         text = item.description,
         title = stringResource(R.string.task_info)

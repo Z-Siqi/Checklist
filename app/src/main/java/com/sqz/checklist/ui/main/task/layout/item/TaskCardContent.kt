@@ -21,6 +21,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.requiredSizeIn
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -59,7 +61,7 @@ import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.sp
 import com.sqz.checklist.R
 import com.sqz.checklist.ui.common.TextTooltipBox
-import com.sqz.checklist.ui.common.dialog.InfoAlertDialog
+import com.sqz.checklist.ui.common.dialog.InfoDialog
 import com.sqz.checklist.ui.main.task.CardHeight
 import com.sqz.checklist.ui.theme.Theme
 import kotlin.math.min
@@ -170,7 +172,7 @@ private fun DateText(
         val result = measurer.measure(
             text = AnnotatedString(raw),
             style = normalStyle,
-            maxLines = 3,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             constraints = Constraints(maxWidth = maxW, maxHeight = maxH)
         )
@@ -185,8 +187,9 @@ private fun DateText(
         Text(
             text = finalText,
             style = finalStyle,
-            maxLines = 3,
-            overflow = TextOverflow.Ellipsis,
+            maxLines = 2,
+            autoSize = TextAutoSize.StepBased(minFontSize = 5.sp, maxFontSize = finalStyle.fontSize),
+            overflow = TextOverflow.Visible,
             modifier = Modifier.padding(start = 5.dp, bottom = 3.dp)
         )
     }
@@ -202,12 +205,12 @@ private fun ButtonsRow(
 ) = BoxWithConstraints(modifier = modifier, contentAlignment = Alignment.BottomStart) {
     val buttonsArea = min(maxWidth * 0.38f, 200.dp)
     Row(
-        modifier = Modifier.width(buttonsArea),
+        modifier = Modifier.widthIn(min = 90.dp).width(buttonsArea),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (iconState.isDetailExist) TextTooltipBox(textRid = R.string.detail) {
-            IconButton(modifier = Modifier.requiredSize(30.dp), onClick = {
+            IconButton(modifier = Modifier.requiredSize(32.dp), onClick = {
                 onClick(CardClickType.Detail)
                 view.playSoundEffect(SoundEffectConstants.CLICK)
             }) {
@@ -218,12 +221,12 @@ private fun ButtonsRow(
                 )
             }
         } else Spacer(
-            modifier = Modifier.requiredSize(30.dp)
+            modifier = Modifier.requiredSize(32.dp)
         )
         Spacer(modifier = Modifier.weight(1f))
         val timerText = textState.reminderTooltip ?: stringResource(R.string.reminder)
         TextTooltipBox(text = timerText) {
-            IconButton(modifier = Modifier.requiredSize(30.dp), onClick = {
+            IconButton(modifier = Modifier.requiredSize(32.dp), onClick = {
                 onClick(CardClickType.Reminder)
                 view.playSoundEffect(SoundEffectConstants.CLICK)
             }) {
@@ -237,7 +240,7 @@ private fun ButtonsRow(
         }
         Spacer(modifier = Modifier.weight(1f))
         TextTooltipBox(textRid = R.string.edit) {
-            IconButton(modifier = Modifier.requiredSize(30.dp), onClick = {
+            IconButton(modifier = Modifier.requiredSize(32.dp), onClick = {
                 onClick(CardClickType.Edit)
                 view.playSoundEffect(SoundEffectConstants.CLICK)
             }) {
@@ -292,7 +295,7 @@ private fun TaskDescription(
             fontWeight = FontWeight.Normal,
         )
     }
-    if (overflowInfo) InfoAlertDialog(
+    if (overflowInfo) InfoDialog(
         onDismissRequest = { overflowInfo = false },
         title = stringResource(R.string.task_info),
         titleRow = {

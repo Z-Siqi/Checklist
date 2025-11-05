@@ -69,7 +69,7 @@ import com.sqz.checklist.database.ImportTaskDatabase
 import com.sqz.checklist.preferences.PreferencesInCache
 import com.sqz.checklist.ui.common.unit.navBarsBottomDp
 import com.sqz.checklist.ui.common.unit.pxToDpInt
-import com.sqz.checklist.ui.common.unit.screenIsWidth
+import com.sqz.checklist.ui.common.unit.isLandscape
 
 /**
  * Backup & Restore layout
@@ -84,7 +84,7 @@ fun BackupAndRestoreLayout(
     val cache = PreferencesInCache(view.context)
 
     val localConfig = LocalWindowInfo.current.containerSize
-    val safePaddingForFullscreen = if (screenIsWidth()) modifier.padding(
+    val safePaddingForFullscreen = if (isLandscape()) modifier.padding(
         start = WindowInsets.displayCutout.asPaddingValues()
             .calculateLeftPadding(LocalLayoutDirection.current),
         end = WindowInsets.displayCutout.asPaddingValues()

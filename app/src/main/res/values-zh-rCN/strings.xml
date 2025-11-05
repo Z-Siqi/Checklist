@@ -27,8 +27,6 @@
     <string name="scroll_to_top">滚动\n到顶端</string>
     <string name="failed_large_file_size">失败！文件大小不能大于 %1$sMB</string>
     <string name="report_normal_file_size">如果文件大小不大于 %1$sMB，请向开发人员报告</string>
-    <string name="unsupported_screen_size">不支持的屏幕尺寸</string>
-    <string name="unsupported_screen_size_describe">抱歉，您的设备屏幕尺寸太小；应用程序无法正确显示UI。</string>
 
     <!-- TaskLayout -->
     <string name="task_date_format">yyyy 年 MMM dd 日</string>

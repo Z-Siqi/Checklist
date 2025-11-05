@@ -25,6 +25,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -49,7 +50,7 @@ import com.sqz.checklist.ui.main.task.layout.TaskLayout
 import com.sqz.checklist.ui.main.task.layout.TaskLayoutTopBar
 import com.sqz.checklist.ui.main.task.layout.TopBarExtendedMenu
 import com.sqz.checklist.ui.main.task.layout.taskExtendedNavButton
-import com.sqz.checklist.ui.common.unit.screenIsWidth
+import com.sqz.checklist.ui.common.unit.isLandscape
 
 enum class MainLayoutNav {
     TaskLayout,
@@ -150,8 +151,9 @@ fun MainLayout(modifier: Modifier, context: Context, view: View) {
     }
 
     // Set Navigation bar mode (Navigation Bar or Navigation Rail)
-    val navMode = if (!screenIsWidth()) NavMode.NavBar else NavMode.Disable
-    val navRailMode = if (screenIsWidth()) NavMode.NavRail else NavMode.Disable
+    val landscapeMinWidthLimit = isLandscape(288.dp)
+    val navMode = if (!landscapeMinWidthLimit) NavMode.NavBar else NavMode.Disable
+    val navRailMode = if (landscapeMinWidthLimit) NavMode.NavRail else NavMode.Disable
 
     // Layout
     val nulLog = { Log.d("MainLayout", "Navigation bar or Top bar is disable") }

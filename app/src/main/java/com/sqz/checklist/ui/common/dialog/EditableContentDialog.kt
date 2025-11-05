@@ -9,15 +9,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredWidthIn
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.rememberTextFieldState
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -52,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
 import com.sqz.checklist.R
+import com.sqz.checklist.ui.common.unit.pxToDp
 import com.sqz.checklist.ui.common.verticalColumnScrollbar
 import com.sqz.checklist.ui.common.unit.pxToDpInt
 import kotlinx.coroutines.delay
@@ -85,40 +87,55 @@ fun EditableContentDialog(
     fun releaseFocusAndDismiss(isClick: Boolean = false) = coroutineScope.launch {
         clearFocus = true
         delay(80)
-       if (isClick) onDismissClick() else onDismissRequest()
+        if (isClick) onDismissClick() else onDismissRequest()
     }
 
     val scrollState = rememberScrollState()
     val containerSize = LocalWindowInfo.current.containerSize
-    AlertDialog(
+    PrimaryDialog(
         modifier = modifier
             .sizeIn(maxWidth = 720.dp)
             .width((containerSize.width.pxToDpInt() / 1.1).dp),
         onDismissRequest = { releaseFocusAndDismiss() },
-        confirmButton = {
-            Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                contentProperties.extraButtonBottom()
-                Spacer(modifier = modifier.weight(1f))
-                TextButton(onClick = {
+        actionButton = {
+            contentProperties.extraButtonBottom()
+            Spacer(modifier = modifier.weight(1f))
+            TextButton(
+                modifier = Modifier.requiredWidthIn(max = containerSize.width.pxToDp() / 5),
+                onClick = {
                     releaseFocusAndDismiss(true)
                     view.playSoundEffect(SoundEffectConstants.CLICK)
                 }) {
-                    Text(text = stringResource(R.string.cancel))
-                }
-                Spacer(modifier = modifier.width(8.dp))
-                TextButton(
-                    colors = if (disableConform) {
-                        ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.outlineVariant)
-                    } else ButtonDefaults.textButtonColors(), onClick = {
-                        if (!disableConform) coroutineScope.launch {
-                            clearFocus = true
-                            delay(80)
-                            confirm()
-                        } else onDisableConformClick()
-                        view.playSoundEffect(SoundEffectConstants.CLICK)
-                    }) {
-                    Text(text = confirmText)
-                }
+                Text(
+                    text = stringResource(R.string.cancel),
+                    maxLines = 1,
+                    autoSize = TextAutoSize.StepBased(
+                        minFontSize = 5.sp,
+                        maxFontSize = 14.sp,
+                    )
+                )
+            }
+            Spacer(modifier = modifier.width(8.dp))
+            TextButton(
+                modifier = Modifier.requiredWidthIn(max = containerSize.width.pxToDp() / 4),
+                colors = if (disableConform) {
+                    ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.outlineVariant)
+                } else ButtonDefaults.textButtonColors(), onClick = {
+                    if (!disableConform) coroutineScope.launch {
+                        clearFocus = true
+                        delay(80)
+                        confirm()
+                    } else onDisableConformClick()
+                    view.playSoundEffect(SoundEffectConstants.CLICK)
+                }) {
+                Text(
+                    text = confirmText,
+                    maxLines = 1,
+                    autoSize = TextAutoSize.StepBased(
+                        minFontSize = 5.sp,
+                        maxFontSize = 14.sp,
+                    )
+                )
             }
         },
         title = {
@@ -128,7 +145,7 @@ fun EditableContentDialog(
                 contentProperties.extraButtonTop()
             }
         },
-        text = {
+        content = {
             Column {
                 contentProperties.extraContentTop()
                 val screenHeightDp = containerSize.height.pxToDpInt()

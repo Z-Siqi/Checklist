@@ -15,7 +15,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.sqz.checklist.R
 import com.sqz.checklist.ui.common.TextTooltipBox
-import com.sqz.checklist.ui.common.unit.screenIsWidth
+import com.sqz.checklist.ui.common.unit.isLandscape
 import com.sqz.checklist.ui.theme.Theme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -26,7 +26,7 @@ fun HistoryTopBar(
 ) {
     val colors = Theme.color
     TopAppBar(
-        colors = colors.topBarBgColors(screenIsWidth()),
+        colors = colors.topBarBgColors(isLandscape()),
         title = { Text(text = stringResource(R.string.task_history)) },
         modifier = modifier.shadow(
             elevation = 1.dp,

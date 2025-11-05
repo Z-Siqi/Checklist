@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
@@ -58,12 +57,12 @@ fun OpenExternalAppDialog(
         screenHeightDp <= 458 -> (screenHeightDp / 1.8).toInt()
         else -> (screenHeightDp / 6.1).toInt()
     }
-    AlertDialog(
+    PrimaryDialog(
         modifier = modifier
             .width((containerSize.width.pxToDpInt() / 1.2).dp)
             .sizeIn(maxWidth = 560.dp),
         onDismissRequest = onDismissRequest,
-        confirmButton = {
+        actionButton = {
             TextButton(onClick = {
                 onDismissRequest()
                 view.playSoundEffect(SoundEffectConstants.CLICK)
@@ -71,7 +70,7 @@ fun OpenExternalAppDialog(
                 Text(text = stringResource(R.string.cancel))
             }
         },
-        text = {
+        content = {
             val focus = LocalFocusManager.current
             val getApp = getApp(packageName, view.context)
             OutlinedCard(
