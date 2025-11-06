@@ -2,17 +2,21 @@ package com.sqz.checklist.ui.common.dialog
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredHeightIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ShapeDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import com.sqz.checklist.ui.common.unit.isLandscape
 import com.sqz.checklist.ui.common.unit.pxToDpInt
+import com.sqz.checklist.ui.common.verticalColumnScrollbar
 import com.sqz.checklist.ui.theme.UISizeLimit
 import com.sqz.checklist.ui.theme.smallInLargestEdgeSize
 import com.sqz.checklist.ui.theme.smallInSmallestEdgeSize
@@ -56,7 +61,15 @@ fun PrimaryDialog(
     titleContentColor: Color = AlertDialogDefaults.titleContentColor,
     textContentColor: Color = AlertDialogDefaults.textContentColor,
     tonalElevation: Dp = AlertDialogDefaults.TonalElevation,
-    contentScrollModifier: Modifier = Modifier.verticalScroll(rememberScrollState()),
+    contentScrollModifier: Modifier = Modifier.let {
+        val scrollState = rememberScrollState()
+        it.verticalColumnScrollbar(
+            scrollState = scrollState, endPadding = 0f, scrollBarCornerRadius = 12f,
+            scrollBarTrackColor = MaterialTheme.colorScheme.outlineVariant,
+            scrollBarColor = MaterialTheme.colorScheme.outline,
+            showScrollBar = scrollState.canScrollBackward || scrollState.canScrollForward
+        ) then it.verticalScroll(scrollState)
+    },
     properties: DialogProperties = DialogProperties(),
 ) {
     val containerSizePx = LocalWindowInfo.current.containerSize
@@ -107,7 +120,7 @@ fun PrimaryDialog(
             onDismissRequest = onDismissRequest,
             modifier = Modifier
                 .fillMaxSize()
-                .background(color = containerColor),
+                .background(color = containerColor, shape = ShapeDefaults.ExtraSmall),
             properties = DialogProperties(usePlatformDefaultWidth = false),
             content = { UISizeLimit(content = contentFullScreen) }
         )
@@ -131,7 +144,27 @@ fun PrimaryDialog(
                 { UISizeLimit(content = title) }
             } else null,
             text = if (content != null) {
-                { UISizeLimit(content = content) }
+                {
+                    BoxWithConstraints {
+                        val textModifier = Modifier.let {
+                            val scrollState = rememberScrollState()
+                            if (maxHeight < 85.dp) it
+                                .verticalColumnScrollbar(
+                                    scrollState = scrollState,
+                                    endPadding = 0f,
+                                    scrollBarCornerRadius = 12f,
+                                    scrollBarTrackColor = MaterialTheme.colorScheme.outlineVariant,
+                                    scrollBarColor = MaterialTheme.colorScheme.outline,
+                                    showScrollBar = scrollState.canScrollBackward || scrollState.canScrollForward
+                                )
+                                .verticalScroll(scrollState)
+                            else it
+                        }
+                        Column(modifier = textModifier.requiredHeightIn(min = 50.dp)) {
+                            UISizeLimit(content = content)
+                        }
+                    }
+                }
             } else null,
             shape = shape,
             containerColor = containerColor,

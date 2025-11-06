@@ -226,7 +226,7 @@ fun DialogWithMenu(
             Row {
                 Text(
                     text = title,
-                    modifier = Modifier.heightIn(max = (containerSize.height * 0.1f).pxToDp()),
+                    maxLines = 1,
                     autoSize = TextAutoSize.StepBased(minFontSize = 10.sp, maxFontSize = 22.sp),
                 )
                 Spacer(modifier = Modifier.weight(1f))

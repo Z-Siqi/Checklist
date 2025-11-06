@@ -74,31 +74,33 @@ fun OpenExternalAppDialog(
             val focus = LocalFocusManager.current
             val getApp = getApp(packageName, view.context)
             OutlinedCard(
-                modifier = modifier.fillMaxWidth() then modifier
+                modifier = Modifier
+                    .fillMaxWidth()
                     .height(height.dp)
                     .pointerInput(Unit) {
                         detectTapGestures { focus.clearFocus() }
                     },
                 colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh)
             ) {
-                Column(if (getApp == null) modifier else modifier
-                    .fillMaxSize()
-                    .clickable {
-                        try {
-                            val intent = view.context.packageManager
-                                .getLaunchIntentForPackage(packageName)
-                            view.context.startActivity(intent)
-                        } catch (e: Exception) {
-                            Toast.makeText(
-                                view.context,
-                                view.context.getString(R.string.failed_found_package),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            Log.w(
-                                "PackageName", "Failed to found saved package name! ERROR: $e"
-                            )
-                        }
-                    }) {
+                Column(
+                    if (getApp == null) Modifier else Modifier
+                        .fillMaxSize()
+                        .clickable {
+                            try {
+                                val intent = view.context.packageManager
+                                    .getLaunchIntentForPackage(packageName)
+                                view.context.startActivity(intent)
+                            } catch (e: Exception) {
+                                Toast.makeText(
+                                    view.context,
+                                    view.context.getString(R.string.failed_found_package),
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                Log.w(
+                                    "PackageName", "Failed to found saved package name! ERROR: $e"
+                                )
+                            }
+                        }) {
                     Row(modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                         if (getApp == null) Text(
                             stringResource(R.string.package_not_found, packageName)
@@ -123,7 +125,9 @@ fun OpenExternalAppDialog(
                 }
             }
         },
-        title = { if (title != null) Text(text = title) },
+        title = if (title != null) {
+            { Text(text = title) }
+        } else null,
         properties = DialogProperties(usePlatformDefaultWidth = false)
     )
 }

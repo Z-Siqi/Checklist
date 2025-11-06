@@ -72,6 +72,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.getString
 import com.sqz.checklist.R
+import com.sqz.checklist.ui.common.verticalColumnScrollbar
 import com.sqz.checklist.ui.theme.UISizeLimit
 import java.text.SimpleDateFormat
 import java.time.Instant
@@ -149,12 +150,19 @@ fun TimeSelectDialog(
             }
         },
         content = {
+            val scrollState = rememberScrollState()
             Column(
-                modifier = modifier.verticalScroll(rememberScrollState()) then if (isLandscape()) {
-                    modifier.border(
+                modifier = modifier
+                    .verticalColumnScrollbar(
+                        scrollState = scrollState, endPadding = 0f, scrollBarCornerRadius = 12f,
+                        scrollBarTrackColor = MaterialTheme.colorScheme.secondaryContainer.copy(0.8f),
+                        scrollBarColor = MaterialTheme.colorScheme.secondary.copy(0.7f),
+                        showScrollBar = scrollState.canScrollBackward || scrollState.canScrollForward
+                    ).verticalScroll(scrollState) then Modifier.let{
+                    if (isLandscape()) it.border(
                         2.dp, MaterialTheme.colorScheme.outlineVariant, ShapeDefaults.Medium
-                    )
-                } else modifier,
+                    ) else it
+                },
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {

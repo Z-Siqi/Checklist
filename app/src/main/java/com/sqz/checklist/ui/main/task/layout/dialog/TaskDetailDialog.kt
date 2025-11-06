@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.InputTransformation
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.clearText
@@ -58,11 +59,16 @@ import com.sqz.checklist.ui.common.ApplicationList
 import com.sqz.checklist.ui.common.TextTooltipBox
 import com.sqz.checklist.ui.common.dialog.DialogWithMenu
 import com.sqz.checklist.ui.common.dialog.DialogWithMenuView
-import com.sqz.checklist.ui.common.media.*
+import com.sqz.checklist.ui.common.media.AudioSelector
+import com.sqz.checklist.ui.common.media.PictureSelector
+import com.sqz.checklist.ui.common.media.VideoSelector
+import com.sqz.checklist.ui.common.media.insertAudio
+import com.sqz.checklist.ui.common.media.insertPicture
+import com.sqz.checklist.ui.common.media.insertVideo
+import com.sqz.checklist.ui.common.media.toUri
 import com.sqz.checklist.ui.common.rememberApplicationList
 import com.sqz.checklist.ui.common.verticalColumnScrollbar
 import java.io.File
-import kotlin.text.toByteArray
 
 @Composable
 fun TaskDetailDialog(
@@ -183,6 +189,11 @@ private fun TaskDetailList( //TODO: implemented it
     }
 
     LazyColumn {
+        item {
+            Text("This feature is not implemented yet.")
+            Text("If you see this, please report to developer as soon as possible!")
+        }
+
         itemsIndexed(detailList.value) { index, data ->
             Text(data.description ?: data.type.toString())
             Button(onClick = { onClick(index) }) { }
@@ -428,7 +439,8 @@ private fun TextField(
 ) = Column(modifier = modifier) {
     val focus = LocalFocusManager.current
     val scrollState = rememberScrollState()
-    BasicTextField(
+    val rememberType = rememberSaveable { mutableStateOf(currentType) }
+    if (currentType == rememberType.value) BasicTextField(
         modifier = Modifier
             .fillMaxSize()
             .padding(8.dp)
@@ -451,7 +463,16 @@ private fun TextField(
             keyboardType = keyboardType(currentType)
         ),
         onKeyboardAction = { if (doneImeAction(currentType)) focus.clearFocus() },
-        lineLimits = lineLimits,
+        inputTransformation = InputTransformation {
+            if (lineLimits == TextFieldLineLimits.SingleLine && this.toString().contains("\n")) {
+                this.replace(0, this.length, this.toString().replace("\n", ""))
+            }
+        },
+        lineLimits = lineLimits.let {
+            if (it == TextFieldLineLimits.SingleLine) TextFieldLineLimits.MultiLine() else it
+        },
         scrollState = scrollState
-    )
+    ) else {
+        rememberType.value = currentType
+    }
 }
