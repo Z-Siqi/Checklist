@@ -2,6 +2,7 @@ package com.sqz.checklist.ui.main.task.layout
 
 import android.annotation.SuppressLint
 import android.os.Build
+import android.util.Log
 import android.view.SoundEffectConstants
 import android.view.View
 import androidx.compose.animation.AnimatedVisibility
@@ -9,6 +10,8 @@ import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -18,7 +21,10 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredHeight
+import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
@@ -42,6 +48,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
@@ -51,10 +58,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sqz.checklist.R
 import com.sqz.checklist.ui.common.TextTooltipBox
-import com.sqz.checklist.ui.theme.Theme
-import com.sqz.checklist.ui.common.unit.pxToDpInt
 import com.sqz.checklist.ui.common.unit.isLandscape
+import com.sqz.checklist.ui.common.unit.pxToDpInt
 import com.sqz.checklist.ui.main.task.CardHeight
+import com.sqz.checklist.ui.theme.Theme
+import com.sqz.checklist.ui.theme.smallInSmallestEdgeSize
 import kotlinx.coroutines.delay
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -104,38 +112,49 @@ fun TaskLayoutTopBar(
     }
 
     val title = @Composable {
-        if (topBarState.heightOffset <= topBarState.heightOffsetLimit * 0.7 && !topBarForLowScreen) {
+        val showByOffset: Boolean = topBarState.heightOffset <= topBarState.heightOffsetLimit * 0.7
+        val showByLimit: Boolean = screenWidth < smallInSmallestEdgeSize && LocalDensity.current.fontScale > 1.25f
+        if (showByOffset && !topBarForLowScreen || showByLimit) {
             Row(
                 modifier = safePaddingForFullscreen,
                 verticalAlignment = Alignment.Bottom
             ) {
                 Text(
-                    text = topBarContent(topAppBarTitle),
+                    text = if (showByLimit) {
+                        topBarContent(stringResource(R.string.top_bar_date).replace("MMMM", "MMM, "))
+                    } else topBarContent(topAppBarTitle),
                     maxLines = 1,
                     modifier = modifier.padding(bottom = 1.dp),
                     overflow = TextOverflow.Visible,
                 )
-                Text(
-                    text = topBarContent(year),
-                    maxLines = 1,
-                    style = TextStyle(fontSize = 15.sp),
-                    autoSize = TextAutoSize.StepBased(minFontSize = 5.sp, maxFontSize = 15.sp),
-                    overflow = TextOverflow.Visible,
-                )
+                Column {
+                    Text(
+                        text = topBarContent(year),
+                        maxLines = 1,
+                        modifier = Modifier.wrapContentSize(Alignment.Center),
+                        style = TextStyle(fontSize = 15.sp),
+                        autoSize = TextAutoSize.StepBased(minFontSize = 5.sp, maxFontSize = 15.sp),
+                        overflow = TextOverflow.Visible,
+                    )
+                    Spacer(modifier = Modifier.height(5.dp))
+                }
             }
         } else {
             Row(
-                modifier = safePaddingForFullscreen,
+                modifier = safePaddingForFullscreen
+                    .requiredHeight(30.dp)
+                    .requiredWidth(IntrinsicSize.Max),
                 verticalAlignment = Alignment.Bottom
             ) {
                 val formatWithSize = if (topBarForLowScreen) {
                     if (topBarForLowAndWidthScreen) {
                         topBarContent(week + ", " + stringResource(R.string.top_bar_date))
-                    } else topBarContent(topAppBarTitle)
+                    } else {
+                        topBarContent(topAppBarTitle)
+                    }
                 } else topBarContent(stringResource(R.string.top_bar_date))
                 Text(
                     text = formatWithSize,
-                    modifier = modifier.height(30.dp),
                     maxLines = 1,
                     fontSize = 24.sp,
                     overflow = TextOverflow.Visible,
@@ -143,11 +162,11 @@ fun TaskLayoutTopBar(
                 Spacer(modifier = modifier.width(10.dp))
                 Text(
                     text = topBarContent(year),
-                    modifier = modifier.height(28.dp),
+                    modifier = Modifier.padding(bottom = 5.dp),
                     maxLines = 1,
                     style = TextStyle(fontSize = 15.sp),
                     autoSize = TextAutoSize.StepBased(minFontSize = 5.sp, maxFontSize = 15.sp),
-                    overflow = TextOverflow.Visible,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }
@@ -240,6 +259,7 @@ private fun topBarContent(pattern: String): String {
         while (true) {
             delay(setUpdateWaitingTime)
             dateTime = LocalDate.now().format(formatter)
+            Log.d("TaskLayoutTopBar", "date time text is updated")
         }
     }
     return dateTime

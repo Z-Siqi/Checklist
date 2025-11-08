@@ -42,7 +42,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import com.sqz.checklist.R
@@ -62,6 +64,12 @@ class ApplicationListSaver(
     val lazyListState: LazyListState
 ) {
     companion object {
+        /**
+         * Creates a [Saver] for [AppInfo] to handle process death and configuration changes.
+         *
+         * @param context The application context.
+         * @return A [Saver] for an `AppInfo?` object.
+         */
         fun saver(context: Context) = Saver<AppInfo?, Any>(save = {
             if (it == null) null else listOf(it.name, it.packageName)
         }, restore = {
@@ -71,13 +79,21 @@ class ApplicationListSaver(
                 val packageName = list[1] as String
                 val icon = try {
                     context.packageManager.getApplicationIcon(packageName)
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     context.getDrawable(android.R.drawable.sym_def_app_icon)!!
                 }
                 AppInfo(name, packageName, icon)
             }
         })
 
+        /**
+         * Creates an [AppInfo] object from a package name.
+         *
+         * @param packageName The package name of the application.
+         * @param context The application context.
+         * @param ignoreToast Whether to suppress the "package not found" toast message.
+         * @return An [AppInfo] object if the package is found and has a launch intent, otherwise null.
+         */
         fun setter(packageName: String, context: Context, ignoreToast: Boolean = true): AppInfo? {
             return try {
                 if (packageName != "") {
@@ -90,7 +106,7 @@ class ApplicationListSaver(
                         icon = appInfo.loadIcon(pm)
                     ) else null
                 } else null
-            } catch (e: NameNotFoundException) {
+            } catch (_: NameNotFoundException) {
                 if (!ignoreToast) Toast.makeText(
                     context, context.getString(R.string.failed_found_package), Toast.LENGTH_SHORT
                 ).show()
@@ -98,6 +114,12 @@ class ApplicationListSaver(
             }
         }
 
+        /**
+         * Creates a [Saver] for a list of [AppInfo] objects.
+         *
+         * @param context The application context.
+         * @return A [Saver] for a `List<AppInfo>`.
+         */
         fun listSaver(context: Context): Saver<List<AppInfo>, Any> {
             return listSaver(save = { list ->
                 list.map { listOf(it.name, it.packageName) }
@@ -107,7 +129,7 @@ class ApplicationListSaver(
                     val packageName = it[1]
                     val icon = try {
                         context.packageManager.getApplicationIcon(packageName)
-                    } catch (e: Exception) {
+                    } catch (_: Exception) {
                         context.getDrawable(android.R.drawable.sym_def_app_icon)!!
                     }
                     AppInfo(name, packageName, icon)
@@ -116,6 +138,14 @@ class ApplicationListSaver(
         }
     }
 
+    /**
+     * Sets the selected app by its package name.
+     *
+     * @param packageName The package name of the application to select.
+     * @param context The application context.
+     * @param ignoreToast Whether to suppress toast messages on failure.
+     * @return The created [AppInfo] object, or null if not found.
+     */
     fun setter(packageName: String, context: Context, ignoreToast: Boolean = false): AppInfo? {
         return ApplicationListSaver.setter(packageName, context, ignoreToast).also {
             if (it != null) this.selectedAppInfo.value = it
@@ -123,6 +153,13 @@ class ApplicationListSaver(
     }
 }
 
+/**
+ * A Composable function that remembers the state for the application list.
+ *
+ * @param context The application context.
+ * @param setter An optional package name to set as the initial selected app.
+ * @return An [ApplicationListSaver] instance that holds the state.
+ */
 @Composable
 fun rememberApplicationList(context: Context, setter: String? = null): ApplicationListSaver {
     return ApplicationListSaver(
@@ -135,6 +172,13 @@ fun rememberApplicationList(context: Context, setter: String? = null): Applicati
     )
 }
 
+/**
+ * Retrieves application information for a given package name.
+ *
+ * @param packageName The package name of the application.
+ * @param context The application context.
+ * @return An [AppInfo] object if the application is found and has a launch intent, otherwise null.
+ */
 fun getApp(packageName: String, context: Context): AppInfo? {
     val pm: PackageManager = context.packageManager
     val intent = context.packageManager.getLaunchIntentForPackage(packageName)
@@ -148,6 +192,13 @@ fun getApp(packageName: String, context: Context): AppInfo? {
     }
 }
 
+/**
+ * A Composable that displays a list of installed applications.
+ *
+ * @param packageName A callback function that is invoked with the selected app's package name.
+ * @param saver An [ApplicationListSaver] instance that manages the state of the list.
+ * @param context The application context.
+ */
 @Composable
 fun ApplicationList(
     packageName: (String) -> Unit,
@@ -183,9 +234,17 @@ fun ApplicationList(
             val index = appList.indexOfFirst { it.packageName == selectedAppInfo!!.packageName }
             saver.lazyListState.scrollToItem(index)
         }
-    } else requestScroll = false
+    } else LaunchedEffect(Unit) {
+        requestScroll = false
+    }
 }
 
+/**
+ * Suspended function to get a list of all installed applications with a launcher intent.
+ *
+ * @param context The application context.
+ * @return A list of [AppInfo] objects for each installed application, excluding the current app.
+ */
 private suspend fun getInstalledApps(context: Context): List<AppInfo> {
     return withContext(Dispatchers.IO) {
         val pm: PackageManager = context.packageManager
@@ -204,8 +263,24 @@ private suspend fun getInstalledApps(context: Context): List<AppInfo> {
     }
 }
 
+/**
+ * A Composable that displays a single application item in the list.
+ *
+ * @param app The [AppInfo] of the application to display.
+ * @param onClick A callback function that is invoked when the item is clicked.
+ * @param selected A boolean indicating if the item is currently selected.
+ * @param overflow A mutable state to track if the text overflows, used for showing a tooltip.
+ */
 @Composable
-private fun AppItem(app: AppInfo, onClick: (appInfo: AppInfo) -> Unit, selected: Boolean) {
+private fun AppItem(
+    app: AppInfo,
+    onClick: (appInfo: AppInfo) -> Unit,
+    selected: Boolean,
+    overflow: MutableState<Boolean> = remember { mutableStateOf(false) }
+) = TextTooltipBox(
+    text = app.name + "\n\n" + app.packageName,
+    enable = overflow.value
+) {
     Card(
         onClick = { onClick(app) },
         modifier = Modifier
@@ -225,8 +300,26 @@ private fun AppItem(app: AppInfo, onClick: (appInfo: AppInfo) -> Unit, selected:
             )
             Spacer(modifier = Modifier.width(10.dp))
             Column {
-                Text(text = app.name, style = MaterialTheme.typography.bodyLarge)
-                Text(text = app.packageName, style = MaterialTheme.typography.bodySmall)
+                var nameOverFlow by remember { mutableStateOf(false) }
+                val titleStyle = MaterialTheme.typography.bodyLarge
+                Text(
+                    text = app.name,
+                    style = titleStyle,
+                    maxLines = 1,
+                    onTextLayout = { nameOverFlow = it.hasVisualOverflow },
+                    overflow = TextOverflow.Ellipsis
+                )
+                var packageNameOverFlow by remember { mutableStateOf(false) }
+                val smallStyle = MaterialTheme.typography.bodySmall
+                Text(
+                    text = app.packageName,
+                    style = smallStyle,
+                    maxLines = 1,
+                    fontSize = smallStyle.fontSize / LocalDensity.current.fontScale,
+                    onTextLayout = { packageNameOverFlow = it.hasVisualOverflow },
+                    overflow = TextOverflow.Ellipsis
+                )
+                overflow.value = nameOverFlow || packageNameOverFlow
             }
         }
     }

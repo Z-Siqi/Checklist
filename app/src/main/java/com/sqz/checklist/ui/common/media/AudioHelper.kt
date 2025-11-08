@@ -26,6 +26,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.TextAutoSize
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -33,6 +36,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Slider
@@ -56,8 +60,12 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.LineHeightStyle
+import androidx.compose.ui.text.style.LineHeightStyle.Mode
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.FileProvider
 import androidx.media3.common.MediaItem
@@ -70,6 +78,8 @@ import com.sqz.checklist.preferences.PreferencesInCache
 import com.sqz.checklist.ui.common.TextTooltipBox
 import com.sqz.checklist.ui.common.dialog.PrimaryDialog
 import com.sqz.checklist.ui.common.unit.pxToDpInt
+import com.sqz.checklist.ui.common.verticalColumnScrollbar
+import com.sqz.checklist.ui.theme.extraSmallInSmallestEdgeSize
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -264,11 +274,6 @@ private fun AudioPlayer(uri: Uri, context: Context) = Row {
             exoPlayer.release()
         }
     }
-    fun Long.toMinute(): Long = this / 1000 / 60
-    fun Long.toSecond(): Long = (this / 1000).let {
-        fun second(second: Long): Long = if (second > 59) second(second - 60) else second
-        second(it)
-    }
     if (isLandScape) AlbumArtCard(uri, context, Modifier.padding(16.dp))
     Column(modifier = Modifier.padding(16.dp)) {
         if (!isLandScape) AlbumArtCard(uri, context, Modifier.align(Alignment.CenterHorizontally))
@@ -284,19 +289,37 @@ private fun AudioPlayer(uri: Uri, context: Context) = Row {
             }
             Text("${currentPosition.toMinute()}:${currentPosition.toStringSecond()} / ${duration.toMinute()}:${duration.toStringSecond()}")
             Spacer(Modifier.weight(1f))
-            Button(
-                onClick = {
-                    if (exoPlayer.isPlaying) {
-                        exoPlayer.pause()
-                        isPlaying = false
-                    } else {
-                        exoPlayer.play()
-                        isPlaying = true
-                    }
+            Button(onClick = {
+                if (exoPlayer.isPlaying) {
+                    exoPlayer.pause()
+                    isPlaying = false
+                } else {
+                    exoPlayer.play()
+                    isPlaying = true
                 }
-            ) { Text(if (exoPlayer.isPlaying) stringResource(R.string.pause) else stringResource(R.string.play)) }
+            }) {
+                val buttonText = if (exoPlayer.isPlaying) {
+                    stringResource(R.string.pause)
+                } else {
+                    stringResource(R.string.play)
+                }
+                Text(
+                    text = buttonText,
+                    maxLines = 1,
+                    autoSize = TextAutoSize.StepBased(
+                        minFontSize = 5.sp,
+                        maxFontSize = LocalTextStyle.current.fontSize
+                    )
+                )
+            }
         }
     }
+}
+
+private fun Long.toMinute(): Long = this / 1000 / 60
+private fun Long.toSecond(): Long = (this / 1000).let {
+    fun second(second: Long): Long = if (second > 59) second(second - 60) else second
+    second(it)
 }
 
 @Composable
@@ -335,13 +358,38 @@ fun AudioViewDialog(
                 view.playSoundEffect(SoundEffectConstants.CLICK)
             }) { Text(text = stringResource(R.string.cancel)) }
         }, content = {
+            val scrollState = rememberScrollState()
+            val showScrollBar = scrollState.canScrollBackward || scrollState.canScrollForward
+            val widthDp = LocalWindowInfo.current.containerSize.width.pxToDpInt()
             Column {
                 OutlinedCard(
-                    modifier = modifier.fillMaxWidth() then modifier.height(mediaDialogContentHeight()),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(mediaDialogContentHeight())
+                        .verticalColumnScrollbar(
+                            scrollState = scrollState, endPadding = 24f, topBottomPadding = 50f,
+                            scrollBarCornerRadius = 12f,
+                            scrollBarTrackColor = MaterialTheme.colorScheme.secondaryContainer.copy(
+                                0.8f
+                            ), scrollBarColor = MaterialTheme.colorScheme.secondary.copy(0.7f),
+                            showScrollBar = showScrollBar && widthDp > extraSmallInSmallestEdgeSize
+                        ),
                     colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh)
-                ) { AudioPlayer(audioUri, view.context) }
+                ) {
+                    Column(modifier = Modifier.verticalScroll(scrollState)) {
+                        AudioPlayer(audioUri, view.context)
+                    }
+                }
                 if (openBySystem) Text(
-                    audioName, modifier.align(Alignment.End) then modifier.padding(end = 10.dp)
+                    text = audioName,
+                    modifier = Modifier
+                        .align(Alignment.End)
+                        .padding(end = 10.dp),
+                    autoSize = TextAutoSize.StepBased(maxFontSize = LocalTextStyle.current.fontSize),
+                    style = TextStyle(
+                        lineHeightStyle = LineHeightStyle.Default.copy(mode = Mode.Minimum)
+                    ),
+                    maxLines = 2
                 )
             }
         }, title = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
