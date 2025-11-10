@@ -13,6 +13,8 @@
     <string name="disable">Disable</string>
     <string name="text">Text</string>
     <string name="url">URL</string>
+    <string name="open">Open</string>
+    <string name="open_with">Open with</string>
     <string name="failed_open">Failed to open!</string>
     <string name="processing">Processing…</string>
     <string name="full_date_short">yyyy dd MMM hh:mm a</string>
@@ -67,7 +69,6 @@
     <string name="picture">Picture</string>
     <string name="click_select_picture">Click to select a picture</string>
     <string name="selected_picture">Selected picture</string>
-    <string name="open_with">Open with</string>
     <string name="picture_size_limit">Picture size cannot more than 50MB!</string>
     <string name="detail_file_not_found">Failed to add detail to task due to file not found!</string>
     <string name="failed_add_picture">Failed to add picture!</string>

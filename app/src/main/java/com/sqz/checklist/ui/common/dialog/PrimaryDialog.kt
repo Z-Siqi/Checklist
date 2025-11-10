@@ -147,18 +147,7 @@ fun PrimaryDialog(
                 {
                     BoxWithConstraints {
                         val textModifier = Modifier.let {
-                            val scrollState = rememberScrollState()
-                            if (maxHeight < 85.dp) it
-                                .verticalColumnScrollbar(
-                                    scrollState = scrollState,
-                                    endPadding = 0f,
-                                    scrollBarCornerRadius = 12f,
-                                    scrollBarTrackColor = MaterialTheme.colorScheme.outlineVariant,
-                                    scrollBarColor = MaterialTheme.colorScheme.outline,
-                                    showScrollBar = scrollState.canScrollBackward || scrollState.canScrollForward
-                                )
-                                .verticalScroll(scrollState)
-                            else it
+                            if (maxHeight < 85.dp) it then contentScrollModifier else it
                         }
                         Column(modifier = textModifier.requiredHeightIn(min = 50.dp)) {
                             UISizeLimit(content = content)

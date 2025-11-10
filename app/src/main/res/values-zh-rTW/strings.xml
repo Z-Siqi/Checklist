@@ -14,6 +14,8 @@
     <string name="disable">禁用</string>
     <string name="text">文本</string>
     <string name="url">網址</string>
+    <string name="open">打開</string>
+    <string name="open_with">打開方式</string>
     <string name="failed_open">打開失敗!</string>
     <string name="processing">正在處理…</string>
     <string name="full_date_short">yyyy 年 MMM dd 日 hh:mm a</string>
@@ -68,7 +70,6 @@
     <string name="picture">圖片</string>
     <string name="click_select_picture">點選選擇圖片</string>
     <string name="selected_picture">選定的圖片</string>
-    <string name="open_with">打開方式</string>
     <string name="picture_size_limit">圖片大小不能超過 50MB!</string>
     <string name="detail_file_not_found">由於文件未找到，無法將詳細內容新增至任務!</string>
     <string name="failed_add_picture">新增圖片失敗!</string>
