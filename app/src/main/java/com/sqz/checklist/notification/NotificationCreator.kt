@@ -46,11 +46,13 @@ class NotificationCreator(private val context: Context) {
         val builder = NotificationCompat.Builder(context, channel.id)
             .setSmallIcon(R.drawable.task_icon)
             .setContentTitle(notifyData.title)
+            .setContentText("")
             .setStyle(NotificationCompat.BigTextStyle().bigText(notifyData.text))
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .setCategory(NotificationCompat.CATEGORY_MESSAGE)
             .setContentIntent(pendingIntent)
+            .setOnlyAlertOnce(true)
         with(NotificationManagerCompat.from(context)) {
             if (ActivityCompat.checkSelfPermission(
                     context, Manifest.permission.POST_NOTIFICATIONS
