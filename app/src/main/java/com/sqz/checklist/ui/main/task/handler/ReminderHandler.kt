@@ -163,7 +163,8 @@ class ReminderHandler private constructor(
      */
     suspend fun setReminder(delayDuration: Long, timeUnit: TimeUnit, id: Long, context: Context) {
         _notifyId = this.setAndCheckRandomId()
-        val delayTime = if (!isAlarmPermission()) delayDuration else {
+        val isAlarmPermission = isAlarmPermission()
+        val delayTime = if (!isAlarmPermission) delayDuration else {
             System.currentTimeMillis() + delayDuration
         }
         val notification = notifyManager.createNotification(
@@ -180,10 +181,12 @@ class ReminderHandler private constructor(
                 Log.d("SetReminder", "New reminder is setting")
             } else throw e
         }
-        val notify = notification.also { Log.i("Notification", "Reminder is setting") }
+        val notify = notification.also {
+            Log.i("Notification", "Reminder is setting, isAlarmPermission: $isAlarmPermission")
+        }
         val now = Calendar.getInstance()
-        val remindTime = if (isAlarmPermission()) delayTime else now.timeInMillis + delayDuration
-        val mode = if (isAlarmPermission()) ReminderModeType.AlarmManager else {
+        val remindTime = if (isAlarmPermission) delayTime else now.timeInMillis + delayDuration
+        val mode = if (isAlarmPermission) ReminderModeType.AlarmManager else {
             ReminderModeType.Worker
         }
         val taskReminder = TaskReminder(
