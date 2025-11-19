@@ -51,12 +51,13 @@ fun ReminderHandlerListener(
     coroutineScope: CoroutineScope,
     ignoreSetAndGetTimeData: (timeInMilli: Long) -> Boolean = { false }
 ) {
-    val reminderActionType by reminderHandler.reminderActionType.collectAsState()
-    val resetState = {
-        reminderHandler.resetRequest()
-        view.playSoundEffect(SoundEffectConstants.CLICK)
-    }
     val cachePreferences = PreferencesInCache(view.context)
+    val reminderActionType by reminderHandler.reminderActionType.collectAsState()
+    fun resetState(clickSound: Boolean = true) {
+        reminderHandler.resetRequest()
+        if (clickSound) view.playSoundEffect(SoundEffectConstants.CLICK)
+    }
+
     var requestPermission by rememberSaveable { mutableStateOf(false) }
     @Suppress("AssignedValueIsNeverRead")
     when (reminderActionType) {
@@ -133,12 +134,12 @@ fun ReminderHandlerListener(
         }
 
         ReminderActionType.Cancel -> WarningAlertDialog(
-            onDismissRequest = { resetState() },
+            onDismissRequest = { resetState(false) },
             onConfirmButtonClick = {
                 reminderHandler.cancelReminder(context = context)
                 resetState()
             },
-            onDismissButtonClick = { resetState() },
+            onDismissButtonClick = { resetState(false) },
             text = {
                 var errNotifyId by rememberSaveable { mutableIntStateOf(Int.MAX_VALUE) }
                 var time by rememberSaveable { mutableLongStateOf(-1L) }
