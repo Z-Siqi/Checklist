@@ -1,14 +1,18 @@
 package com.sqz.checklist.ui.main.task.layout.dialog
 
 import android.net.Uri
+import android.util.Log
 import android.view.SoundEffectConstants
 import android.view.View
 import android.widget.Toast
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
@@ -26,16 +30,19 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
@@ -44,6 +51,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
@@ -130,10 +138,12 @@ fun TaskDetailDialog(
                     ) {
                         TaskDetailList(showListDialog = showListDialog, viewModel = viewModel)
                     }
-                    Spacer(modifier = Modifier.weight(1f))
+                    Spacer(modifier = Modifier.weight(1f, false))
                     Row {
                         Spacer(modifier = Modifier.weight(1f))
-                        Button(onClick = { showListDialog.value = false }) {
+                        Button(onClick = {
+                            showListDialog.value = false
+                        }, enabled = viewModel.allowAddToList().collectAsState().value) {
                             Icon(
                                 painter = painterResource(R.drawable.add_list),
                                 contentDescription = stringResource(R.string.add)
@@ -145,35 +155,59 @@ fun TaskDetailDialog(
         )
     } else {
         val taskDetailOnProcess by viewModel.taskDetail.collectAsState()
-        val onConfirm = rememberSaveable { mutableStateOf(false) }
-        if (onConfirm.value) {
-            if (taskDetailOnProcess == null) { // on delete
-                if (!isListed) {
-                    confirm(viewModel.getFinalTaskDetail(), isChanged)
-                    viewModel.onCleared()
-                } else {
+        val onMode = rememberSaveable { mutableStateOf(OnMode.Null) }
+        when (onMode.value) {
+            OnMode.List -> {
+                if (taskDetailOnProcess == null) {
+                    Log.d("TaskDetailDialog", "List")
                     showListDialog.value = true
-                }
-                onConfirm.value = false
-            } else if (mediaProcesser(viewModel, view)) {
-                viewModel.addTaskDetailToList()
-                if (!isListed) {
-                    confirm(viewModel.getFinalTaskDetail(), isChanged)
-                    viewModel.onCleared()
-                } else {
+                    onMode.value = OnMode.Null
+                } else if (mediaProcesser(viewModel, view)) {
+                    viewModel.addTaskDetailToList()
                     showListDialog.value = true
+                    onMode.value = OnMode.Null
                 }
-                onConfirm.value = false
             }
+
+            OnMode.Confirm -> {
+                if (taskDetailOnProcess == null) { // on delete
+                    if (!isListed) {
+                        confirm(viewModel.getFinalTaskDetail(), isChanged)
+                        viewModel.onCleared()
+                    } else {
+                        showListDialog.value = true
+                    }
+                    onMode.value = OnMode.Null
+                } else if (mediaProcesser(viewModel, view)) {
+                    viewModel.addTaskDetailToList()
+                    if (!isListed) {
+                        confirm(viewModel.getFinalTaskDetail(), isChanged)
+                        viewModel.onCleared()
+                    } else {
+                        showListDialog.value = true
+                    }
+                    onMode.value = OnMode.Null
+                }
+            }
+
+            else -> {}
         }
-        if (taskDetail.isNullOrEmpty() || taskDetailOnProcess != null) TaskDetailDialog(
+        val isNotEmptyCallIn = !taskDetail.isNullOrEmpty() && taskDetailOnProcess != null
+        val isNew = isListed || taskDetail.isNullOrEmpty()
+        if (isNotEmptyCallIn || isNew) TaskDetailDialog(
             onDismissRequest = { onDismissRequest().also { viewModel.onCleared() } },
-            confirm = { onConfirm.value = true },
+            confirm = { onMode.value = OnMode.Confirm },
+            onDismissClick = { if (isListed) onMode.value = OnMode.List else onDismissRequest() },
+            listedConfirm = { onMode.value = OnMode.List },
             title = title,
             taskDetailIn = taskDetail,
             viewModel = viewModel
         )
     }
+}
+
+private enum class OnMode {
+    Null, Confirm, List
 }
 
 /** The list of task details **/
@@ -182,22 +216,55 @@ private fun TaskDetailList( //TODO: implemented it
     showListDialog: MutableState<Boolean>,
     viewModel: TaskDetailDialogViewModel
 ) {
-    val detailList = viewModel.getTaskDetailList()!!.collectAsState()
+    val detailList = viewModel.getTaskDetailList()?.collectAsState()
+    val rememberDetailList = remember { mutableStateOf(detailList?.value) }
     fun onClick(index: Int) {
         viewModel.setTaskDetailFromList(index)
         showListDialog.value = false
     }
 
-    LazyColumn {
+    @Composable
+    fun ListView(index: Int, data: TaskDetailData) = Card(modifier = Modifier.padding(4.dp)) {
+        val typeString = (data.type as Any?).toString()
+        val textFieldState = rememberTextFieldState(initialText = data.description ?: typeString)
+        TextField(
+            state = textFieldState,
+            lineLimits = TextFieldLineLimits.SingleLine,
+            inputTransformation = {
+                if (this.toString() != typeString) {
+                    if (this.toString() == "") {
+                        viewModel.updateTaskDetailDescription(index, null)
+                    } else {
+                        viewModel.updateTaskDetailDescription(index, this.toString())
+                    }
+                } else if (data.description != null && this.toString() == typeString) {
+                    viewModel.updateTaskDetailDescription(index, null)
+                }
+            },
+            placeholder = { Text(typeString) },
+            textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.Medium)
+        )
+        Text(typeString)
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            Button(onClick = { onClick(index) }) {
+                Icon(painterResource(R.drawable.edit), null)
+            }
+            Spacer(modifier = Modifier.widthIn(max = 8.dp) then Modifier.fillMaxWidth())
+            Button(onClick = { viewModel.removeFromTaskDetailList(index) }) {
+                Icon(painterResource(R.drawable.delete), null)
+            }
+            Spacer(modifier = Modifier.widthIn(max = 4.dp) then Modifier.fillMaxWidth())
+        }
+    }
+
+    if (detailList != null) LazyColumn {
         item {
             Text("This feature is not implemented yet.")
             Text("If you see this, please report to developer as soon as possible!")
         }
 
         itemsIndexed(detailList.value) { index, data ->
-            Text(data.description ?: data.type.toString())
-            Button(onClick = { onClick(index) }) { }
-            Button(onClick = { viewModel.removeFromTaskDetailList(index) }) { }
+            ListView(index, data)
         }
     }
 }
@@ -209,7 +276,7 @@ private fun TaskDetailList( //TODO: implemented it
 @Composable
 private fun mediaProcesser(viewModel: TaskDetailDialogViewModel, view: View): Boolean {
     val onReturn = rememberSaveable { mutableStateOf(false) }
-    val taskDetail = viewModel.taskDetail.collectAsState().value
+    val taskDetail: TaskDetailData? = viewModel.taskDetail.collectAsState().value
     if (taskDetail == null || !viewModel.isChanged.collectAsState().value) return true
     try {
         taskDetail.dataByte as Uri
@@ -226,6 +293,7 @@ private fun mediaProcesser(viewModel: TaskDetailDialogViewModel, view: View): Bo
             val insertPicture = insertPicture(
                 view.context, taskDetail.dataByte, isExists(taskDetail.dataByte)
             )
+            Log.d("TaskDetailDialog", "insertPicture: $insertPicture")
             insertPicture?.let {
                 viewModel.onMediaSave(
                     uri = insertPicture,
@@ -271,6 +339,8 @@ private fun mediaProcesser(viewModel: TaskDetailDialogViewModel, view: View): Bo
 private fun TaskDetailDialog(
     onDismissRequest: () -> Unit,
     confirm: () -> Unit,
+    onDismissClick: () -> Unit,
+    listedConfirm: () -> Unit,
     title: String,
     taskDetailIn: List<TaskDetailData>?,
     viewModel: TaskDetailDialogViewModel,
@@ -292,6 +362,19 @@ private fun TaskDetailDialog(
         }
     }
     val applicationListSaver = rememberApplicationList(view.context)
+    fun onTaskDetailConfirm(getType: Any?, callback: () -> Unit) = viewModel.onTaskDetailConfirm(
+        getType = getType, textFieldState = textFieldState, onIssue = { issueType ->
+            when (issueType) {
+                TaskDetailType.URL -> {
+                    Toast.makeText(view.context, notURL, Toast.LENGTH_SHORT).show()
+                }
+
+                else -> {
+                    Toast.makeText(view.context, noDoNothing, Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    ) { callback() }
 
     val functionalContent: @Composable ((Any?) -> Unit) = {
         val mediaUriGetter: Uri? = try {
@@ -365,31 +448,20 @@ private fun TaskDetailDialog(
             )
         }
     }
+    val isListed: Boolean = viewModel.getTaskDetailList()?.collectAsState()?.value.let {
+        it != null && it.isNotEmpty()
+    }
     DialogWithMenu(
         onDismissRequest = { if (!viewModel.isChanged.value) onDismissRequest() },
-        confirm = {
-            viewModel.onTaskDetailConfirm(
-                getType = it, textFieldState = textFieldState, onIssue = { issueType ->
-                    when (issueType) {
-                        TaskDetailType.URL -> {
-                            Toast.makeText(view.context, notURL, Toast.LENGTH_SHORT).show()
-                        }
-
-                        else -> {
-                            Toast.makeText(view.context, noDoNothing, Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                }
-            ) { confirm() }
-        },
-        confirmText = stringResource(R.string.confirm),
-        dismissText = stringResource(R.string.dismiss),
-        title = title,
+        confirm = { onTaskDetailConfirm(it) { confirm() } },
         menuListGetter = TaskDetailType.entries.toTypedArray(),
         menuText = { it.toString() },
         functionalContent = functionalContent,
         defaultType = taskDetail?.type,
         dialogWithMenuView = DialogWithMenuView(
+            title = title,
+            confirmText = stringResource(R.string.confirm),
+            dismissText = stringResource(R.string.dismiss),
             extensionActionButton = {
                 if (taskDetail?.dataByte != null && !taskDetailIn.isNullOrEmpty()) TextTooltipBox(R.string.delete) {
                     IconButton(onClick = {
@@ -404,11 +476,20 @@ private fun TaskDetailDialog(
                     }
                 }
             },
-            extensionTitleButton = { //TODO
+            extensionTitleButton = {
+                /*IconButton(onClick = {
+                    onTaskDetailConfirm(it) { listedConfirm() }
+                    view.playSoundEffect(SoundEffectConstants.CLICK)
+                }) {
+                    Icon(
+                        painter = painterResource(R.drawable.add_list),
+                        contentDescription = stringResource(R.string.add_detail)
+                    )
+                }*/
             }
         ),
         currentMenuSelection = { viewModel.onMenuSelectionChanged(it, textFieldState) },
-        onDismissClick = onDismissRequest,
+        onDismissClick = onDismissClick,
     )
 }
 

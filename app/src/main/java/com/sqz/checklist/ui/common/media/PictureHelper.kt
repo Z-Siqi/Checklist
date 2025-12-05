@@ -70,10 +70,12 @@ import com.sqz.checklist.preferences.PrimaryPreferences
 import com.sqz.checklist.ui.common.TextTooltipBox
 import com.sqz.checklist.ui.common.dialog.PrimaryDialog
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileNotFoundException
@@ -392,7 +394,9 @@ fun openImageBySystem(imageName: String, byteArray: ByteArray, context: Context)
 }
 
 /** Saves a picture from a URI to the app's internal storage, with optional compression. **/
-private fun insertPicture(context: Context, uri: Uri, compression: Int): Uri? {
+private suspend fun insertPicture(
+    context: Context, uri: Uri, compression: Int
+): Uri? = withContext(Dispatchers.Default) {
     val mediaDir = File(context.filesDir, pictureMediaPath)
     if (!mediaDir.exists()) mediaDir.mkdirs()
     val toCompression = compression in 1..100
@@ -411,7 +415,7 @@ private fun insertPicture(context: Context, uri: Uri, compression: Int): Uri? {
     }
     errFileNameSaver(fileName)
     val file = File(mediaDir, fileName)
-    return try {
+    return@withContext try {
         val inputStream = context.contentResolver.openInputStream(uri)
         if (!toCompression) {
             val outputStream = FileOutputStream(file)
@@ -455,12 +459,20 @@ private fun insertPicture(context: Context, uri: Uri, compression: Int): Uri? {
 fun insertPicture(context: Context, uri: Uri, ignoreCompressSettings: Boolean = false): Uri? {
     val coroutineScope = rememberCoroutineScope()
     var rememberUri by rememberSaveable { mutableStateOf<Uri?>(null) }
+    var close by remember { mutableStateOf(false) }
     val preference = PrimaryPreferences(context)
     val compression = if (ignoreCompressSettings) 0 else preference.pictureCompressionRate()
-    if (rememberUri == null) {
-        ProcessingDialog {
+    if (rememberUri == null && !close) {
+        ProcessingDialog().let {
             coroutineScope.launch(Dispatchers.IO) {
-                rememberUri = insertPicture(context, uri, compression)
+                insertPicture(context, uri, compression)?.let { rememberUri = it }
+            }
+        }
+        LaunchedEffect(Unit) {
+            // fix a weird issue may cause dialog cannot dismiss
+            while (true) {
+                delay(5000)
+                if (rememberUri != null) close = true
             }
         }
     }
@@ -471,7 +483,7 @@ fun insertPicture(context: Context, uri: Uri, ignoreCompressSettings: Boolean = 
 }
 
 @Composable
-private fun ProcessingDialog(run: () -> Unit) {
+private fun ProcessingDialog() {
     AlertDialog(onDismissRequest = {}, confirmButton = {}, text = {
         Column(
             modifier = Modifier.fillMaxWidth(),
@@ -482,5 +494,4 @@ private fun ProcessingDialog(run: () -> Unit) {
             Text(stringResource(R.string.processing))
         }
     })
-    run()
 }

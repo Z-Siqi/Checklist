@@ -23,7 +23,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.util.UnknownFormatConversionException
 
 class ModifyHandler private constructor(
     private val reminderHandler: ReminderHandler,
@@ -134,7 +133,13 @@ class ModifyHandler private constructor(
             }
             prefsCache.inProcessFilesPath(null)
             for (i in check) {
-                if (!i.isBlank()) prefsCache.inProcessFilesPath(i + "\n")
+                if (!i.isBlank()) {
+                    if (prefsCache.inProcessFilesPath() == null) {
+                        prefsCache.inProcessFilesPath(i + "\n")
+                    } else {
+                        prefsCache.inProcessFilesPath(prefsCache.inProcessFilesPath() + i + "\n")
+                    }
+                }
             }
         } catch (_: Exception) {
         }
@@ -219,28 +224,29 @@ class ModifyHandler private constructor(
                 }
             }
             return
-        } else for (i in onEdit.detailSetter.indices) { // original size is smaller
-            val taskDetail = onEdit.detailSetter[i]
-            try {
-                val originalTaskDetail = originalTaskDetailList[i] as TaskDetail
-                if (taskDetail == originalTaskDetail) {
-                    continue
-                }
-                database().updateTaskDetail(
-                    original = originalTaskDetail,
-                    update = originalTaskDetail.copy(
-                        type = taskDetail.type,
-                        description = taskDetail.description,
-                        dataString = taskDetail.dataString,
-                        dataByte = taskDetail.dataByte as ByteArray,
+        } else {
+            for (i in onEdit.detailSetter.indices) { // original size is smaller
+                val taskDetail = onEdit.detailSetter[i]
+                try {
+                    val originalTaskDetail = originalTaskDetailList[i] as TaskDetail
+                    if (taskDetail == originalTaskDetail) {
+                        continue
+                    }
+                    database().updateTaskDetail(
+                        original = originalTaskDetail,
+                        update = originalTaskDetail.copy(
+                            type = taskDetail.type,
+                            description = taskDetail.description,
+                            dataString = taskDetail.dataString,
+                            dataByte = taskDetail.dataByte as ByteArray,
+                        )
                     )
-                )
-            } catch (_: IndexOutOfBoundsException) {
-                database().insertTaskDetail(taskId = onEdit.taskId, taskDetail = taskDetail)
+                } catch (_: IndexOutOfBoundsException) {
+                    database().insertTaskDetail(taskId = onEdit.taskId, taskDetail = taskDetail)
+                }
             }
             return
         }
-        throw UnknownFormatConversionException("ModifyHandler.updateTaskDetail: Unknown error")
     }
 
     /** Edit task **/
@@ -257,7 +263,7 @@ class ModifyHandler private constructor(
             )
             val prefsCache = PreferencesInCache(context)
             if (onEdit.detailSetter != null || onEdit.detailGetter != null) {
-                updateTaskDetail(onEdit = onEdit)
+                this@ModifyHandler.updateTaskDetail(onEdit = onEdit)
                 onEdit.detailSetter?.let {
                     dropValidInProcessFilesPath(detail = it, prefsCache = prefsCache)
                 }

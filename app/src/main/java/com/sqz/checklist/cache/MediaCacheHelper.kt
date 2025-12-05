@@ -33,7 +33,13 @@ suspend fun dropEmptyInProcessFilesPath(prefsCache: PreferencesInCache) {
             }
             prefsCache.inProcessFilesPath(null)
             for (i in check) {
-                if (!i.isBlank()) prefsCache.inProcessFilesPath(i + "\n")
+                if (!i.isBlank()) {
+                    if (prefsCache.inProcessFilesPath() == null) {
+                        prefsCache.inProcessFilesPath(i + "\n")
+                    } else {
+                        prefsCache.inProcessFilesPath(prefsCache.inProcessFilesPath() + i + "\n")
+                    }
+                }
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -84,7 +90,13 @@ suspend fun deleteAllFileWhichInProcessFilesPath(prefsCache: PreferencesInCache)
             }
             prefsCache.inProcessFilesPath(null)
             for (i in check) {
-                if (!i.isBlank()) prefsCache.inProcessFilesPath(i + "\n")
+                if (!i.isBlank()) {
+                    if (prefsCache.inProcessFilesPath() == null) {
+                        prefsCache.inProcessFilesPath(i + "\n")
+                    } else {
+                        prefsCache.inProcessFilesPath(prefsCache.inProcessFilesPath() + i + "\n")
+                    }
+                }
             }
         } catch (e: Exception) {
             e.printStackTrace()

@@ -40,7 +40,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.tooling.preview.Preview
@@ -50,7 +49,6 @@ import androidx.compose.ui.window.DialogProperties
 import com.sqz.checklist.ui.common.unit.pxToDp
 import com.sqz.checklist.ui.common.unit.pxToDpInt
 import com.sqz.checklist.ui.common.verticalColumnScrollbar
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
@@ -61,34 +59,21 @@ import kotlinx.coroutines.launch
 fun DialogWithMenu(
     onDismissRequest: () -> Unit,
     confirm: (type: Any?) -> Unit,
-    confirmText: String,
-    dismissText: String,
-    title: String,
     menuListGetter: Array<out Any>,
     menuText: @Composable (Any?) -> String,
     functionalContent: @Composable (type: Any?) -> Unit,
     modifier: Modifier = Modifier,
     defaultType: Any? = null,
     onDismissClick: () -> Unit = onDismissRequest,
-    dialogWithMenuView: DialogWithMenuView = DialogWithMenuView(),
+    dialogWithMenuView: DialogWithMenuView,
     currentMenuSelection: (selected: Any?) -> Unit = {},
     view: View = LocalView.current,
 ) {
-    val focus = LocalFocusManager.current
     val coroutineScope = rememberCoroutineScope()
     var expanded by remember { mutableStateOf(false) }
     var type by rememberSaveable { mutableStateOf<Any?>(null) }
     if (defaultType != null) LaunchedEffect(Unit) {
         type = defaultType
-    }
-    fun releaseFocusAndDismiss(
-        onDismissClick: Boolean, ignoreRequest: Boolean = false
-    ) = coroutineScope.launch {
-        focus.clearFocus(force = true)
-        delay(80)
-        if (!ignoreRequest) {
-            if (onDismissClick) onDismissClick() else onDismissRequest()
-        }
     }
 
     val containerSize = LocalWindowInfo.current.containerSize
@@ -143,7 +128,6 @@ fun DialogWithMenu(
                             type = it
                             currentMenuSelection(it)
                             view.playSoundEffect(SoundEffectConstants.CLICK)
-                            focus.clearFocus()
                             expanded = false
                         }, text = { Text(text = menuText(it)) })
                     }
@@ -171,7 +155,7 @@ fun DialogWithMenu(
     }
 
     PrimaryDialog(
-        onDismissRequest = { releaseFocusAndDismiss(false) },
+        onDismissRequest = onDismissRequest,
         actionButton = {
             val screenWidth = containerSize.width.pxToDp()
             var parentWidthDp by remember { mutableStateOf(screenWidth) }
@@ -184,19 +168,15 @@ fun DialogWithMenu(
                     },
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                dialogWithMenuView.extensionActionButton()
+                dialogWithMenuView.extensionActionButton(type)
                 Spacer(modifier = modifier.weight(1f))
                 val autoSize = TextAutoSize.StepBased(minFontSize = 5.sp, maxFontSize = 14.sp)
                 TextButton(onClick = {
-                    coroutineScope.launch {
-                        focus.clearFocus()
-                        delay(80)
-                        releaseFocusAndDismiss(true)
-                    }
+                    onDismissClick()
                     view.playSoundEffect(SoundEffectConstants.CLICK)
                 }) {
                     Text(
-                        text = dismissText,
+                        text = dialogWithMenuView.dismissText,
                         modifier = Modifier.widthIn(max = parentWidthDp / 4),
                         maxLines = 1, autoSize = autoSize
                     )
@@ -204,15 +184,12 @@ fun DialogWithMenu(
                 Spacer(modifier = modifier.width(8.dp))
                 TextButton(onClick = {
                     coroutineScope.launch {
-                        focus.clearFocus()
-                        delay(80)
                         confirm(type)
-                        releaseFocusAndDismiss(false, ignoreRequest = true)
                     }
                     view.playSoundEffect(SoundEffectConstants.CLICK)
                 }) {
                     Text(
-                        text = confirmText,
+                        text = dialogWithMenuView.confirmText,
                         modifier = Modifier.widthIn(max = parentWidthDp / 4),
                         maxLines = 1, autoSize = autoSize
                     )
@@ -223,14 +200,16 @@ fun DialogWithMenu(
             maxWidth = 720.dp, maxHeight = (containerSize.height.pxToDpInt() / 1.2).dp
         ) then modifier.width((containerSize.width.pxToDpInt() / 1.2).dp),
         title = {
-            Row {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = title,
+                    text = dialogWithMenuView.title,
                     maxLines = 1,
                     autoSize = TextAutoSize.StepBased(minFontSize = 10.sp, maxFontSize = 22.sp),
                 )
                 Spacer(modifier = Modifier.weight(1f))
-                dialogWithMenuView.extensionTitleButton()
+                Row(modifier = Modifier.sizeIn(maxHeight = 39.dp, maxWidth = 39.dp)) {
+                    dialogWithMenuView.extensionTitleButton(type)
+                }
             }
         },
         content = {
@@ -251,8 +230,11 @@ fun DialogWithMenu(
 }
 
 data class DialogWithMenuView(
-    val extensionTitleButton: @Composable () -> Unit = {},
-    val extensionActionButton: @Composable () -> Unit = {},
+    val title: String,
+    val confirmText: String,
+    val dismissText: String,
+    val extensionTitleButton: @Composable (type: Any?) -> Unit = {},
+    val extensionActionButton: @Composable (type: Any?) -> Unit = {},
 )
 
 @Preview
@@ -261,7 +243,19 @@ private fun DialogWithMenuPreview() {
     data class TestData(val t: String, val v: Int)
 
     val test = listOf(TestData("TEST A", 0), TestData("TEST B", 1)).toTypedArray()
-    DialogWithMenu({}, {}, "Confirm", "Dismiss", "TITLE", test, {
-        if (it == test[1]) "TEST A" else "TEST"
-    }, { false })
+    DialogWithMenu(
+        onDismissRequest = {}, confirm = {}, menuListGetter = test, menuText = {
+            when (it) {
+                is TestData -> it.t
+                else -> "Select a type"
+            }
+        }, functionalContent = { type ->
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text("This is the functional content area.")
+                Text("Selected type: ${if (type is TestData) type.t else "None"}")
+            }
+        }, dialogWithMenuView = DialogWithMenuView(
+            title = "Preview Dialog", confirmText = "Confirm", dismissText = "Dismiss"
+        )
+    )
 }

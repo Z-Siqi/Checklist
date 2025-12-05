@@ -1,10 +1,12 @@
 package com.sqz.checklist.ui.main.task.layout.dialog
 
 import android.net.Uri
+import android.util.Log
 import android.util.Patterns
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.insert
+import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sqz.checklist.database.TaskDetailData
@@ -17,14 +19,19 @@ import com.sqz.checklist.ui.common.media.errUri
 import com.sqz.checklist.ui.common.media.toByteArray
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 
 class TaskDetailDialogViewModel : ViewModel() {
     private lateinit var _taskDetailList: MutableStateFlow<List<TaskDetailData>>
+    private val _originalMediaURI: MutableStateFlow<List<String>> = MutableStateFlow(listOf())
 
     /** Init method with parameter **/
     fun init(taskDetailData: List<TaskDetailData>) { // Set list from the database
@@ -32,6 +39,18 @@ class TaskDetailDialogViewModel : ViewModel() {
         if (taskDetailData.size == 1) { // if is a single task detail
             _taskDetail.update { this._taskDetailList.value.last() }
             this.removeTaskDetailListItem(taskDetailData.size - 1)
+        }
+        for (i in taskDetailData) { // Set original media uri for delete removable media file
+            if (i.dataByte == null) continue
+            when (i.type) {
+                TaskDetailType.Text -> continue
+                TaskDetailType.URL -> continue
+                TaskDetailType.Application -> continue
+                TaskDetailType.Audio -> {}
+                TaskDetailType.Picture -> {}
+                TaskDetailType.Video -> {}
+            }
+            _originalMediaURI.update { it + (i.dataByte as ByteArray).toString(Charsets.UTF_8) }
         }
     }
 
@@ -62,6 +81,35 @@ class TaskDetailDialogViewModel : ViewModel() {
             return null
         }
         return this._taskDetailList.asStateFlow()
+    }
+
+    /**
+     * Determines if a new item can be added to the task detail list based on a weighted count.
+     * Different item types have different "weights" (e.g., Video=5, Picture=2, Audio=3, others=1).
+     *
+     * @return a [StateFlow] emitting `true` if the total weight is less than 10, `false` otherwise.
+     */
+    fun allowAddToList(): StateFlow<Boolean> {
+        val allow: StateFlow<Boolean> = this._taskDetailList.asStateFlow().map { list ->
+            val video = list.count { it.type == TaskDetailType.Video }
+            val audio = list.count { it.type == TaskDetailType.Audio }
+            val picture = list.count { it.type == TaskDetailType.Picture }
+            val size = list.size - video - audio - picture
+            val videoWeight = video * 5
+            val pictureWeight = picture * 2
+            val audioWeight = audio * 3
+            (size + videoWeight + pictureWeight + audioWeight) < 10
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+        return allow
+    }
+
+    fun updateTaskDetailDescription(index: Int, description: String?) {
+        if (!_isChanged.value) _isChanged.update { true }
+        _taskDetailList.update { update ->
+            val mutable = update.toMutableList()
+            mutable[index] = mutable[index].copy(description = description)
+            mutable
+        }
     }
 
     /** Remove an item from [_taskDetailList], but won't update [_isChanged] **/
@@ -140,7 +188,55 @@ class TaskDetailDialogViewModel : ViewModel() {
         functionalSaver = null
         _taskDetail.value = null
         _isChanged.value = false
+        _originalMediaURI.value = listOf()
         super.onCleared()
+    }
+
+    /**
+     * Deletes unused media files from the cache.
+     *
+     * This function reads the list of file paths from the preferences cache. It then iterates
+     * through them, deleting any file that is not currently in use (i.e., not in
+     * [_originalMediaURI] or matching the [currentUri]). After deletion, it updates the
+     * preferences cache to only contain the paths of the files that were kept.
+     *
+     * @param currentUri The URI of the media file currently being processed, to avoid deleting it.
+     * @param prefsCache The [PreferencesInCache] instance to read from and write to.
+     */
+    private suspend fun deleteMediaCache(
+        currentUri: Uri,
+        prefsCache: PreferencesInCache
+    ) = withContext(Dispatchers.Default) {
+        val prefsLines =
+            prefsCache.inProcessFilesPath()?.lineSequence()?.toList() ?: return@withContext
+        try {
+            val check = prefsLines.filter { line ->
+                val file = File(line.toUri().path ?: "")
+                if (file.exists()) { // if file is exist
+                    if (_originalMediaURI.value.contains(line) || currentUri.toString() == line) {
+                        return@filter true // skip valid uri
+                    }
+                    if (file.delete()) { // delete
+                        return@filter false
+                    }
+                    Log.e("deleteMediaCache", "Failed to delete file: $file")
+                    return@filter true
+                }
+                return@filter true
+            }
+            prefsCache.inProcessFilesPath(null)
+            for (i in check) {
+                if (!i.isBlank()) {
+                    if (prefsCache.inProcessFilesPath() == null) {
+                        prefsCache.inProcessFilesPath(i + "\n")
+                    } else {
+                        prefsCache.inProcessFilesPath(prefsCache.inProcessFilesPath() + i + "\n")
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     /**
@@ -170,7 +266,10 @@ class TaskDetailDialogViewModel : ViewModel() {
     fun onMediaSave(uri: Uri, prefsCache: PreferencesInCache) {
         _taskDetail.update {
             if (uri != errUri) {
-                viewModelScope.launch { setCache(uri, prefsCache) }
+                viewModelScope.launch {
+                    this@TaskDetailDialogViewModel.setCache(uri, prefsCache)
+                    this@TaskDetailDialogViewModel.deleteMediaCache(uri, prefsCache)
+                }
                 it?.copy(dataByte = uri.toByteArray())
             } else {
                 val errTypeText = " - " + TaskDetailType.Picture.name
