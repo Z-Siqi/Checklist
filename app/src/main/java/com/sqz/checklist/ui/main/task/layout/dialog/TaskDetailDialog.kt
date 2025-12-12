@@ -42,7 +42,6 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
@@ -103,7 +102,7 @@ fun TaskDetailDialog(
         it != null && it.isNotEmpty()
     }
     if (showListDialog.value) {
-        AlertDialog(
+        AlertDialog( //TODO: Fix the size
             onDismissRequest = { if (!viewModel.isChanged.value) onDismissRequest() },
             dismissButton = {
                 if (isListed) TextButton(onClick = {
@@ -159,7 +158,6 @@ fun TaskDetailDialog(
         when (onMode.value) {
             OnMode.List -> {
                 if (taskDetailOnProcess == null) {
-                    Log.d("TaskDetailDialog", "List")
                     showListDialog.value = true
                     onMode.value = OnMode.Null
                 } else if (mediaProcesser(viewModel, view)) {
@@ -217,36 +215,45 @@ private fun TaskDetailList( //TODO: implemented it
     viewModel: TaskDetailDialogViewModel
 ) {
     val detailList = viewModel.getTaskDetailList()?.collectAsState()
-    val rememberDetailList = remember { mutableStateOf(detailList?.value) }
-    fun onClick(index: Int) {
-        viewModel.setTaskDetailFromList(index)
-        showListDialog.value = false
+
+    @Composable
+    fun ListTitle(index: Int, data: TaskDetailData) {
+        val typeString = (data.type as Any?).toString()
+        val listHash =
+            detailList?.value?.let { list -> list.filter { it != list[index] } }?.hashCode()
+        val rememberListHash = rememberSaveable { mutableStateOf(listHash) }
+        if (listHash == rememberListHash.value) {
+            val textFieldState =
+                rememberTextFieldState(initialText = data.description ?: typeString)
+            TextField(
+                state = textFieldState,
+                lineLimits = TextFieldLineLimits.SingleLine,
+                inputTransformation = {
+                    if (this.toString() != typeString) {
+                        if (this.toString() == "") {
+                            viewModel.updateTaskDetailDescription(index, null)
+                        } else {
+                            viewModel.updateTaskDetailDescription(index, this.toString())
+                        }
+                    } else if (data.description != null && this.toString() == typeString) {
+                        viewModel.updateTaskDetailDescription(index, null)
+                    }
+                },
+                placeholder = { Text(typeString) },
+                textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.Medium)
+            )
+        } else {
+            rememberListHash.value = listHash
+        }
     }
 
     @Composable
-    fun ListView(index: Int, data: TaskDetailData) = Card(modifier = Modifier.padding(4.dp)) {
-        val typeString = (data.type as Any?).toString()
-        val textFieldState = rememberTextFieldState(initialText = data.description ?: typeString)
-        TextField(
-            state = textFieldState,
-            lineLimits = TextFieldLineLimits.SingleLine,
-            inputTransformation = {
-                if (this.toString() != typeString) {
-                    if (this.toString() == "") {
-                        viewModel.updateTaskDetailDescription(index, null)
-                    } else {
-                        viewModel.updateTaskDetailDescription(index, this.toString())
-                    }
-                } else if (data.description != null && this.toString() == typeString) {
-                    viewModel.updateTaskDetailDescription(index, null)
-                }
-            },
-            placeholder = { Text(typeString) },
-            textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.Medium)
-        )
-        Text(typeString)
+    fun ListAction(index: Int) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            Button(onClick = { onClick(index) }) {
+            Button(onClick = {
+                viewModel.setTaskDetailFromList(index)
+                showListDialog.value = false
+            }) {
                 Icon(painterResource(R.drawable.edit), null)
             }
             Spacer(modifier = Modifier.widthIn(max = 8.dp) then Modifier.fillMaxWidth())
@@ -264,7 +271,10 @@ private fun TaskDetailList( //TODO: implemented it
         }
 
         itemsIndexed(detailList.value) { index, data ->
-            ListView(index, data)
+            Card(modifier = Modifier.padding(4.dp)) {
+                ListTitle(index, data)
+                ListAction(index)
+            }
         }
     }
 }
@@ -448,9 +458,6 @@ private fun TaskDetailDialog(
             )
         }
     }
-    val isListed: Boolean = viewModel.getTaskDetailList()?.collectAsState()?.value.let {
-        it != null && it.isNotEmpty()
-    }
     DialogWithMenu(
         onDismissRequest = { if (!viewModel.isChanged.value) onDismissRequest() },
         confirm = { onTaskDetailConfirm(it) { confirm() } },
@@ -477,15 +484,15 @@ private fun TaskDetailDialog(
                 }
             },
             extensionTitleButton = {
-                /*IconButton(onClick = {
+                IconButton(onClick = {
                     onTaskDetailConfirm(it) { listedConfirm() }
                     view.playSoundEffect(SoundEffectConstants.CLICK)
-                }) {
+                }, enabled = false) { //TODO: finish this
                     Icon(
                         painter = painterResource(R.drawable.add_list),
                         contentDescription = stringResource(R.string.add_detail)
                     )
-                }*/
+                }
             }
         ),
         currentMenuSelection = { viewModel.onMenuSelectionChanged(it, textFieldState) },
