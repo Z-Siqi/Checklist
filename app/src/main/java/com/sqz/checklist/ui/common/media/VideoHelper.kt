@@ -289,7 +289,7 @@ fun VideoViewDialog(
                         showVideoQualityOptions = false,
                         enableFullEdgeToEdge = false,
                         enablePIPControl = false,
-                        fastForwardBackwardIntervalSeconds = 5,
+                        fastForwardBackwardIntervalSeconds = 5F,
                     )
                     VideoPlayerComposable(
                         modifier = Modifier.fillMaxSize(),

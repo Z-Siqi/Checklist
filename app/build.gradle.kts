@@ -1,11 +1,12 @@
+import com.android.build.api.dsl.ApplicationExtension
+
 plugins {
-    id("com.android.application")
-    id("org.jetbrains.kotlin.android")
-    id("org.jetbrains.kotlin.plugin.compose")
-    id("com.google.devtools.ksp") version "2.2.21-2.0.4"
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.ksp)
 }
 
-android {
+extensions.configure<ApplicationExtension>("android") {
     namespace = "com.sqz.checklist"
     compileSdk = 36
 
@@ -37,12 +38,8 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    }
-    kotlinOptions {
-        @Suppress("DEPRECATION")
-        jvmTarget = "11"
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
     buildFeatures {
         compose = true
@@ -56,37 +53,37 @@ android {
 
 dependencies {
 
-    implementation("androidx.core:core-ktx:1.17.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.4")
-    implementation("androidx.activity:activity-compose:1.11.0")
-    implementation(platform("androidx.compose:compose-bom:2025.11.00"))
-    implementation("androidx.compose.ui:ui")
-    implementation("androidx.compose.ui:ui-graphics")
-    implementation("androidx.compose.ui:ui-tooling-preview")
-    implementation("androidx.compose.material3:material3-android:1.5.0-alpha08")
-    implementation("androidx.compose.material:material-icons-core:1.7.8")
-    implementation("androidx.compose.foundation:foundation-android:1.9.4")
-    implementation("androidx.compose.runtime:runtime-android:1.9.4")
-    implementation("androidx.work:work-runtime-ktx:2.11.0")
-    testImplementation("junit:junit:4.13.2")
-    androidTestImplementation("androidx.test.ext:junit:1.3.0")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
-    androidTestImplementation(platform("androidx.compose:compose-bom:2025.11.00"))
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
-    debugImplementation("androidx.compose.ui:ui-tooling")
-    debugImplementation("androidx.compose.ui:ui-test-manifest")
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.activity.compose)
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.ui)
+    implementation(libs.androidx.ui.graphics)
+    implementation(libs.androidx.ui.tooling.preview)
+    implementation(libs.androidx.material3.android)
+    implementation(libs.androidx.material.icons.core)
+    implementation(libs.androidx.foundation.android)
+    implementation(libs.androidx.runtime.android)
+    implementation(libs.androidx.work.runtime.ktx)
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.ui.test.junit4)
+    debugImplementation(libs.androidx.ui.tooling)
+    debugImplementation(libs.androidx.ui.test.manifest)
     // Leakcanary
-    debugImplementation("com.squareup.leakcanary:leakcanary-android:2.14")
+    debugImplementation(libs.leakcanary.android)
     // Navigation
-    implementation("androidx.navigation:navigation-compose:2.9.6")
+    implementation(libs.androidx.navigation.compose)
     // Room
-    ksp("androidx.room:room-compiler:2.8.3")
-    implementation("androidx.room:room-runtime:2.8.3")
-    implementation("androidx.room:room-ktx:2.8.3")
-    testImplementation("androidx.room:room-testing:2.8.3")
+    ksp(libs.androidx.room.compiler)
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    testImplementation(libs.androidx.room.testing)
     // Media
-    implementation("network.chaintech:compose-multiplatform-media-player:1.0.50")
-    implementation("io.coil-kt:coil-compose:2.7.0")
-    implementation("androidx.media3:media3-exoplayer:1.8.0")
-    implementation("com.otaliastudios:transcoder:0.11.2")
+    implementation(libs.compose.multiplatform.media.player)
+    implementation(libs.coil.compose)
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.com.otaliastudios.transcoder)
 }

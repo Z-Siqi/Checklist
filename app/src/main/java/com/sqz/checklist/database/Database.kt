@@ -32,7 +32,6 @@ abstract class TaskDatabase : RoomDatabase() {
     abstract fun taskReminderDao(): TaskReminderDao
 }
 
-@Suppress("TYPE_INTERSECTION_AS_REIFIED_WARNING")
 private val MIGRATION_1_2 = object : Migration(1, 2) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL("CREATE TABLE taskDetail(id INTEGER NOT NULL, type TEXT NOT NULL, dataString TEXT NOT NULL, PRIMARY KEY(id))")
@@ -69,7 +68,7 @@ private val MIGRATION_1_2 = object : Migration(1, 2) {
             }
             db.execSQL( // INSERT to task_temp
                 " INSERT INTO task_temp (id, description, createDate, reminder, doingState, isPin, detail, pinToTop, isHistory, isHistoryId) VALUES (?, ?, ?, ?, NULL, ?, 0, ?, ?, ?)",
-                arrayOf(
+                arrayOf<Any?>(
                     id, description, createDate, reminderId, isPin, pinToTop, isHistory, isHistoryId
                 )
             )
@@ -80,7 +79,7 @@ private val MIGRATION_1_2 = object : Migration(1, 2) {
             ) "1" else "0"
             if (reminderId != null && reminderTime != null) db.execSQL( // INSERT to reminder
                 " INSERT INTO reminder (id, description, reminderTime, mode, isReminded, extraText, extraData, longAsDelay) VALUES (?, ?, ?, ?, $isReminded, NULL, ?, 0)",
-                arrayOf(reminderId, description, reminderTime, mode, extraData)
+                arrayOf<Any?>(reminderId, description, reminderTime, mode, extraData)
             )
         }
         cursor.close()
