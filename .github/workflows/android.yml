@@ -49,7 +49,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu' # See 'Supported distributions' for available options
-          java-version: '17'
+          java-version: '21'
           cache: 'gradle'
 
       - name: Change wrapper permissions
@@ -57,7 +57,7 @@ jobs:
 
       # Run Tests Build
       - name: Run gradle tests
-        run: ./gradlew test
+        run: ./gradlew test --stacktrace
 
       # Run Build Project
       - name: Build gradle project
