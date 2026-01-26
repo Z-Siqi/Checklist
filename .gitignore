@@ -1,12 +1,8 @@
 *.iml
 .gradle
 /local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
+.idea/*
+!.idea/icon.png
 .DS_Store
 /build
 /captures
@@ -15,5 +11,4 @@
 local.properties
 /.idea/codeStyles/codeStyleConfig.xml
 /.idea/deviceManager.xml
-/.kotlin/errors/*
-/.kotlin/sessions/*
+/.kotlin/*
