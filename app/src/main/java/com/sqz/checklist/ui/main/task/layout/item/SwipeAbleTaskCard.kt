@@ -1,5 +1,6 @@
 package com.sqz.checklist.ui.main.task.layout.item
 
+import android.annotation.TargetApi
 import android.content.Context
 import android.os.Build
 import android.os.VibrationEffect
@@ -55,15 +56,18 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat.getSystemService
 import com.sqz.checklist.R
-import com.sqz.checklist.database.Task
-import com.sqz.checklist.database.TaskViewData
+import sqz.checklist.data.database.Task
 import com.sqz.checklist.ui.common.unit.isApi29AndAbove
 import com.sqz.checklist.ui.main.task.CardHeight
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.todayIn
+import sqz.checklist.common.KmpLocalDatePatternFormatter
+import sqz.checklist.data.database.model.TaskViewData
 import java.text.SimpleDateFormat
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.abs
+import kotlin.time.Clock
+import androidx.compose.ui.platform.LocalLocale
 
 /**
  * Swipe-able task item for list (Expected @LazyList call this)
@@ -161,17 +165,17 @@ fun SwipeAbleTaskCard(
                 val fullDateShort = stringResource(R.string.full_date_short)
                 if (getTimeInLong <= 1000L) null else SimpleDateFormat(
                     fullDateShort,
-                    Locale.getDefault()
+                    LocalLocale.current.platformLocale
                 ).format(getTimeInLong)
             }
             val dateReminderText = stringResource(
                 R.string.task_reminded_time, remindTime().toString()
             )
-            val formatter = DateTimeFormatter.ofPattern(
-                stringResource(R.string.task_date_format), Locale.getDefault()
+            val dateFormat =  KmpLocalDatePatternFormatter.format(
+                task.createDate, stringResource(R.string.task_date_format),
             )
             val dateText = stringResource(
-                R.string.task_creation_time, task.createDate.format(formatter)
+                R.string.task_creation_time, dateFormat //task.createDate.format(formatter)
             )
             //val reminderState = databaseRepository.reminderState(task.reminder)
             TaskCardContent(
@@ -299,7 +303,8 @@ private fun AnimateInFinishedTask(visible: Boolean = false, alignment: Alignment
 @Preview
 @Composable
 private fun Preview() {
-    val task = Task(0, "The quick brown fox jumps over the lazy dog.", LocalDate.now())
+    val curTime: kotlinx.datetime.LocalDate = Clock.System.todayIn(TimeZone.currentSystemDefault())
+    val task = Task(0, "The quick brown fox jumps over the lazy dog.", curTime)
     SwipeAbleTaskCard(
         TaskViewData(task, isDetailExist = false, false, null),
         { _, _, _ -> }, {}, false, LocalContext.current, ItemMode.NormalTask,

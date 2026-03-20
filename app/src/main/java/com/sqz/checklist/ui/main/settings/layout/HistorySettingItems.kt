@@ -21,7 +21,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.sqz.checklist.R
-import com.sqz.checklist.preferences.PrimaryPreferences
+import sqz.checklist.data.preferences.PrimaryPreferences
 
 class HistorySettingItems(private val view: View) : SettingsList() {
 

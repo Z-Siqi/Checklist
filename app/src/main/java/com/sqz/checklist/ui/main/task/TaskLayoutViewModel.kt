@@ -10,11 +10,12 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sqz.checklist.MainActivity
-import com.sqz.checklist.database.DatabaseRepository
-import com.sqz.checklist.database.TaskDetail
-import com.sqz.checklist.database.TaskViewData
-import com.sqz.checklist.preferences.PreferencesInCache
-import com.sqz.checklist.preferences.PrimaryPreferences
+import com.sqz.checklist.notification.NotifyManager
+import com.sqz.checklist.presentation.task.modify.TaskModifyState
+import sqz.checklist.data.database.repository.DatabaseRepository
+import sqz.checklist.data.database.TaskDetail
+import sqz.checklist.data.preferences.PreferencesInCache
+import sqz.checklist.data.preferences.PrimaryPreferences
 import com.sqz.checklist.ui.main.task.handler.ModifyHandler
 import com.sqz.checklist.ui.main.task.handler.ReminderHandler
 import com.sqz.checklist.ui.main.task.layout.NavConnectData
@@ -33,6 +34,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import sqz.checklist.data.database.Task
+import sqz.checklist.data.database.model.TaskViewData
+import sqz.checklist.data.database.repository.Table
 import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -72,7 +76,7 @@ open class TaskLayoutViewModel : ViewModel() {
         if (_isUpdateRunning.get()) return else _isUpdateRunning.set(true)
         viewModelScope.launch {
             _listState.update { lists ->
-                val taskDao = MainActivity.taskDatabase.taskDao()
+                val taskDao = MainActivity.taskDatabase.taskDaoOld()
                 lists.copy(
                     item = taskDao.getAll(),
                     pinnedItem = taskDao.getAll(0),
@@ -170,7 +174,7 @@ open class TaskLayoutViewModel : ViewModel() {
             CardClickType.Pin -> modifyHandler.pinState(task.id, !task.isPin)
             CardClickType.Detail -> this.taskDetailData(task.id)
             CardClickType.Reminder -> reminderHandler.requestReminder(task.id)
-            CardClickType.Edit -> modifyHandler.requestEditTask(task)
+            CardClickType.Edit -> this.requestModify(TaskModifyState.EditTask(task.id))
             CardClickType.Close -> viewModelScope.launch {
                 val reminder = database().getReminderData(task.id)
                 if (!primaryPreferences(context).disableRemoveNotifyInReminded()) try {
@@ -246,7 +250,7 @@ open class TaskLayoutViewModel : ViewModel() {
     fun getIsHistory(id: Long): Boolean {
         var value by mutableIntStateOf(-1)
         fun getIsHistoryId(id: Long) {
-            viewModelScope.launch { value = MainActivity.taskDatabase.taskDao().getIsHistory(id) }
+            viewModelScope.launch { value = MainActivity.taskDatabase.taskDaoOld().getIsHistory(id) }
         }
         getIsHistoryId(id)
         return value >= 1
@@ -265,7 +269,7 @@ open class TaskLayoutViewModel : ViewModel() {
         searchText: String = "", reset: Boolean = false, initWithAll: Boolean = false
     ) {
         suspend fun returnList(): List<TaskViewData> {
-            val taskDao = MainActivity.taskDatabase.taskDao()
+            val taskDao = MainActivity.taskDatabase.taskDaoOld()
             if (searchText.isNotEmpty()) return taskDao.searchedList(searchText)
             if (initWithAll || searchingText.isEmpty()) {
                 searchingText = ""
@@ -279,5 +283,28 @@ open class TaskLayoutViewModel : ViewModel() {
 
     fun requestUpdateList() {
         updateListState()
+    }
+
+    private val _isModify: MutableStateFlow<TaskModifyState?> = MutableStateFlow(null)
+    val isModify: StateFlow<TaskModifyState?> = _isModify.asStateFlow()
+
+    fun requestModify(state: TaskModifyState?) {
+        if (state == null) {
+            this.updateListState()
+        }
+        _isModify.update { state }
+    }
+
+    fun requestReminder(id: Long) {
+        reminderHandler.requestReminder(id, false)
+    }
+
+    fun updateNotification(taskId: Long, context: Context) = viewModelScope.launch {
+        database().getReminderData(taskId = taskId)?.let {
+            if (NotifyManager.isNotificationExist(it.id, context)) {
+                val task = database().getTable(Table.Task, taskId)[0] as Task
+                reminderHandler.updateNotification(it.id, task, context)
+            }
+        }
     }
 }

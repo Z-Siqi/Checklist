@@ -1,6 +1,6 @@
 package com.sqz.checklist.ui.main.task
 
-import com.sqz.checklist.database.DatabaseRepository
+import sqz.checklist.data.database.repository.DatabaseRepository
 
 /**
  * Override for preview work

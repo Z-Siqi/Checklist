@@ -18,7 +18,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.sqz.checklist.R
-import com.sqz.checklist.preferences.PrimaryPreferences
+import sqz.checklist.data.preferences.PrimaryPreferences
 import com.sqz.checklist.ui.MainLayoutNav
 
 enum class TopBarMenuClickType { History, Search, BackupRestore, Settings }

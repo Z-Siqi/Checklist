@@ -6,11 +6,9 @@ import android.widget.Toast
 import androidx.lifecycle.viewModelScope
 import com.sqz.checklist.MainActivity
 import com.sqz.checklist.R
-import com.sqz.checklist.database.DatabaseRepository
-import com.sqz.checklist.database.ReminderModeType
-import com.sqz.checklist.database.ReminderViewData
-import com.sqz.checklist.database.TaskData
-import com.sqz.checklist.database.TaskReminder
+import sqz.checklist.data.database.repository.DatabaseRepository
+import sqz.checklist.data.database.ReminderModeType
+import sqz.checklist.data.database.TaskReminder
 import com.sqz.checklist.notification.NotificationChannelData
 import com.sqz.checklist.notification.NotificationCreator
 import com.sqz.checklist.notification.NotificationData
@@ -29,6 +27,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import sqz.checklist.data.database.Task
+import sqz.checklist.data.database.model.ReminderViewData
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
@@ -48,7 +48,7 @@ class ReminderHandler private constructor(
         )
     }
 
-    /** Get [com.sqz.checklist.database.TaskDatabase] instance **/
+    /** Get [MainActivity.taskDatabase] instance **/
     private fun database(): DatabaseRepository = DatabaseRepository(
         MainActivity.taskDatabase
     )
@@ -198,7 +198,7 @@ class ReminderHandler private constructor(
         )
         database().insertReminderData(taskReminder)
         if (mode == ReminderModeType.Worker) {
-            // if worker will sent notification immediately, this delay is needed
+            // if worker will send notification immediately, this delay is needed
             // for update list correctly
             delay(100)
         }
@@ -228,7 +228,7 @@ class ReminderHandler private constructor(
      * @param task The updated task data to display in the notification.
      * @param context The application context.
      */
-    suspend fun updateNotification(notifyId: Int, task: TaskData, context: Context) {
+    suspend fun updateNotification(notifyId: Int, task: Task, context: Context) {
         val reminder = database().getReminderData(reminderId = notifyId)
         NotifyManager.isNotificationExist(notifyId, context) { channelId, postTime ->
             NotificationCreator(context).pushedNotificationCreator(
@@ -239,7 +239,7 @@ class ReminderHandler private constructor(
                 ),
                 notifyData = NotificationData(
                     id = notifyId,
-                    title = task.description!!,
+                    title = task.description,
                     text = NotificationReceiver.notificationTextFormater(
                         text = reminder?.reminder?.extraText,
                         remindTime = postTime,
@@ -302,7 +302,7 @@ class ReminderHandler private constructor(
 
     /** Cancel history reminder **/
     fun cancelHistoryReminder(context: Context) = coroutineScope.launch(Dispatchers.IO) {
-        val allIsHistoryIdList = MainActivity.taskDatabase.taskDao().getAllOrderByIsHistoryId()
+        val allIsHistoryIdList = MainActivity.taskDatabase.taskDaoOld().getAllOrderByIsHistoryId()
         for (data in allIsHistoryIdList) {
             try {
                 val reminder = database().getReminderData(taskId = data.id)!!

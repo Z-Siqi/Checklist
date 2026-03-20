@@ -3,7 +3,7 @@ package com.sqz.checklist.cache
 import android.content.Context
 import android.util.Log
 import androidx.core.net.toUri
-import com.sqz.checklist.preferences.PreferencesInCache
+import sqz.checklist.data.preferences.PreferencesInCache
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File

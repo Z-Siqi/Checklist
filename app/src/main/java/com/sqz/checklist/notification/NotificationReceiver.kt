@@ -6,12 +6,13 @@ import android.content.Intent
 import android.util.Log
 import com.sqz.checklist.MainActivity
 import com.sqz.checklist.R
-import com.sqz.checklist.database.DatabaseRepository
-import com.sqz.checklist.database.TaskDatabase
-import com.sqz.checklist.database.buildDatabase
+import sqz.checklist.data.database.repository.DatabaseRepository
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import sqz.checklist.data.database.TaskDatabase
+import sqz.checklist.data.database.getDatabaseBuilder
+import sqz.checklist.data.database.getRoomDatabase
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -41,7 +42,7 @@ class NotificationReceiver : BroadcastReceiver() {
             val db: TaskDatabase = try {
                 MainActivity.taskDatabase
             } catch (_: Exception) {
-                buildDatabase(context)
+                 getRoomDatabase(getDatabaseBuilder(context))
             }
             try {
                 val databaseRepository = DatabaseRepository(db)

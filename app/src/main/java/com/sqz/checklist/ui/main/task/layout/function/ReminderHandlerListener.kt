@@ -29,8 +29,8 @@ import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
 import com.sqz.checklist.R
 import com.sqz.checklist.notification.PermissionState
-import com.sqz.checklist.preferences.PreferencesInCache
-import com.sqz.checklist.preferences.PrimaryPreferences
+import sqz.checklist.data.preferences.PreferencesInCache
+import sqz.checklist.data.preferences.PrimaryPreferences
 import com.sqz.checklist.ui.main.task.handler.ReminderHandler
 import com.sqz.checklist.ui.common.dialog.WarningAlertDialog
 import com.sqz.checklist.ui.common.dialog.TimeSelectDialog

@@ -11,16 +11,16 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.util.fastForEach
 import androidx.lifecycle.coroutineScope
 import com.sqz.checklist.cache.clearExpiredCache
 import com.sqz.checklist.cache.clearOldCacheIfNeeded
 import com.sqz.checklist.cache.deleteAllFileWhichInProcessFilesPath
 import com.sqz.checklist.cache.dropEmptyInProcessFilesPath
-import com.sqz.checklist.database.DatabaseRepository
-import com.sqz.checklist.database.TaskDatabase
-import com.sqz.checklist.database.buildDatabase
-import com.sqz.checklist.preferences.PrimaryPreferences
+import sqz.checklist.data.database.repository.DatabaseRepository
 import com.sqz.checklist.ui.MainLayout
 import com.sqz.checklist.ui.common.unit.isGestureNavigationMode
 import com.sqz.checklist.ui.theme.ChecklistTheme
@@ -29,18 +29,24 @@ import com.sqz.checklist.ui.theme.Theme
 import com.sqz.checklist.ui.theme.UISizeLimit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import sqz.checklist.data.database.TaskDatabase
+import sqz.checklist.data.database.getDatabaseBuilder
+import sqz.checklist.data.database.getRoomDatabase
+import sqz.checklist.data.preferences.PrimaryPreferences
+import sqz.checklist.data.storage.AppDirType
+import sqz.checklist.data.storage.initInternalDirPath
+import sqz.checklist.data.storage.manager.StorageManager
 
 class MainActivity : ComponentActivity() {
     companion object {
         lateinit var taskDatabase: TaskDatabase
-        lateinit var appDir: String
     }
 
     @Override
     override fun onCreate(savedInstanceState: Bundle?) {
+        initInternalDirPath(applicationContext) // load app dir location
         super.onCreate(savedInstanceState)
-        taskDatabase = buildDatabase(applicationContext) // load database
-        appDir = applicationContext.filesDir.absolutePath // load app dir location
+        taskDatabase = getRoomDatabase(getDatabaseBuilder(applicationContext)) // load database
         setContent {
             ChecklistTheme {
                 SystemBarsColor.CreateSystemBars(window) {
@@ -68,11 +74,31 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+            val storageManager = StorageManager.provider()
+            LaunchedEffect(storageManager.getTempFiles.collectAsState()) {
+                this@MainActivity.clearUnusedTemp(storageManager)
+            }
         }
         if (savedInstanceState == null) {
             super.lifecycle.coroutineScope.launch(Dispatchers.IO) {
                 deleteAllFileWhichInProcessFilesPath(applicationContext)
             }
+        }
+    }
+
+    private suspend fun clearUnusedTemp(storageManager: StorageManager) {
+        try {
+            val allTemp = storageManager.getDirResList(AppDirType.Temp)
+            val knownTemp = storageManager.getTempFiles.value.map { it.first }
+            allTemp.fastForEach {
+                if (!knownTemp.any { known -> it == known }) {
+                    if (it.endsWith(".tmp")) return@fastForEach
+                    val delMode = StorageManager.DeleteMode.FilePath(it)
+                    storageManager.deleteTempFile(delMode)
+                }
+            }
+        } catch (e: Exception) {
+            Log.w("clearUnusedTemp", "Failed to clear unused temp files: $e")
         }
     }
 

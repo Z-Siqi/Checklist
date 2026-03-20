@@ -68,6 +68,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.Locale
+import androidx.compose.ui.platform.LocalLocale
 
 /** TaskLayout Top App Bar **/
 @SuppressLint("ComposableNaming")
@@ -246,7 +247,7 @@ fun TaskLayoutTopBar(
 
 @Composable
 private fun topBarContent(pattern: String): String {
-    val formatter = DateTimeFormatter.ofPattern(pattern, Locale.getDefault())
+    val formatter = DateTimeFormatter.ofPattern(pattern, LocalLocale.current.platformLocale)
     var dateTime by remember { mutableStateOf(LocalDate.now().format(formatter)) }
     LaunchedEffect(Unit) { // Auto update date time when date change
         val calendar = Calendar.getInstance()

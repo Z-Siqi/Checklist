@@ -12,13 +12,14 @@
     <string name="cancel">取消</string>
     <string name="delete">刪除</string>
     <string name="disable">禁用</string>
+    <string name="sort">排序</string>
     <string name="text">文本</string>
     <string name="url">網址</string>
     <string name="open">打開</string>
     <string name="open_with">打開方式</string>
     <string name="failed_open">打開失敗!</string>
     <string name="processing">正在處理…</string>
-    <string name="full_date_short">yyyy 年 MMM dd 日 hh:mm a</string>
+    <string name="full_date_short">yyyy 年 mm 月 dd 日 hh:mm a</string>
 
     <!-- MainLayout -->
     <string name="tasks">任務</string>
@@ -31,7 +32,7 @@
     <string name="report_normal_file_size">如果檔案大小不大於 %1$sMB，請向開發人員報告</string>
 
     <!-- TaskLayout -->
-    <string name="task_date_format">yyyy 年 MMM dd 日</string>
+    <string name="task_date_format">yyyy 年 mm 月 dd 日</string>
     <string name="task_creation_time">創建日期: %1$s</string>
     <string name="check">檢查</string>
     <string name="undo">撤回</string>
@@ -43,11 +44,13 @@
     <string name="redo_all_history">重做所有?</string>
     <string name="redo">重做</string>
     <string name="nothing_here">什麽都沒有!</string>
-    <string name="pin">固定</string>
-    <string name="pinned_task">固定的任務</string>
+    <string name="pin">置頂</string>
+    <string name="pin_task">置頂任務</string>
+    <string name="pinned_task">置頂的任務</string>
     <string name="select_date">選擇日期</string>
     <string name="pick">選擇</string>
     <string name="input">輸入</string>
+    <string name="plan_something">計劃些什麼…</string>
     <string name="recently_reminded">最近提醒的任務</string>
     <string name="task_reminded_time">任務已提醒於: %1$s</string>
     <string name="cancel_highlight">取消突出顯示</string>
@@ -59,23 +62,24 @@
     <string name="add_detail">添加詳細內容</string>
     <string name="create_task_detail">創建任務詳情</string>
     <string name="edit_task_detail">編輯任務詳情</string>
-    <string name="click_select_detail_type">按下選擇詳細內容類型</string>
+    <string name="click_select_detail_type">選擇詳情類型</string>
     <string name="invalid_url">網址無效!</string>
-    <string name="select_detail_type">請先選擇詳細內容類型!</string>
+    <string name="select_detail_type">請先點擊 %1$s 選擇詳情類型!</string>
     <string name="package_not_found">未找到應用程式!\n應用程式包名: %1$s</string>
     <string name="app_icon">應用程式圖標</string>
     <string name="loading">載入中…</string>
     <string name="application">應用</string>
     <string name="failed_found_package">找不到儲存的應用程式包名!</string>
     <string name="picture">圖片</string>
-    <string name="click_select_picture">點選選擇圖片</string>
-    <string name="selected_picture">選定的圖片</string>
+    <string name="select_picture">選擇圖片</string>
+    <string name="select_new_picture">選擇一個新圖片</string>
     <string name="picture_size_limit">圖片大小不能超過 50MB!</string>
     <string name="detail_file_not_found">由於文件未找到，無法將詳細內容新增至任務!</string>
     <string name="failed_add_picture">新增圖片失敗!</string>
     <string name="video_size_limit">影片大小不能超過350MB!</string>
     <string name="play_video">播放影片</string>
-    <string name="click_select_video">點擊選擇視頻</string>
+    <string name="select_video">點擊選擇視頻</string>
+    <string name="select_new_video">選擇一個新視頻</string>
     <string name="video">影片</string>
     <string name="play">播放</string>
     <string name="pause">暫停</string>
@@ -83,10 +87,18 @@
     <string name="play_audio">播放音訊</string>
     <string name="audio_size_limit">音訊大小不能超過55MB!</string>
     <string name="audio">音訊</string>
-    <string name="click_select_audio">點選選擇音訊</string>
     <string name="video_compression_rate">任務詳細視訊壓縮率</string>
     <string name="failed_add_video">新增影片失敗!</string>
     <string name="task_info">任務資訊</string>
+    <string name="list">列表</string>
+    <string name="confirm_enter_list">確認並進入列表</string>
+    <string name="list_management">管理列表</string>
+    <string name="detail_list">詳細資訊列表管理</string>
+    <string name="no_picture_selected">沒有已選擇的圖片</string>
+    <string name="no_video_selected">沒有已選擇的視頻</string>
+    <string name="no_audio_selected">沒有已選擇的音訊</string>
+    <string name="select_audio">選擇一個音訊</string>
+    <string name="select_new_audio">選擇一個新音訊</string>
 
     <!-- Notification -->
     <string name="task_reminder">提醒</string>

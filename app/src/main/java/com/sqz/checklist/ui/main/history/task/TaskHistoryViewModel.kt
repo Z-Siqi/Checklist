@@ -3,8 +3,8 @@ package com.sqz.checklist.ui.main.history.task
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sqz.checklist.MainActivity
-import com.sqz.checklist.database.DatabaseRepository
-import com.sqz.checklist.database.Task
+import sqz.checklist.data.database.repository.DatabaseRepository
+import sqz.checklist.data.database.Task
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,7 +23,7 @@ class TaskHistoryViewModel: ViewModel() {
     fun updateTaskHistoryData() {
         viewModelScope.launch {
             _taskHistoryData.update {
-                MainActivity.taskDatabase.taskDao().getAllOrderByIsHistoryId()
+                MainActivity.taskDatabase.taskDaoOld().getAllOrderByIsHistoryId()
             }
         }
     }
@@ -31,7 +31,7 @@ class TaskHistoryViewModel: ViewModel() {
     /** Redo or Delete all task from history **/
     fun doAllTask(doAllTaskAction: DoTaskAction) = viewModelScope.launch {
         when (doAllTaskAction) {
-            DoTaskAction.Redo -> MainActivity.taskDatabase.taskDao().setAllNotHistory()
+            DoTaskAction.Redo -> MainActivity.taskDatabase.taskDaoOld().setAllNotHistory()
             DoTaskAction.Delete -> database().deleteAllHistory()
         }
         // Update to LazyColumn

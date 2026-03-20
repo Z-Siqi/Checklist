@@ -4,13 +4,14 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
-import com.sqz.checklist.database.DatabaseRepository
-import com.sqz.checklist.database.ReminderModeType
-import com.sqz.checklist.database.buildDatabase
+import sqz.checklist.data.database.repository.DatabaseRepository
+import sqz.checklist.data.database.ReminderModeType
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import sqz.checklist.data.database.getDatabaseBuilder
+import sqz.checklist.data.database.getRoomDatabase
 import java.util.concurrent.TimeUnit
 
 /**
@@ -40,7 +41,7 @@ class BootReceiver : BroadcastReceiver() {
         notificationManager: MutableStateFlow<NotifyManager>,
         context: Context
     ) {
-        val db = buildDatabase(context)
+        val db = getRoomDatabase(getDatabaseBuilder(context))
         val dao = db.taskReminderDao()
         val list = dao.getAll()
         val databaseRepository = DatabaseRepository(db)

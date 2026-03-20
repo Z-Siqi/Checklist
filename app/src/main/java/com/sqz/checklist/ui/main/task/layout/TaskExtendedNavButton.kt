@@ -2,7 +2,6 @@ package com.sqz.checklist.ui.main.task.layout
 
 import android.view.SoundEffectConstants
 import android.view.View
-import android.widget.Toast
 import androidx.compose.foundation.BasicTooltipBox
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.rememberBasicTooltipState
@@ -16,24 +15,16 @@ import androidx.compose.material3.TooltipAnchorPosition
 import androidx.compose.material3.TooltipDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import com.sqz.checklist.R
-import com.sqz.checklist.cache.deleteAllFileWhichInProcessFilesPath
-import com.sqz.checklist.notification.PermissionState
-import com.sqz.checklist.preferences.PreferencesInCache
+import com.sqz.checklist.presentation.task.modify.TaskModifyState
+import com.sqz.checklist.ui.common.TextTooltipBox
 import com.sqz.checklist.ui.main.NavExtendedButtonData
 import com.sqz.checklist.ui.main.NavMode
 import com.sqz.checklist.ui.main.NavTooltipContent
 import com.sqz.checklist.ui.main.OnClickType
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
-import com.sqz.checklist.ui.main.task.layout.dialog.CreateTask
-import com.sqz.checklist.ui.main.task.layout.dialog.TaskModifyDialog
-import com.sqz.checklist.ui.common.TextTooltipBox
 import kotlinx.coroutines.launch
 
 /** Nav Extended Button Connect Data **/
@@ -52,15 +43,18 @@ fun taskExtendedNavButton(
 ): NavExtendedButtonData {
     val connector = viewModel.navExtendedConnector.collectAsState().value
     val coroutineScope = rememberCoroutineScope()
-    var taskAddCard by rememberSaveable { mutableStateOf(false) }
+
     val buttonInfo = stringResource(if (!connector.searchState) R.string.add else R.string.cancel)
+
     val icon = @Composable {
         val icons = if (!connector.searchState) Icons.Filled.AddCircle else Icons.Filled.Close
         Icon(icons, contentDescription = buttonInfo)
     }
+
     val label = @Composable {
         Text(text = buttonInfo)
     }
+
     val tooltipContent: @Composable ((@Composable (() -> Unit)) -> Unit) = {
         if (connector.canScroll && !connector.searchState) {
             val tooltipState = rememberBasicTooltipState(isPersistent = true)
@@ -101,8 +95,11 @@ fun taskExtendedNavButton(
             content = it
         )
     }
+
     val onClick = {
-        if (!connector.searchState) taskAddCard = true else {
+        if (!connector.searchState) {
+            viewModel.requestModify(TaskModifyState.AddTask)
+        } else {
             val it = NavConnectData(searchState = false)
             viewModel.updateNavConnector(it, NavConnectData(searchState = true))
             viewModel.updateInSearch(reset = true)
@@ -110,52 +107,10 @@ fun taskExtendedNavButton(
         view.playSoundEffect(SoundEffectConstants.CLICK)
     }
 
-    // to add task
-    if (taskAddCard) TaskAddCard(
-        onDismissRequest = {
-            coroutineScope.launch { deleteAllFileWhichInProcessFilesPath(view.context) }
-            taskAddCard = false
-        },
-        confirm = {
-            viewModel.modifyHandler.createTask(
-                task = it.task,
-                detail = it.detail,
-                prefsCache = PreferencesInCache(view.context),
-                requestReminder = it.requestReminder
-            ) {
-                Toast.makeText(
-                    view.context,
-                    view.context.getString(R.string.task_is_created),
-                    Toast.LENGTH_LONG
-                ).show()
-            }
-            taskAddCard = false
-        },
-        permissionState = viewModel.reminderHandler.notificationInitState(view.context),
-        view = view,
-    )
-
     return NavExtendedButtonData(
         icon = icon,
         label = label,
         tooltipContent = tooltipContent,
         onClick = onClick
-    )
-}
-
-@Composable
-private fun TaskAddCard(
-    onDismissRequest: () -> Unit,
-    confirm: (CreateTask) -> Unit,
-    permissionState: PermissionState,
-    view: View,
-) {
-    TaskModifyDialog(
-        reminderButton = permissionState.let {
-            it == PermissionState.Notification || it == PermissionState.Both
-        },
-        confirm = confirm,
-        onDismissRequest = onDismissRequest,
-        view = view
     )
 }

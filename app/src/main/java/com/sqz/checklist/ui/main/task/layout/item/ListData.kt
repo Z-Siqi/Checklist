@@ -1,6 +1,6 @@
 package com.sqz.checklist.ui.main.task.layout.item
 
-import com.sqz.checklist.database.TaskViewData
+import sqz.checklist.data.database.model.TaskViewData
 
 data class ListData(
     val unLoading: Boolean = true,

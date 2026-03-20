@@ -12,6 +12,8 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.sqz.checklist.ui.theme.smallInLargestEdgeSize
+import com.sqz.checklist.ui.theme.smallInSmallestEdgeSize
 
 @ReadOnlyComposable
 @Composable
@@ -61,4 +63,20 @@ fun isGestureNavigationMode(
     isGestureHeight(isGestureHeight, navCalibrate.value)
     isGestureMode(isGestureMode, navMode)
     return isGestureMode || isGestureHeight
+}
+
+@ReadOnlyComposable
+@Composable
+fun isSmallScreenSizeForDialog(): Boolean {
+    val containerSizePx = LocalWindowInfo.current.containerSize
+    val widthDp: Int = containerSizePx.width.pxToDpInt()
+    val heightDp: Int = containerSizePx.height.pxToDpInt()
+    // minimal height size for dialog on portrait
+    if (isLandscape()) {
+        return heightDp < smallInSmallestEdgeSize
+    }
+    // minimal overall size for dialog
+    val widthRequired = widthDp < smallInSmallestEdgeSize
+    val heightRequired = heightDp < smallInLargestEdgeSize
+    return widthRequired && heightRequired
 }

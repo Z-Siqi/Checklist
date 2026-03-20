@@ -1,12 +1,10 @@
-import com.android.build.api.dsl.ApplicationExtension
-
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
 }
 
-extensions.configure<ApplicationExtension>("android") {
+android {
     namespace = "com.sqz.checklist"
     compileSdk = 36
 
@@ -53,6 +51,8 @@ extensions.configure<ApplicationExtension>("android") {
 
 dependencies {
 
+    api(project(":framework:umbrella"))
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -65,6 +65,7 @@ dependencies {
     implementation(libs.androidx.foundation.android)
     implementation(libs.androidx.runtime.android)
     implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.kotlinx.datetime)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

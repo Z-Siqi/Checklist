@@ -23,8 +23,6 @@ import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
 import com.sqz.checklist.MainActivity.Companion.taskDatabase
 import com.sqz.checklist.notification.NotifyManager
-import com.sqz.checklist.preferences.PreferencesInCache
-import com.sqz.checklist.ui.common.media.toUri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -32,6 +30,19 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import okio.Path.Companion.toPath
+import sqz.checklist.data.database.ReminderModeType
+import sqz.checklist.data.database.TaskDatabase
+import sqz.checklist.data.database.TaskDetailType
+import sqz.checklist.data.database.getDatabaseBuilder
+import sqz.checklist.data.database.getRoomDatabase
+import sqz.checklist.data.database.mergeDatabaseCheckpoint
+import sqz.checklist.data.database.repository.DatabaseRepository
+import sqz.checklist.data.database.taskDatabaseName
+import sqz.checklist.data.preferences.PreferencesInCache
+import sqz.checklist.data.storage.AppDirType
+import sqz.checklist.data.storage.StorageHelper.platformDataPathToSafetyPath
+import sqz.checklist.data.storage.appInternalDirPath
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -44,6 +55,7 @@ import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 import kotlin.system.exitProcess
 
+//TODO: Fix database not run correctly after action (lead to cannot edit task...)
 class DatabaseIO private constructor(application: Application) : AndroidViewModel(application) {
     companion object {
         @Volatile
@@ -80,13 +92,14 @@ class DatabaseIO private constructor(application: Application) : AndroidViewMode
             .filter { it.isFile }
             .toList()
         var dataList: List<Uri> = listOf()
-        for (data in taskDatabase.taskDao().getTaskDetail()) {
+        for (data in taskDatabase.taskDaoOld().getTaskDetail()) {
             when (data.type) {
                 TaskDetailType.Text -> {}
                 TaskDetailType.URL -> {}
                 TaskDetailType.Application -> {}
-                else -> data.dataByte.let {
-                    dataList = dataList + it.toUri(context.filesDir.absolutePath)
+                else -> data.dataByte.decodeToString().platformDataPathToSafetyPath().let {
+                    val fullPath = "${appInternalDirPath(AppDirType.Data)}/$it"
+                    dataList = dataList + Uri.fromFile((fullPath.toPath()).toFile())
                 }
             }
         }
@@ -111,9 +124,12 @@ class DatabaseIO private constructor(application: Application) : AndroidViewMode
             setLoading(3) // close database
             taskDatabase.close()
             setLoading(5) // merge database checkpoint ("PRAGMA wal_checkpoint(FULL)")
-            mergeDatabaseCheckpoint(taskDatabase)
+            viewModelScope.launch {
+                mergeDatabaseCheckpoint(taskDatabase)
+            }
+            Thread.sleep(5000) //TODO: change to detect file size for safety
             setLoading(10) // re-open database
-            taskDatabase = buildDatabase(context = context)
+            taskDatabase = getRoomDatabase(getDatabaseBuilder(context))
             setLoading(20) // start backup
             val dbPath = context.getDatabasePath(taskDatabaseName).absolutePath
             val mediaDir = File(context.filesDir, "media/")
@@ -222,7 +238,10 @@ class DatabaseIO private constructor(application: Application) : AndroidViewMode
                     //db.close()
                     Thread.sleep(500)
                     setLoading(30) // merge database checkpoint ("PRAGMA wal_checkpoint(FULL)")
-                    mergeDatabaseCheckpoint(taskDatabase)
+                    viewModelScope.launch {
+                        mergeDatabaseCheckpoint(taskDatabase)
+                    }
+                    Thread.sleep(5000) //TODO: change to detect file size for safety
                     setLoading(35) // remove old data
                     deleteDbFiles(File(dbPath))
                     clearMediaFolder(mediaDir)
@@ -230,16 +249,19 @@ class DatabaseIO private constructor(application: Application) : AndroidViewMode
                     ZipInputStream(FileInputStream(zipFile)).use { zipIn ->
                         var entry: ZipEntry?
                         while (zipIn.nextEntry.also { entry = it } != null) {
-                            val entryName = entry!!.name
-                            val outputFile = if (entryName == "$taskDatabaseName.db") {
-                                setLoading(55)
-                                File(dbPath)
-                            } else if (entryName == "primary_preferences.xml" && cache.restoreSettings()) {
-                                setLoading(58)
-                                foundSetting = true
-                                File(context.dataDir, "shared_prefs/primary_preferences.xml")
-                            } else {
-                                File(mediaDir, entryName.removePrefix("media/"))
+                            val outputFile = when (val entryName = entry!!.name) {
+                                "$taskDatabaseName.db" -> {
+                                    setLoading(55)
+                                    File(dbPath)
+                                }
+                                "primary_preferences.xml" if cache.restoreSettings() -> {
+                                    setLoading(58)
+                                    foundSetting = true
+                                    File(context.dataDir, "shared_prefs/primary_preferences.xml")
+                                }
+                                else -> {
+                                    File(mediaDir, entryName.removePrefix("media/"))
+                                }
                             }
                             outputFile.parentFile?.mkdirs()
                             if (entry.isDirectory) {
@@ -255,7 +277,7 @@ class DatabaseIO private constructor(application: Application) : AndroidViewMode
                     setLoading(75) // delete cache
                     zipFile.delete()
                     setLoading(80) // re-open database
-                    taskDatabase = buildDatabase(context)
+                    taskDatabase = getRoomDatabase(getDatabaseBuilder(context))
                     setLoading(85) // check database
                     if (!isDatabaseValid(dbPath)) {
                         setIOdbState(IOdbState.Error)

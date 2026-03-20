@@ -57,13 +57,16 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sqz.checklist.MainActivity
 import com.sqz.checklist.R
-import com.sqz.checklist.database.Task
+import sqz.checklist.data.database.Task
 import com.sqz.checklist.ui.common.dialog.InfoDialog
 import com.sqz.checklist.ui.main.task.CardHeight
 import com.sqz.checklist.ui.theme.Theme
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.util.Locale
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.todayIn
+import sqz.checklist.common.KmpLocalDatePatternFormatter
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 data class SelectData(
     val selectedId: Long = -0,
@@ -131,7 +134,7 @@ fun TaskHistory(
                 )
             }
         } else LaunchedEffect(item) {
-            value = MainActivity.taskDatabase.taskDao().getIsHistorySum()
+            value = MainActivity.taskDatabase.taskDaoOld().getIsHistorySum()
         }
     }
 }
@@ -170,9 +173,11 @@ private fun ItemBox(
             border = border,
             shape = ShapeDefaults.ExtraLarge
         ) {
-            val formatter = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.getDefault())
+            val dateFormat =  KmpLocalDatePatternFormatter.format(
+                item.createDate, stringResource(R.string.task_date_format),
+            )
             val time = stringResource(
-                R.string.task_creation_time, item.createDate.format(formatter)
+                R.string.task_creation_time, dateFormat
             )
             val paddingModifier = Modifier.padding(
                 bottom = 8.dp, top = 12.dp, start = 12.dp, end = 11.dp
@@ -247,9 +252,11 @@ private fun TaskDescription(
 @Preview
 @Composable
 private fun Preview() {
+    @OptIn(ExperimentalTime::class)
+    val curTime: LocalDate = Clock.System.todayIn(TimeZone.currentSystemDefault())
     val item = listOf(
-        Task(0, "The quick brown fox jumps over the lazy dog.", LocalDate.now()),
-        Task(1, "The quick brown fox jumps over the lazy dog.", LocalDate.now())
+        Task(0, "The quick brown fox jumps over the lazy dog.", curTime),
+        Task(1, "The quick brown fox jumps over the lazy dog.", curTime)
     )
     TaskHistory(item = item)
 }

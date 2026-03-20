@@ -66,7 +66,7 @@ import com.sqz.checklist.database.DatabaseIO
 import com.sqz.checklist.database.ExportTaskDatabase
 import com.sqz.checklist.database.IOdbState
 import com.sqz.checklist.database.ImportTaskDatabase
-import com.sqz.checklist.preferences.PreferencesInCache
+import sqz.checklist.data.preferences.PreferencesInCache
 import com.sqz.checklist.ui.common.unit.navBarsBottomDp
 import com.sqz.checklist.ui.common.unit.pxToDpInt
 import com.sqz.checklist.ui.common.unit.isLandscape

@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 
 @ReadOnlyComposable
 @Composable
@@ -25,4 +26,12 @@ fun Float.pxToDp(): Dp {
     val it = this
     val density = LocalDensity.current
     return with(density) { it.toDp() }
+}
+
+@Composable
+@ReadOnlyComposable
+fun TextUnit.toDp(): Dp {
+    return with(LocalDensity.current) {
+        this@toDp.toDp()
+    }
 }

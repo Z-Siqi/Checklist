@@ -12,13 +12,14 @@
     <string name="cancel">取消</string>
     <string name="delete">删除</string>
     <string name="disable">禁用</string>
+    <string name="sort">排序</string>
     <string name="text">文本</string>
     <string name="url">网址</string>
     <string name="open">打开</string>
     <string name="open_with">打开方式</string>
     <string name="failed_open">打开失败!</string>
     <string name="processing">正在处理…</string>
-    <string name="full_date_short">yyyy 年 MMM dd 日 hh:mm a</string>
+    <string name="full_date_short">yyyy 年 mm 月 dd 日 hh:mm a</string>
 
     <!-- MainLayout -->
     <string name="tasks">任务</string>
@@ -31,7 +32,7 @@
     <string name="report_normal_file_size">如果文件大小不大于 %1$sMB，请向开发人员报告</string>
 
     <!-- TaskLayout -->
-    <string name="task_date_format">yyyy 年 MMM dd 日</string>
+    <string name="task_date_format">yyyy 年 mm 月 dd 日</string>
     <string name="task_creation_time">创建日期: %1$s</string>
     <string name="check">检查</string>
     <string name="undo">撤销</string>
@@ -43,11 +44,13 @@
     <string name="redo_all_history">重做全部?</string>
     <string name="redo">重做</string>
     <string name="nothing_here">这里什么都没有!</string>
-    <string name="pin">固定</string>
-    <string name="pinned_task">固定的任务</string>
+    <string name="pin">置顶</string>
+    <string name="pin_task">置顶任务</string>
+    <string name="pinned_task">置顶的任务</string>
     <string name="select_date">选择日期</string>
     <string name="pick">选择</string>
     <string name="input">输入</string>
+    <string name="plan_something">计划些什么…</string>
     <string name="recently_reminded">最近提醒的</string>
     <string name="task_reminded_time">任务已提醒于: %1$s</string>
     <string name="cancel_highlight">取消此突出显示</string>
@@ -55,27 +58,28 @@
     <string name="create_as_pin">创建为固定的任务</string>
     <string name="create_with_reminder">创建任务后添加提醒</string>
     <string name="task_is_created">任务已创建，点击禁用不会影响刚创建的任务</string>
-    <string name="detail">详情信息</string>
-    <string name="add_detail">添加详情信息</string>
+    <string name="detail">详情内容</string>
+    <string name="add_detail">添加详情内容</string>
     <string name="create_task_detail">创建任务详情</string>
     <string name="edit_task_detail">编辑任务详情</string>
-    <string name="click_select_detail_type">单击选择详细信息类型</string>
+    <string name="click_select_detail_type">选择详细类型</string>
     <string name="invalid_url">网址无效!</string>
-    <string name="select_detail_type">请先选择详细信息类型!</string>
+    <string name="select_detail_type">请先点击 %1$s 选择类型!</string>
     <string name="package_not_found">未找到应用程序!\n应用包名: %1$s</string>
     <string name="app_icon">应用图标</string>
     <string name="loading">加载中…</string>
     <string name="application">应用</string>
     <string name="failed_found_package">找不到保存的应用包名!</string>
     <string name="picture">图片</string>
-    <string name="click_select_picture">单击选择图片</string>
-    <string name="selected_picture">选定的图片</string>
+    <string name="select_picture">选择图片</string>
+    <string name="select_new_picture">选择一个新选择图片</string>
     <string name="picture_size_limit">图片大小不能超过 50MB!</string>
-    <string name="detail_file_not_found">由于文件未找到，无法将详细信息添加到任务!</string>
+    <string name="detail_file_not_found">由于文件未找到，无法将详情内容添加到任务!</string>
     <string name="failed_add_picture">添加图片失败!</string>
     <string name="video_size_limit">视频大小不能超过 350MB!</string>
     <string name="play_video">播放视频</string>
-    <string name="click_select_video">点击选择视频</string>
+    <string name="select_video">点击选择视频</string>
+    <string name="select_new_video">选择一个新视频</string>
     <string name="video">视频</string>
     <string name="play">播放</string>
     <string name="pause">暂停</string>
@@ -83,10 +87,18 @@
     <string name="play_audio">播放音频</string>
     <string name="audio_size_limit">音频大小不能超过55MB!</string>
     <string name="audio">音频</string>
-    <string name="click_select_audio">点击选择音频</string>
     <string name="video_compression_rate">任务详情视频压缩率</string>
     <string name="failed_add_video">添加视频失败!</string>
     <string name="task_info">任务信息</string>
+    <string name="list">列表</string>
+    <string name="confirm_enter_list">确认并进入列表</string>
+    <string name="list_management">管理列表</string>
+    <string name="detail_list">详细内容列表管理</string>
+    <string name="no_picture_selected">没有已选择的图片</string>
+    <string name="no_video_selected">没有已选择的视频</string>
+    <string name="no_audio_selected">没有已选择的音频</string>
+    <string name="select_audio">选择一个音频</string>
+    <string name="select_new_audio">选择一个新音频</string>
 
     <!-- Notification -->
     <string name="task_reminder">任务提醒</string>

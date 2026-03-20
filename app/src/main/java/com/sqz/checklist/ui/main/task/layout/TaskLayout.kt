@@ -3,6 +3,7 @@ package com.sqz.checklist.ui.main.task.layout
 import android.annotation.SuppressLint
 import android.content.Context
 import android.view.View
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -59,10 +60,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sqz.checklist.R
-import com.sqz.checklist.database.Task
-import com.sqz.checklist.database.TaskDetail
-import com.sqz.checklist.database.TaskDetailType
-import com.sqz.checklist.database.TaskViewData
+import com.sqz.checklist.presentation.task.modify.TaskModifyLayout
+import sqz.checklist.data.database.Task
+import sqz.checklist.data.database.TaskDetail
+import sqz.checklist.data.database.TaskDetailType
 import com.sqz.checklist.ui.common.dialog.InfoDialog
 import com.sqz.checklist.ui.common.dialog.InfoDialogWithURL
 import com.sqz.checklist.ui.common.dialog.OpenExternalAppDialog
@@ -72,15 +73,19 @@ import com.sqz.checklist.ui.common.media.VideoViewDialog
 import com.sqz.checklist.ui.common.unit.screenIsWidthAndAPI34Above
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModelPreview
-import com.sqz.checklist.ui.main.task.layout.dialog.TaskModifyDialog
 import com.sqz.checklist.ui.main.task.layout.function.CheckTaskAction
 import com.sqz.checklist.ui.main.task.layout.function.ReminderHandlerListener
 import com.sqz.checklist.ui.main.task.layout.item.LazyList
 import com.sqz.checklist.ui.main.task.layout.item.ListData
 import com.sqz.checklist.ui.theme.Theme
+import kotlin.time.Clock
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.time.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.todayIn
+import sqz.checklist.data.database.model.TaskViewData
+import sqz.checklist.data.preferences.PrimaryPreferences
+import kotlin.time.ExperimentalTime
 
 /**
  * Top layout of TaskLayout.kt
@@ -146,15 +151,27 @@ fun TaskLayout(
             context = context
         )
     }
-    taskState.modifyHandler.inModifyTask.collectAsState().value.let { // Edit Task
-        if (it != null) TaskModifyDialog(
-            editTask = it,
-            confirm = taskState.modifyHandler::editTask,
-            onDismissRequest = {
-                taskState.modifyHandler.requestEditTask(null, view.context)
+    val taskCreatedToast = remember { mutableStateOf(false) }
+    taskState.isModify.collectAsState().value?.let {
+        TaskModifyLayout(
+            preference = PrimaryPreferences(context),
+            view = view,
+            modifyState = it,
+            requestReminder = { taskId ->
+                taskCreatedToast.value = true
+                taskState.requestReminder(taskId)
             },
-            view = view
+            onFinished = { taskId ->
+                taskState.requestModify(null)
+                taskId?.let { let -> taskState.updateNotification(let, context) }
+            },
         )
+    }
+    if (taskCreatedToast.value) LaunchedEffect(Unit) {
+        Toast.makeText(
+            view.context, R.string.task_is_created, Toast.LENGTH_LONG
+        ).show()
+        taskCreatedToast.value = false
     }
     ReminderHandlerListener(
         reminderHandler = taskState.reminderHandler,
@@ -328,11 +345,15 @@ private fun rememberLazyListState(
 }
 
 @SuppressLint("ViewModelConstructorInComposable")
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalTime::class)
 @Preview
 @Composable
 private fun Preview() {
-    val task = Task(0, "The quick brown fox jumps over the lazy dog.", LocalDate.now())
+    val task = Task(
+        0,
+        "The quick brown fox jumps over the lazy dog.",
+        Clock.System.todayIn(TimeZone.currentSystemDefault())
+    )
     val item = listOf(TaskViewData(task, isDetailExist = false, false, null))
     TaskLayout(
         TopAppBarDefaults.exitUntilCollapsedScrollBehavior(),

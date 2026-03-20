@@ -6,17 +6,9 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
 import android.net.Uri
-import android.provider.OpenableColumns
-import android.util.Log
 import android.view.SoundEffectConstants
-import android.view.View
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -45,7 +37,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -71,10 +62,8 @@ import androidx.core.content.FileProvider
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
-import com.sqz.checklist.MainActivity
 import com.sqz.checklist.R
 import com.sqz.checklist.cache.deleteCacheFileByName
-import com.sqz.checklist.preferences.PreferencesInCache
 import com.sqz.checklist.ui.common.TextTooltipBox
 import com.sqz.checklist.ui.common.dialog.PrimaryDialog
 import com.sqz.checklist.ui.common.unit.pxToDpInt
@@ -82,133 +71,13 @@ import com.sqz.checklist.ui.common.verticalColumnScrollbar
 import com.sqz.checklist.ui.theme.extraSmallInSmallestEdgeSize
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import okio.Path.Companion.toPath
+import sqz.checklist.data.preferences.PreferencesInCache
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
-
-@Composable
-fun AudioSelector(
-    handler: AudioSelector,
-    view: View,
-    modifier: Modifier = Modifier,
-) {
-    val dataUri by handler.dataUri.collectAsState()
-    val audioName by handler.audioName.collectAsState()
-    var checkSize by remember { mutableStateOf<Long?>(null) }
-    val launcher =
-        rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
-            try {
-                uri?.let {
-                    view.context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-                        val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
-                        if (sizeIndex != -1 && cursor.moveToFirst()) {
-                            checkSize = cursor.getLong(sizeIndex)
-                        }
-                        val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                        if (nameIndex != -1 && cursor.moveToFirst()) {
-                            handler.setPictureName(cursor.getString(nameIndex))
-                        }
-                    }
-                    handler.setDataUri(uri)
-                }
-            } catch (e: Exception) {
-                handler.clear()
-                Log.e("AudioHelper", "Failed to select a audio: $e")
-                Toast.makeText(
-                    view.context, view.context.getString(R.string.failed_large_file_size, "55"),
-                    Toast.LENGTH_LONG
-                ).show()
-                Toast.makeText(
-                    view.context, view.context.getString(R.string.report_normal_file_size, "55"),
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        }
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .clickable {
-                view.playSoundEffect(SoundEffectConstants.CLICK)
-                launcher.launch("audio/*")
-            },
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        val inPreviewState by handler.inPreviewState.collectAsState()
-        val inPreviewAudio = inPreviewState ?: false
-        if (dataUri != null) dataUri?.let {
-            if (!inPreviewAudio) Box(
-                modifier = modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                AlbumArtCard(it, view.context)
-                Button(
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(8.dp), onClick = { handler.setInPreviewState(true) }) {
-                    Text(stringResource(R.string.play_audio))
-                }
-            } else AudioViewDialog(
-                onDismissRequest = { handler.setInPreviewState(false) },
-                audioName = audioName ?: "Unknown", audioUri = it, title = audioName ?: "Unknown"
-            )
-        } else Text(
-            stringResource(R.string.click_select_audio), color = MaterialTheme.colorScheme.outline
-        )
-    }
-    val audioSizeLimitStr = stringResource(R.string.audio_size_limit)
-    if (checkSize != null) LaunchedEffect(Unit) {
-        val size = checkSize ?: 1
-        if ((size / 1024 / 1024) > 55) {
-            handler.clear()
-            Toast.makeText(
-                view.context, audioSizeLimitStr, Toast.LENGTH_SHORT
-            ).show()
-        }
-        checkSize = null
-    }
-}
-
-class AudioSelector {
-    constructor() // default constructor
-
-    constructor(uriIn: Uri?, nameIn: String?) { // constructor with parameters
-        this._dataUri.value = uriIn
-        this._audioName.value = nameIn
-    }
-
-    private var _dataUri: MutableStateFlow<Uri?> = MutableStateFlow(null)
-    val dataUri = _dataUri.asStateFlow()
-
-    fun setDataUri(uri: Uri) {
-        this._dataUri.update { uri }
-    }
-
-    private var _audioName: MutableStateFlow<String?> = MutableStateFlow(null)
-    val audioName = _audioName.asStateFlow()
-
-    fun setPictureName(string: String) {
-        this._audioName.update { string }
-    }
-
-    private var _inPreviewState: MutableStateFlow<Boolean?> = MutableStateFlow(null)
-    val inPreviewState = _inPreviewState.asStateFlow()
-
-    fun setInPreviewState(boolean: Boolean) {
-        this._inPreviewState.update { boolean }
-    }
-
-    fun clear() {
-        this._dataUri.value = null
-        this._audioName.value = null
-        this._inPreviewState.value = null
-    }
-}
 
 @Composable
 private fun AlbumArtCard(
@@ -409,7 +278,7 @@ fun AudioViewDialog(
     AudioViewDialog(
         onDismissRequest = onDismissRequest,
         audioName = audioName,
-        audioUri = byteArray.toUri(MainActivity.appDir),
+        audioUri = Uri.fromFile((byteArray.decodeToString().toPath()).toFile()),
         title = title,
         openBySystem = true
     )
@@ -468,59 +337,4 @@ fun openAudioBySystem(audioName: String, uri: Uri, context: Context) {
     } catch (e: Exception) {
         e.printStackTrace()
     }
-}
-
-private fun insertAudio(context: Context, uri: Uri, filesDir: String): Uri {
-    val mediaDir = File(filesDir, audioMediaPath)
-    if (!mediaDir.exists()) mediaDir.mkdirs()
-    val fileName = "AUDIO_${System.currentTimeMillis()}"
-    val cache = PreferencesInCache(context)
-    fun errFileNameSaver(name: String?) { // clear invalid file
-        cache.errFileNameSaver()?.let {
-            val file = File(mediaDir, it)
-            if (file.exists()) file.delete()
-        }
-        cache.errFileNameSaver(name)
-    }
-    errFileNameSaver(fileName)
-    val file = File(mediaDir, fileName)
-    return try { // copy file
-        val inputStream = context.contentResolver.openInputStream(uri)
-        val outputStream = FileOutputStream(file)
-        inputStream?.copyTo(outputStream)
-        inputStream?.close()
-        outputStream.close()
-        cache.errFileNameSaver(null)
-        Uri.fromFile(file)
-    } catch (_: FileNotFoundException) {
-        Toast.makeText(
-            context, context.getString(R.string.detail_file_not_found), Toast.LENGTH_LONG
-        ).show()
-        errUri
-    } catch (e: Exception) {
-        e.printStackTrace()
-        errFileNameSaver(null)
-        errUri
-    }
-}
-
-@Composable
-fun insertAudio(context: Context, uri: Uri): Uri? {
-    val coroutineScope = rememberCoroutineScope()
-    var rememberUri by rememberSaveable { mutableStateOf<Uri?>(null) }
-    if (rememberUri == null) {
-        var run by remember { mutableStateOf(false) }
-        ProcessingDialog {
-            if (!run) {
-                run = true
-                coroutineScope.launch(Dispatchers.IO) {
-                    rememberUri = insertAudio(context, uri, MainActivity.appDir)
-                }
-            }
-        }
-    }
-    if (rememberUri == errUri) Toast.makeText(
-        context, stringResource(R.string.failed_add_picture), Toast.LENGTH_LONG
-    ).show()
-    return rememberUri
 }

@@ -44,8 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
 import com.sqz.checklist.R
-import com.sqz.checklist.database.Task
-import com.sqz.checklist.database.TaskViewData
+import sqz.checklist.data.database.Task
 import com.sqz.checklist.ui.common.unit.navBarsBottomDp
 import com.sqz.checklist.ui.main.task.CardHeight
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
@@ -53,7 +52,12 @@ import com.sqz.checklist.ui.main.task.TaskLayoutViewModelPreview
 import com.sqz.checklist.ui.main.task.handler.ReminderHandler
 import com.sqz.checklist.ui.theme.Theme
 import kotlinx.coroutines.delay
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.todayIn
+import sqz.checklist.data.database.model.TaskViewData
 import java.time.LocalDate
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 /**
  * List of TaskLayout (Expected @TaskLayout call this)
@@ -308,7 +312,9 @@ private fun HighlightItems(
 @Preview(showBackground = true)
 @Composable
 private fun Preview() {
-    val task = Task(0, "The quick brown fox jumps over the lazy dog.", LocalDate.now())
+    @OptIn(ExperimentalTime::class)
+    val curTime: kotlinx.datetime.LocalDate = Clock.System.todayIn(TimeZone.currentSystemDefault())
+    val task = Task(0, "The quick brown fox jumps over the lazy dog.", curTime)
     val item = listOf(TaskViewData(task, isDetailExist = false, false, null))
     val context = LocalContext.current
     LazyList(
