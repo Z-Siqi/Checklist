@@ -62,10 +62,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat.getSystemService
 import com.sqz.checklist.R
-import com.sqz.checklist.database.DatabaseIO
-import com.sqz.checklist.database.ExportTaskDatabase
-import com.sqz.checklist.database.IOdbState
-import com.sqz.checklist.database.ImportTaskDatabase
+import com.sqz.checklist.common.storage.AppDataIO
+import com.sqz.checklist.common.storage.ExportTaskDatabase
+import com.sqz.checklist.common.storage.IOdbState
+import com.sqz.checklist.common.storage.ImportTaskDatabase
 import sqz.checklist.data.preferences.PreferencesInCache
 import com.sqz.checklist.ui.common.unit.navBarsBottomDp
 import com.sqz.checklist.ui.common.unit.pxToDpInt
@@ -247,7 +247,7 @@ fun BackupAndRestoreLayout(
                                 view.context, view.context.getString(R.string.failed_in_zip),
                                 Toast.LENGTH_LONG
                             ).show()
-                            DatabaseIO.instance(Application()).releaseMemory()
+                            AppDataIO.instance(Application()).releaseMemory()
                         }
 
                         IOdbState.Finished -> Toast.makeText(

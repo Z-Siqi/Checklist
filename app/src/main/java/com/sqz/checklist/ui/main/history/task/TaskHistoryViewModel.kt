@@ -14,7 +14,7 @@ import kotlinx.coroutines.launch
 
 class TaskHistoryViewModel: ViewModel() {
     private fun database(): DatabaseRepository = DatabaseRepository(
-        MainActivity.taskDatabase
+        MainActivity.taskDatabase.getDatabase()
     )
 
     /** Load history task **/
@@ -23,7 +23,7 @@ class TaskHistoryViewModel: ViewModel() {
     fun updateTaskHistoryData() {
         viewModelScope.launch {
             _taskHistoryData.update {
-                MainActivity.taskDatabase.taskDaoOld().getAllOrderByIsHistoryId()
+                MainActivity.taskDatabase.getDatabase().taskDaoOld().getAllOrderByIsHistoryId()
             }
         }
     }
@@ -31,7 +31,7 @@ class TaskHistoryViewModel: ViewModel() {
     /** Redo or Delete all task from history **/
     fun doAllTask(doAllTaskAction: DoTaskAction) = viewModelScope.launch {
         when (doAllTaskAction) {
-            DoTaskAction.Redo -> MainActivity.taskDatabase.taskDaoOld().setAllNotHistory()
+            DoTaskAction.Redo -> MainActivity.taskDatabase.getDatabase().taskDaoOld().setAllNotHistory()
             DoTaskAction.Delete -> database().deleteAllHistory()
         }
         // Update to LazyColumn

@@ -3,6 +3,7 @@ package sqz.checklist.data.storage
 import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
+import okio.Path
 import java.io.File
 import okio.Source
 import okio.source
@@ -56,6 +57,16 @@ actual fun appInternalDirPath(type: AppDirType): String {
         AppDirType.Temp -> "$cache/temp"
     }
 }
+
+/**
+ * Get the last modified time of the file.
+ *
+ * @param path The path of the file.
+ */
+internal actual fun getFileLastModified(path: Path): Long {
+    return path.toFile().lastModified()
+}
+
 
 /**
  * Open a [Source] from a [Uri].

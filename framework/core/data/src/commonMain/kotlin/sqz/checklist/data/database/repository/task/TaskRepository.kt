@@ -1,5 +1,6 @@
 package sqz.checklist.data.database.repository.task
 
+import sqz.checklist.data.database.DatabaseProvider
 import sqz.checklist.data.database.Task
 import sqz.checklist.data.database.TaskDatabase
 import sqz.checklist.data.database.TaskDetail
@@ -35,9 +36,9 @@ interface TaskRepository {
     suspend fun modifyTask(task: Task, detail: List<TaskDetail>?): Long
 
     companion object {
-        fun provider(database: TaskDatabase): TaskRepository {
+        fun provider(database: DatabaseProvider): TaskRepository {
             return TaskRepositoryImpl(
-                taskDao = database.taskDao(), storageManager = StorageManager.provider(),
+                db = database, storageManager = StorageManager.provider(),
             )
         }
     }

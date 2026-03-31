@@ -1,5 +1,6 @@
 package sqz.checklist.data.database.repository.task
 
+import sqz.checklist.data.database.DatabaseProvider
 import sqz.checklist.data.database.Task
 import sqz.checklist.data.database.TaskDetail
 import sqz.checklist.data.database.TaskDetailType
@@ -12,9 +13,11 @@ import sqz.checklist.data.storage.appInternalDirPath
 import sqz.checklist.data.storage.manager.StorageManager
 
 internal class TaskRepositoryImpl(
-    private val taskDao: TaskDao,
+    private val db: DatabaseProvider,
     private val storageManager: StorageManager
 ) : TaskRepository {
+    
+    private fun taskDao(): TaskDao = db.getDatabase().taskDao()
 
     private fun List<TaskDetail>.formatTaskDetailPathToPlatform(): List<TaskDetail> {
         return this.map {
@@ -32,8 +35,8 @@ internal class TaskRepositoryImpl(
     }
 
     override suspend fun getFullTask(id: Long): Pair<Task, List<TaskDetail>?> {
-        val task = taskDao.getTask(id)
-        val taskDetail = taskDao.getTaskDetailList(id)
+        val task = this.taskDao().getTask(id)
+        val taskDetail = this.taskDao().getTaskDetailList(id)
         if (task == null) {
             throw NullPointerException("No task match the id")
         }
@@ -47,9 +50,9 @@ internal class TaskRepositoryImpl(
 
     /** @return Error message or `null` means no error **/
     private suspend fun checkModifyValid(newTask: Task, newDetail: List<TaskDetail>?): String? {
-        val dbDetail = taskDao.getTaskDetailList(newTask.id)
+        val dbDetail = this.taskDao().getTaskDetailList(newTask.id)
         if (newTask.id != 0L) {
-            val dbTask = taskDao.getTask(newTask.id)
+            val dbTask = this.taskDao().getTask(newTask.id)
                 ?: return "Not a new task, no task match the id!"
             if (dbTask.createDate != newTask.createDate) {
                 return "Create date should not be able to change!"
@@ -95,7 +98,7 @@ internal class TaskRepositoryImpl(
             isPin = newTask.isPin,
             isHistoryId = newTask.isHistoryId,
         )
-        taskDao.updateTask(updateTaskData)
+        this.taskDao().updateTask(updateTaskData)
     }
 
     /** Usage: `taskId.updateTaskDetail(originalDetail, newDetail)` **/
@@ -113,7 +116,7 @@ internal class TaskRepositoryImpl(
             for (original in originalDetail) {
                 original.deleteTaskDetailStorageFile(storageManager)
             }
-            taskDao.deleteTaskDetailByTaskId(this)
+            this@TaskRepositoryImpl.taskDao().deleteTaskDetailByTaskId(this)
             return
         }
         // only new detail need to add
@@ -122,7 +125,7 @@ internal class TaskRepositoryImpl(
                 val toInsert = new.moveTempToInternalStorage(storageManager)?.let {
                     new.copy(dataByte = it.encodeToByteArray())
                 } ?: new
-                taskDao.insertTaskDetail(toInsert.copy(taskId = this))
+                this@TaskRepositoryImpl.taskDao().insertTaskDetail(toInsert.copy(taskId = this))
             }
             return
         }
@@ -148,10 +151,10 @@ internal class TaskRepositoryImpl(
                         dataString = toInsert.dataString,
                         dataByte = toInsert.dataByte,
                     )
-                    taskDao.updateTaskDetail(update)
+                    this@TaskRepositoryImpl.taskDao().updateTaskDetail(update)
                 } catch (_: IndexOutOfBoundsException) {
                     original.deleteTaskDetailStorageFile(storageManager, newDetail)
-                    taskDao.deleteTaskDetail(original)
+                    this@TaskRepositoryImpl.taskDao().deleteTaskDetail(original)
                 }
             }
             return
@@ -169,10 +172,10 @@ internal class TaskRepositoryImpl(
                         dataString = toInsert.dataString,
                         dataByte = toInsert.dataByte,
                     )
-                    taskDao.updateTaskDetail(update)
+                    this@TaskRepositoryImpl.taskDao().updateTaskDetail(update)
                 } catch (_: IndexOutOfBoundsException) {
                     val toInsert = new.toInsertTaskDetail()
-                    taskDao.insertTaskDetail(toInsert.copy(taskId = this))
+                    this@TaskRepositoryImpl.taskDao().insertTaskDetail(toInsert.copy(taskId = this))
                 }
             }
             return
@@ -188,18 +191,18 @@ internal class TaskRepositoryImpl(
         }
         if (task.id == 0L) { // Insert new
             // insert task
-            val newTaskId = taskDao.insertTask(task)
+            val newTaskId = this.taskDao().insertTask(task)
             // insert detail
             if (!detail.isNullOrEmpty()) detail.forEach { new ->
                 val toInsert = new.moveTempToInternalStorage(storageManager)?.let {
                     new.copy(dataByte = it.encodeToByteArray())
                 } ?: new
-                taskDao.insertTaskDetail(toInsert.copy(taskId = newTaskId))
+                this.taskDao().insertTaskDetail(toInsert.copy(taskId = newTaskId))
             }
             return newTaskId
         } else { // Update existed
-            val dbTask = taskDao.getTask(task.id)
-            val dbDetail = taskDao.getTaskDetailList(task.id).formatTaskDetailPathToPlatform()
+            val dbTask = this.taskDao().getTask(task.id)
+            val dbDetail = this.taskDao().getTaskDetailList(task.id).formatTaskDetailPathToPlatform()
             // update task
             this.updateTask(dbTask!!, task)
             // update detail

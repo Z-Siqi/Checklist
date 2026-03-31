@@ -1,4 +1,4 @@
-package com.sqz.checklist.database
+package com.sqz.checklist.common.storage
 
 import android.app.Application
 import android.content.Context
@@ -31,11 +31,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import okio.Path.Companion.toPath
+import sqz.checklist.data.database.DatabaseProvider
 import sqz.checklist.data.database.ReminderModeType
 import sqz.checklist.data.database.TaskDatabase
 import sqz.checklist.data.database.TaskDetailType
 import sqz.checklist.data.database.getDatabaseBuilder
-import sqz.checklist.data.database.getRoomDatabase
 import sqz.checklist.data.database.mergeDatabaseCheckpoint
 import sqz.checklist.data.database.repository.DatabaseRepository
 import sqz.checklist.data.database.taskDatabaseName
@@ -55,13 +55,12 @@ import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 import kotlin.system.exitProcess
 
-//TODO: Fix database not run correctly after action (lead to cannot edit task...)
-class DatabaseIO private constructor(application: Application) : AndroidViewModel(application) {
+class AppDataIO private constructor(application: Application) : AndroidViewModel(application) {
     companion object {
         @Volatile
-        private var instance: DatabaseIO? = null
-        fun instance(application: Application): DatabaseIO = instance ?: synchronized(this) {
-            instance ?: DatabaseIO(application).also { instance = it }
+        private var instance: AppDataIO? = null
+        fun instance(application: Application): AppDataIO = instance ?: synchronized(this) {
+            instance ?: AppDataIO(application).also { instance = it }
         }
     }
 
@@ -92,7 +91,7 @@ class DatabaseIO private constructor(application: Application) : AndroidViewMode
             .filter { it.isFile }
             .toList()
         var dataList: List<Uri> = listOf()
-        for (data in taskDatabase.taskDaoOld().getTaskDetail()) {
+        for (data in taskDatabase.getDatabase().taskDaoOld().getTaskDetail()) {
             when (data.type) {
                 TaskDetailType.Text -> {}
                 TaskDetailType.URL -> {}
@@ -121,15 +120,6 @@ class DatabaseIO private constructor(application: Application) : AndroidViewMode
             val cache = PreferencesInCache(context)
             setLoading(1) // remove invalid file
             removeInvalidFile(context)
-            setLoading(3) // close database
-            taskDatabase.close()
-            setLoading(5) // merge database checkpoint ("PRAGMA wal_checkpoint(FULL)")
-            viewModelScope.launch {
-                mergeDatabaseCheckpoint(taskDatabase)
-            }
-            Thread.sleep(5000) //TODO: change to detect file size for safety
-            setLoading(10) // re-open database
-            taskDatabase = getRoomDatabase(getDatabaseBuilder(context))
             setLoading(20) // start backup
             val dbPath = context.getDatabasePath(taskDatabaseName).absolutePath
             val mediaDir = File(context.filesDir, "media/")
@@ -182,7 +172,7 @@ class DatabaseIO private constructor(application: Application) : AndroidViewMode
             setLoading(100) // finished
             setIOdbState(IOdbState.Finished)
         } else if (_dbState.value != IOdbState.Processing) {
-            Log.d("DatabaseIO", "Note: reset before next run")
+            Log.d("AppDataIO", "Note: reset before next run")
         } else {
             Log.d("ChecklistDatabase", "Exporting...")
         }
@@ -231,17 +221,14 @@ class DatabaseIO private constructor(application: Application) : AndroidViewMode
                         }
                     }
                     setLoading(20) // cancel all notification
-                    cancelAllNotification(taskDatabase, context)
-                    setLoading(25) // close database
+                    cancelAllNotification(taskDatabase.getDatabase(), context)
+                    setLoading(25) // merge database checkpoint ("PRAGMA wal_checkpoint(FULL)")
+                    mergeDatabaseCheckpoint(taskDatabase.getDatabase())
+                    setLoading(30) // close database
                     //val db = SQLiteDatabase.openDatabase(dbPath, null, SQLiteDatabase.OPEN_READWRITE)
-                    taskDatabase.close()
+                    taskDatabase.rebuild()
                     //db.close()
                     Thread.sleep(500)
-                    setLoading(30) // merge database checkpoint ("PRAGMA wal_checkpoint(FULL)")
-                    viewModelScope.launch {
-                        mergeDatabaseCheckpoint(taskDatabase)
-                    }
-                    Thread.sleep(5000) //TODO: change to detect file size for safety
                     setLoading(35) // remove old data
                     deleteDbFiles(File(dbPath))
                     clearMediaFolder(mediaDir)
@@ -277,7 +264,7 @@ class DatabaseIO private constructor(application: Application) : AndroidViewMode
                     setLoading(75) // delete cache
                     zipFile.delete()
                     setLoading(80) // re-open database
-                    taskDatabase = getRoomDatabase(getDatabaseBuilder(context))
+                    DatabaseProvider.updateBuilder(getDatabaseBuilder(context))
                     setLoading(85) // check database
                     if (!isDatabaseValid(dbPath)) {
                         setIOdbState(IOdbState.Error)
@@ -285,7 +272,7 @@ class DatabaseIO private constructor(application: Application) : AndroidViewMode
                         deleteDbFiles(File(dbPath))
                     }
                     setLoading(90) // restore notification
-                    restoreNotification(taskDatabase, context)
+                    restoreNotification(taskDatabase.getDatabase(), context)
                     setLoading(95) // remove invalid file
                     removeInvalidFile(context)
                     if (foundSetting && cache.restoreSettings()) {
@@ -298,7 +285,7 @@ class DatabaseIO private constructor(application: Application) : AndroidViewMode
                     restoreJob?.cancel()
                 }
             } else if (_dbState.value != IOdbState.Processing) {
-            Log.d("DatabaseIO", "Note: reset before next run")
+            Log.d("AppDataIO", "Note: reset before next run")
         } else {
             Log.d("ChecklistDatabase", "Importing...")
         }
@@ -345,7 +332,7 @@ class DatabaseIO private constructor(application: Application) : AndroidViewMode
                         val entryName = entry!!.name
                         // check zip work
                         if (entry.method == ZipEntry.DEFLATED && entry.extra != null) {
-                            Log.e("DatabaseIO", "Cannot unzip!")
+                            Log.e("AppDataIO", "Cannot unzip!")
                             return false
                         }
                         // check database file
@@ -369,13 +356,13 @@ class DatabaseIO private constructor(application: Application) : AndroidViewMode
                     }
                     return when {
                         !hasDatabase -> {
-                            Log.e("DatabaseIO", "Database file not found!")
+                            Log.e("AppDataIO", "Database file not found!")
                             false
                         }
 
                         rootFolderCount > 1 || rootFileCount > if (hasPreference) 2 else 1 -> {
                             val errText = "Zip type incorrect: $rootFolderCount, $rootFileCount"
-                            Log.e("DatabaseIO", errText)
+                            Log.e("AppDataIO", errText)
                             false
                         }
 
@@ -385,7 +372,7 @@ class DatabaseIO private constructor(application: Application) : AndroidViewMode
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            Log.e("DatabaseIO", "Zip File ERR: $e")
+            Log.e("AppDataIO", "Zip File ERR: $e")
             return false
         }
         return false
@@ -406,27 +393,27 @@ fun ExportTaskDatabase(
     dbState: (state: IOdbState, loading: Int) -> Unit = { _, _ -> }
 ) {
     val exportName = "Checklist_Backup"
-    val databaseIO = DatabaseIO.instance(Application())
+    val appDataIO = AppDataIO.instance(Application())
     val canceled = remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/zip")
     ) { selectedUri: Uri? ->
         selectedUri?.let {
-            databaseIO.exportDatabase(selectedUri, view.context)
+            appDataIO.exportDatabase(selectedUri, view.context)
         }
         coroutineScope.launch {
-            if (databaseIO.getIOdbState().asLiveData(this.coroutineContext).value
+            if (appDataIO.getIOdbState().asLiveData(this.coroutineContext).value
                 == IOdbState.Default
             ) {
-                databaseIO.setLoading(100)
+                appDataIO.setLoading(100)
                 Log.d("ExportTaskDatabase", "Export canceled")
                 canceled.value = true
             }
         }
     }
     if (state) { // Export actions
-        if (useChooser) databaseIO.exportDatabase(null, view.context) else {
+        if (useChooser) appDataIO.exportDatabase(null, view.context) else {
             val currentTime = remember {
                 val sdf = SimpleDateFormat(timeFormat, Locale.getDefault())
                 sdf.format(Date())
@@ -437,13 +424,13 @@ fun ExportTaskDatabase(
         }
     }
     dbState(
-        databaseIO.getIOdbState().collectAsState(IOdbState.Default).value,
-        databaseIO.getLoadingState().collectAsState(0).value
+        appDataIO.getIOdbState().collectAsState(IOdbState.Default).value,
+        appDataIO.getLoadingState().collectAsState(0).value
     )
-    if (canceled.value || databaseIO.getIOdbState().collectAsState(IOdbState.Default).value
+    if (canceled.value || appDataIO.getIOdbState().collectAsState(IOdbState.Default).value
         == IOdbState.Finished && state
     ) {
-        databaseIO.releaseMemory()
+        appDataIO.releaseMemory()
         canceled.value = false
     }
 }
@@ -470,15 +457,15 @@ fun ImportTaskDatabase(
     if (selectClicked) LaunchedEffect(Unit) {
         launcher.launch("application/zip")
     }
-    val databaseIO = DatabaseIO.instance(Application())
-    val getIOdbState = databaseIO.getIOdbState().collectAsState(IOdbState.Default).value
+    val appDataIO = AppDataIO.instance(Application())
+    val getIOdbState = appDataIO.getIOdbState().collectAsState(IOdbState.Default).value
     if (importClicked && uri.value != null) {
-        databaseIO.importDatabase(uri.value!!, view.context)
+        appDataIO.importDatabase(uri.value!!, view.context)
         if (getIOdbState == IOdbState.Finished) {
-            databaseIO.releaseMemory()
+            appDataIO.releaseMemory()
             uri.value = null
         }
-        dbState(getIOdbState, databaseIO.getLoadingState().collectAsState(0).value)
+        dbState(getIOdbState, appDataIO.getLoadingState().collectAsState(0).value)
     } else if (uri.value == null) {
         dbState(IOdbState.Default, 100)
     }

@@ -16,6 +16,7 @@ import okio.use
 import sqz.checklist.data.storage.AppDirType
 import sqz.checklist.data.storage.StorageHelper.illegalFileNameCharsRegex
 import sqz.checklist.data.storage.StorageHelper.reservedFileNames
+import sqz.checklist.data.storage.getFileLastModified
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
@@ -224,11 +225,7 @@ internal class StorageManagerImpl(
                     if (!path.toString().contains('/')) {
                         throw IllegalArgumentException("Invalid path: $path")
                     }
-                    val fileTime = path.toString()
-                        .substringAfterLast("/")
-                        .substringBefore("_")
-                        .toLongOrNull()
-                    if (fileTime != null && fileTime < time) {
+                    if (getFileLastModified(path) < time) {
                         fileSystem.delete(path, true)
                     }
                 }

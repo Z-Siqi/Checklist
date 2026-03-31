@@ -10,8 +10,8 @@ import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import sqz.checklist.data.database.DatabaseProvider
 import sqz.checklist.data.database.getDatabaseBuilder
-import sqz.checklist.data.database.getRoomDatabase
 import java.util.concurrent.TimeUnit
 
 /**
@@ -41,7 +41,7 @@ class BootReceiver : BroadcastReceiver() {
         notificationManager: MutableStateFlow<NotifyManager>,
         context: Context
     ) {
-        val db = getRoomDatabase(getDatabaseBuilder(context))
+        val db = DatabaseProvider(getDatabaseBuilder(context)).getDatabase()
         val dao = db.taskReminderDao()
         val list = dao.getAll()
         val databaseRepository = DatabaseRepository(db)
@@ -73,6 +73,5 @@ class BootReceiver : BroadcastReceiver() {
             }
         }
         Log.d("BootReceiver", "Delayed notification is restored!")
-        db.close()
     }
 }

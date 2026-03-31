@@ -6,12 +6,52 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import kotlinx.coroutines.flow.Flow
 import sqz.checklist.data.database.Task
 import sqz.checklist.data.database.TaskDetail
+import sqz.checklist.data.database.model.TaskViewData
 
 @Suppress("AndroidUnresolvedRoomSqlReference")
 @Dao
 internal interface TaskDao {
+
+    @Query(
+        """
+        SELECT 
+            t.*,
+            EXISTS(SELECT 1 FROM taskDetail d WHERE d.taskId = t.id LIMIT 1) AS isDetailExist,
+            EXISTS(SELECT 1 FROM reminder r  WHERE r.taskId = t.id AND r.isReminded = 1 LIMIT 1) AS isReminded,
+            (SELECT r.reminderTime FROM reminder r WHERE r.taskId = t.id) AS reminderTime
+        FROM task t WHERE isHistoryId < 1 AND isPin = 0
+    """
+    )
+    fun getTaskList(): Flow<List<TaskViewData>>
+
+    @Query(
+        """
+        SELECT 
+            t.*,
+            EXISTS(SELECT 1 FROM taskDetail d WHERE d.taskId = t.id LIMIT 1) AS isDetailExist,
+            EXISTS(SELECT 1 FROM reminder r  WHERE r.taskId = t.id AND r.isReminded = 1 LIMIT 1) AS isReminded,
+            (SELECT r.reminderTime FROM reminder r WHERE r.taskId = t.id) AS reminderTime
+        FROM task t WHERE isHistoryId < 1 AND isPin = 1
+    """
+    )
+    fun getPinnedTaskList(): Flow<List<TaskViewData>>
+
+    @Query(
+        """
+        SELECT 
+            t.*,
+            EXISTS(SELECT 1 FROM taskDetail d WHERE d.taskId = t.id LIMIT 1) AS isDetailExist,
+            EXISTS(SELECT 1 FROM reminder r  WHERE r.taskId = t.id AND r.isReminded = 1 LIMIT 1) AS isReminded,
+            r.reminderTime
+        FROM task t INNER JOIN reminder r ON r.taskId = t.id 
+        WHERE t.isHistoryId = 0 AND r.isReminded = 1
+        ORDER BY r.reminderTime DESC
+    """
+    )
+    fun getRemindedTaskList(): Flow<List<TaskViewData>>
 
     @Query("SELECT * FROM task WHERE id = :taskId")
     suspend fun getTask(taskId: Long): Task?

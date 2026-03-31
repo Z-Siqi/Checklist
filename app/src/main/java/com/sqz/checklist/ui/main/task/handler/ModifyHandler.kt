@@ -22,7 +22,7 @@ class ModifyHandler private constructor(
     }
 
     private fun database(): DatabaseRepository = DatabaseRepository(
-        MainActivity.taskDatabase
+        MainActivity.taskDatabase.getDatabase()
     )
 
     /** Set task pin **/

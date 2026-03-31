@@ -50,7 +50,7 @@ class ReminderHandler private constructor(
 
     /** Get [MainActivity.taskDatabase] instance **/
     private fun database(): DatabaseRepository = DatabaseRepository(
-        MainActivity.taskDatabase
+        MainActivity.taskDatabase.getDatabase()
     )
 
     private val _notificationManager = MutableStateFlow(NotifyManager())
@@ -268,7 +268,7 @@ class ReminderHandler private constructor(
     private suspend fun cancelReminderAction(id: Long, reminder: Int?, context: Context) {
         try { // Cancel sent notification
             if (reminder != 0 && reminder != null) {
-                val data = MainActivity.taskDatabase.taskReminderDao().getAll(reminder)
+                val data = MainActivity.taskDatabase.getDatabase().taskReminderDao().getAll(reminder)
                 if (data != null) when (data.reminder.mode) {
                     ReminderModeType.AlarmManager -> notifyManager.cancelNotification(
                         data.reminder.id.toString(), context, reminder
@@ -302,7 +302,7 @@ class ReminderHandler private constructor(
 
     /** Cancel history reminder **/
     fun cancelHistoryReminder(context: Context) = coroutineScope.launch(Dispatchers.IO) {
-        val allIsHistoryIdList = MainActivity.taskDatabase.taskDaoOld().getAllOrderByIsHistoryId()
+        val allIsHistoryIdList = MainActivity.taskDatabase.getDatabase().taskDaoOld().getAllOrderByIsHistoryId()
         for (data in allIsHistoryIdList) {
             try {
                 val reminder = database().getReminderData(taskId = data.id)!!
@@ -330,7 +330,10 @@ class ReminderHandler private constructor(
     fun restoreNotification(context: Context) {
         Log.e("ReminderHandler", "trying to call restoreNotification")
         coroutineScope.launch(Dispatchers.Main) {
-            com.sqz.checklist.database.restoreNotification(MainActivity.taskDatabase, context)
+            com.sqz.checklist.common.storage.restoreNotification(
+                MainActivity.taskDatabase.getDatabase(),
+                context
+            )
         }
     }
 

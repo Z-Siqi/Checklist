@@ -42,7 +42,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 open class TaskLayoutViewModel : ViewModel() {
     open fun database(): DatabaseRepository = DatabaseRepository(
-        MainActivity.taskDatabase
+        MainActivity.taskDatabase.getDatabase()
     )
 
     private val _navExtendedConnectData = MutableStateFlow(NavConnectData())
@@ -76,7 +76,7 @@ open class TaskLayoutViewModel : ViewModel() {
         if (_isUpdateRunning.get()) return else _isUpdateRunning.set(true)
         viewModelScope.launch {
             _listState.update { lists ->
-                val taskDao = MainActivity.taskDatabase.taskDaoOld()
+                val taskDao = MainActivity.taskDatabase.getDatabase().taskDaoOld()
                 lists.copy(
                     item = taskDao.getAll(),
                     pinnedItem = taskDao.getAll(0),
@@ -250,7 +250,7 @@ open class TaskLayoutViewModel : ViewModel() {
     fun getIsHistory(id: Long): Boolean {
         var value by mutableIntStateOf(-1)
         fun getIsHistoryId(id: Long) {
-            viewModelScope.launch { value = MainActivity.taskDatabase.taskDaoOld().getIsHistory(id) }
+            viewModelScope.launch { value = MainActivity.taskDatabase.getDatabase().taskDaoOld().getIsHistory(id) }
         }
         getIsHistoryId(id)
         return value >= 1
@@ -269,7 +269,7 @@ open class TaskLayoutViewModel : ViewModel() {
         searchText: String = "", reset: Boolean = false, initWithAll: Boolean = false
     ) {
         suspend fun returnList(): List<TaskViewData> {
-            val taskDao = MainActivity.taskDatabase.taskDaoOld()
+            val taskDao = MainActivity.taskDatabase.getDatabase().taskDaoOld()
             if (searchText.isNotEmpty()) return taskDao.searchedList(searchText)
             if (initWithAll || searchingText.isEmpty()) {
                 searchingText = ""

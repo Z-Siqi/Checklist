@@ -1,5 +1,7 @@
 package sqz.checklist.data.storage
 
+import okio.Path
+
 const val pictureMediaPath = "media/picture/"
 
 const val videoMediaPath = "media/video/"
@@ -18,3 +20,11 @@ enum class AppDirType {
  * @throws IllegalStateException if platform actual method request init but call this before init.
  */
 expect fun appInternalDirPath(type: AppDirType): String
+
+/**
+ * Get the last modified time of the file.
+ *
+ * @param path The path of the file.
+ * @return The last modified time of the file.
+ */
+internal expect fun getFileLastModified(path: Path): Long

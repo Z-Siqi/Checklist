@@ -7,12 +7,6 @@ plugins {
 }
 
 kotlin {
-    android {
-        lint {
-            checkGeneratedSources = false
-        }
-    }
-
     // Target declarations - add or remove as needed below. These define
     // which platforms this KMP module supports.
     // See: https://kotlinlang.org/docs/multiplatform-discover-project.html#targets
@@ -107,4 +101,9 @@ dependencies {
 
 room {
     schemaDirectory("$projectDir/schemas")
+}
+
+lint {
+    checkGeneratedSources = false
+    disable += "RestrictedApi"
 }

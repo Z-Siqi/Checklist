@@ -1,6 +1,7 @@
 package sqz.checklist.data.storage
 
 import okio.FileSystem
+import okio.Path
 import okio.Path.Companion.toPath
 import okio.Source
 
@@ -17,6 +18,10 @@ actual fun appInternalDirPath(type: AppDirType): String {
     }
     java.io.File(path).mkdirs()
     return path
+}
+
+internal actual fun getFileLastModified(path: Path): Long {
+    return path.toFile().lastModified()
 }
 
 @Suppress("unused")

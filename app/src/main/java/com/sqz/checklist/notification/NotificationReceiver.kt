@@ -10,9 +10,9 @@ import sqz.checklist.data.database.repository.DatabaseRepository
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import sqz.checklist.data.database.DatabaseProvider
 import sqz.checklist.data.database.TaskDatabase
 import sqz.checklist.data.database.getDatabaseBuilder
-import sqz.checklist.data.database.getRoomDatabase
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -40,9 +40,9 @@ class NotificationReceiver : BroadcastReceiver() {
         }
         GlobalScope.launch {
             val db: TaskDatabase = try {
-                MainActivity.taskDatabase
+                MainActivity.taskDatabase.getDatabase()
             } catch (_: Exception) {
-                 getRoomDatabase(getDatabaseBuilder(context))
+                DatabaseProvider(getDatabaseBuilder(context)).getDatabase()
             }
             try {
                 val databaseRepository = DatabaseRepository(db)

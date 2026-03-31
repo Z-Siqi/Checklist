@@ -134,7 +134,7 @@ fun TaskHistory(
                 )
             }
         } else LaunchedEffect(item) {
-            value = MainActivity.taskDatabase.taskDaoOld().getIsHistorySum()
+            value = MainActivity.taskDatabase.getDatabase().taskDaoOld().getIsHistorySum()
         }
     }
 }
