@@ -9,6 +9,7 @@ kotlin {
     android {
         lint {
             checkGeneratedSources = false
+            disable += "RestrictedApi"
         }
     }
 

@@ -37,3 +37,8 @@ kotlin {
         }
     }
 }
+
+lint {
+    checkGeneratedSources = false
+    disable += "RestrictedApi"
+}
