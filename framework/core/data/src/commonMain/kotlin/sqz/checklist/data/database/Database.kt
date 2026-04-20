@@ -44,9 +44,10 @@ abstract class TaskDatabase : RoomDatabase() { //TODO: Finish dao
 
     internal abstract fun taskDao(): TaskDao
 
+    internal abstract fun taskHistoryDao(): TaskHistoryDao
+
 
     abstract fun taskDaoOld(): TaskDaoOld
-    abstract fun taskHistoryDao(): TaskHistoryDao
     abstract fun taskReminderDao(): TaskReminderDao
 }
 

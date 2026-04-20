@@ -51,6 +51,7 @@ import com.sqz.checklist.ui.main.task.layout.TaskLayoutTopBar
 import com.sqz.checklist.ui.main.task.layout.TopBarExtendedMenu
 import com.sqz.checklist.ui.main.task.layout.taskExtendedNavButton
 import com.sqz.checklist.ui.common.unit.isLandscape
+import sqz.checklist.data.preferences.PrimaryPreferences
 
 enum class MainLayoutNav {
     TaskLayout,
@@ -184,18 +185,24 @@ fun MainLayout(modifier: Modifier, context: Context, view: View) {
         },
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
     ) {
+        val refreshConfigRequest = rememberSaveable { mutableStateOf(true) }
+        val refreshListRequest = rememberSaveable { mutableStateOf(false) }
         NavHost(
             navController = navController,
             startDestination = MainLayoutNav.TaskLayout.name
         ) {
             composable(MainLayoutNav.TaskLayout.name) {
-                var refreshed by rememberSaveable { mutableStateOf(false) }
-                if (!refreshed) LaunchedEffect(Unit) {
-                    taskLayoutViewModel.requestUpdateList()
+                if (refreshConfigRequest.value && currentRoute == MainLayoutNav.TaskLayout.name) {
+                    LaunchedEffect(Unit) {
+                        taskLayoutViewModel.updateListConfig(PrimaryPreferences(context))
+                        refreshConfigRequest.value = false
+                    }
                 }
                 TaskLayout(
+                    refreshListRequest = refreshListRequest,
                     scrollBehavior = scrollBehavior,
-                    context = context, view = view,
+                    context = context,
+                    view = view,
                     taskState = taskLayoutViewModel
                 )
             }
@@ -203,11 +210,14 @@ fun MainLayout(modifier: Modifier, context: Context, view: View) {
                 TaskHistory(historyState = taskHistoryViewModel)
             }
             composable(MainLayoutNav.BackupRestore.name) {
-                BackupAndRestoreLayout(view = view) {
+                BackupAndRestoreLayout(refreshListRequest = refreshListRequest, view = view) {
                     disableBackButton = it
                 }
             }
             composable(MainLayoutNav.Settings.name) {
+                LaunchedEffect(Unit) {
+                    refreshConfigRequest.value = true
+                }
                 SettingsLayout(viewModel = settingsLayoutViewModel, view = view)
             }
         }

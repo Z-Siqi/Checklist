@@ -128,7 +128,7 @@ fun OpenExternalAppDialog(
 }
 
 /**
- * Internal composable that displays the app information card and the open button.
+ * Private composable that displays the app information card and the open button.
  * It adapts its layout based on the available width.
  *
  * @param packageName The package name of the app.

@@ -102,7 +102,6 @@ fun taskExtendedNavButton(
         } else {
             val it = NavConnectData(searchState = false)
             viewModel.updateNavConnector(it, NavConnectData(searchState = true))
-            viewModel.updateInSearch(reset = true)
         }
         view.playSoundEffect(SoundEffectConstants.CLICK)
     }

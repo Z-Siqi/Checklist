@@ -5,10 +5,10 @@ package com.sqz.checklist.presentation.task.modify
  *
  * @see TaskModifyLayout
  */
-interface TaskModifyState {
+sealed interface TaskModifyState {
 
     /** Request add a new task **/
-    object AddTask : TaskModifyState
+    data object AddTask : TaskModifyState
 
     /** Request edit a task with [taskId] **/
     data class EditTask(val taskId: Long) : TaskModifyState

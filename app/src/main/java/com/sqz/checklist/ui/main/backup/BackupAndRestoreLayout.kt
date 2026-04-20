@@ -41,6 +41,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -76,6 +77,7 @@ import com.sqz.checklist.ui.common.unit.isLandscape
  */
 @Composable
 fun BackupAndRestoreLayout(
+    refreshListRequest: MutableState<Boolean>,
     view: View,
     modifier: Modifier = Modifier,
     disableBackHandlerState: (Boolean) -> Unit = {}
@@ -258,6 +260,7 @@ fun BackupAndRestoreLayout(
                         else -> {}
                     }
                     if (state == IOdbState.Error || state == IOdbState.Finished || loading == 100) {
+                        refreshListRequest.value = true
                         onClick = false
                         selected = selectingText
                     }
@@ -375,5 +378,8 @@ private fun clickFeedback(view: View, audioManager: AudioManager) {
 @Preview(showBackground = true, locale = "EN")
 @Composable
 private fun Preview() {
-    BackupAndRestoreLayout(LocalView.current)
+    BackupAndRestoreLayout(
+        remember { mutableStateOf(false) },
+        LocalView.current
+    )
 }

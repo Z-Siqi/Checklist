@@ -1,11 +1,15 @@
 package sqz.checklist.data.database.repository.task
 
+import kotlinx.coroutines.flow.Flow
 import sqz.checklist.data.database.DatabaseProvider
 import sqz.checklist.data.database.Task
 import sqz.checklist.data.database.TaskDetail
 import sqz.checklist.data.database.TaskDetailType
 import sqz.checklist.data.database.dao.TaskDao
+import sqz.checklist.data.database.model.TaskViewData
 import sqz.checklist.data.database.pathStringConverter
+import sqz.checklist.data.database.repository.deleteTaskDetailStorageFile
+import sqz.checklist.data.database.repository.moveTempToInternalStorage
 import sqz.checklist.data.storage.AppDirType
 import sqz.checklist.data.storage.StorageHelper.isCachePath
 import sqz.checklist.data.storage.StorageHelper.platformDataPathToSafetyPath
@@ -16,8 +20,44 @@ internal class TaskRepositoryImpl(
     private val db: DatabaseProvider,
     private val storageManager: StorageManager
 ) : TaskRepository {
-    
     private fun taskDao(): TaskDao = db.getDatabase().taskDao()
+
+    override fun getTaskList(): Flow<List<TaskViewData>> {
+        return this.taskDao().getTaskList()
+    }
+
+    override fun getPinnedTaskList(): Flow<List<TaskViewData>> {
+        return this.taskDao().getPinnedTaskList()
+    }
+
+    override fun getRemindedTaskList(): Flow<List<TaskViewData>> {
+        return this.taskDao().getRemindedTaskList()
+    }
+
+    override fun getSearchedList(searchQuery: String): Flow<List<TaskViewData>> {
+        return this.taskDao().searchedList(searchQuery)
+    }
+
+    override suspend fun onTaskPinChange(taskId: Long, update: Boolean) {
+        if (taskId == 0L) {
+            return
+        }
+        val toInt = update.let {
+            if (it) 1 else 0
+        }
+        this.taskDao().onTaskPinChange(taskId, toInt)
+    }
+
+    override suspend fun removeTaskFromDefaultList(taskId: Long) {
+        //TODO: change historyId as time long in future
+        val dao = this.taskDao()
+        val getMaxIsHistoryId = dao.getMaxIsHistoryId() ?: 0
+        dao.setIsHistoryId(getMaxIsHistoryId + 1, taskId)
+    }
+
+    override fun isTaskListEmpty(): Flow<Boolean> {
+        return this.taskDao().isTaskListEmpty()
+    }
 
     private fun List<TaskDetail>.formatTaskDetailPathToPlatform(): List<TaskDetail> {
         return this.map {

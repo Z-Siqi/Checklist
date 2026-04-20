@@ -20,11 +20,9 @@ import com.sqz.checklist.ui.main.task.layout.function.ReminderActionType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import sqz.checklist.data.database.Task
@@ -35,15 +33,14 @@ import kotlin.random.Random
 
 class ReminderHandler private constructor(
     private val coroutineScope: CoroutineScope,
-    private val requestUpdate: MutableStateFlow<Boolean>,
     private val initState: MutableStateFlow<Boolean>,
 ) {
     companion object {
         fun instance(
-            viewModel: TaskLayoutViewModel, requestUpdate: MutableStateFlow<Boolean>,
+            viewModel: TaskLayoutViewModel,
             initState: MutableStateFlow<Boolean>
         ): ReminderHandler = ReminderHandler(
-            coroutineScope = viewModel.viewModelScope, requestUpdate = requestUpdate,
+            coroutineScope = viewModel.viewModelScope,
             initState = initState
         )
     }
@@ -202,7 +199,7 @@ class ReminderHandler private constructor(
             // for update list correctly
             delay(100)
         }
-        requestUpdate.update { true }
+        //requestUpdate.update { true }
         _notifyId = null
     }
 
@@ -296,7 +293,7 @@ class ReminderHandler private constructor(
     fun cancelReminder(id: Long = _taskId!!, reminder: Int? = _notifyId, context: Context) {
         coroutineScope.launch {
             this@ReminderHandler.cancelReminderAction(id, reminder, context)
-            requestUpdate.update { true }
+            //requestUpdate.update { true }
         }
     }
 
@@ -336,14 +333,4 @@ class ReminderHandler private constructor(
             )
         }
     }
-
-    /** Gets the number of tasks that have been reminded. */
-    fun getIsRemindedNum(): Flow<Int>? {
-        return if (!initState.value) flowOf(0) else {
-            database().getIsRemindedNum(true)
-        }
-    }
-
-    /** Requests an update of the task list. */
-    fun requestUpdateList() = requestUpdate.update { true }
 }

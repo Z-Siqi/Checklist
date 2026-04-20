@@ -69,17 +69,6 @@ class DatabaseRepository(
     }
 
     /**
-     * Toggles the 'pin' status of a task.
-     *
-     * @param id The ID of the task to update.
-     * @param setter The new boolean state for the pin (true for pinned, false for unpinned).
-     */
-    suspend fun taskPin(id: Long, setter: Boolean) {
-        fun Boolean.toInt(): Int = if (this) 1 else 0
-        this.databaseInstance!!.taskDaoOld().editTaskPin(id, setter.toInt())
-    }
-
-    /**
      * Deletes the reminder data associated with a specific task ID.
      *
      * @param taskId The ID of the task whose reminder should be deleted.
@@ -91,23 +80,6 @@ class DatabaseRepository(
         val reminder =
             reminderDao.getByTaskId(taskId = taskId) ?: throw NullPointerException("No id data!")
         reminderDao.delete(reminder)
-    }
-
-    /**
-     * Deletes the oldest history tasks if the total number of history items exceeds a given limit.
-     * This includes deleting any associated media files.
-     *
-     * @param maxRetainIdNum The maximum number of history items to retain.
-     */
-    suspend fun deleteByHistoryId(maxRetainIdNum: Int) {
-        val taskDao = this.databaseInstance!!.taskDaoOld()
-        val value = taskDao.getIsHistorySum()
-        if (value > maxRetainIdNum) (1..(value - maxRetainIdNum)).forEach { _ ->
-            val toDeleteTask = taskDao.getIsHistoryBottomIdTask()
-            this.deleteAllMediaByTaskId(toDeleteTask.id)
-            taskDao.delete(toDeleteTask)
-            arrangeHistoryId()
-        }
     }
 
     /**
@@ -169,34 +141,6 @@ class DatabaseRepository(
                 } catch (_: Exception) {
                 }
             }
-        }
-    }
-
-    /**
-     * Retrieves all task detail entities for a given task ID.
-     *
-     * @param taskId The ID of the parent task.
-     * @return A list of [TaskDetail] objects, or null if none are found.
-     */
-    suspend fun getDetailData(taskId: Long): List<TaskDetail> {
-        val taskDao = this.databaseInstance!!.taskDaoOld()
-        return taskDao.getTaskDetail(taskId = taskId).map {
-            when (it.type) {
-                TaskDetailType.Picture -> {}
-                TaskDetailType.Video -> {}
-                TaskDetailType.Audio -> {}
-                else -> return@map it
-            }
-            val toStr = it.dataByte.decodeToString().let { let ->
-                if (let.startsWith("file:///") || let.startsWith("content://")) {
-                    return@let let.replaceBefore("media", "")
-                }
-                return@let let
-            }
-            val path: String = toStr.let { let ->
-                "${appInternalDirPath(AppDirType.Data)}/${let}"
-            }
-            return@map it.copy(dataByte = path.encodeToByteArray())
         }
     }
 
@@ -264,17 +208,6 @@ class DatabaseRepository(
     suspend fun setIsReminded(reminderId: Int, state: Boolean) {
         if (state) this.databaseInstance!!.taskReminderDao().setIsReminded(reminderId, 1)
         else this.databaseInstance!!.taskReminderDao().setIsReminded(reminderId, 0)
-    }
-
-    /**
-     * Moves a task to the history list by assigning it the next available history ID.
-     *
-     * @param id The ID of the task to move to history.
-     */
-    suspend fun isHistoryIdToHistory(id: Long) {
-        val dbInstance = this.databaseInstance!!.taskDaoOld()
-        val maxId = dbInstance.getIsHistoryIdTop()
-        dbInstance.setHistoryId((maxId + 1), id)
     }
 
     /**

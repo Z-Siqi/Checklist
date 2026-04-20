@@ -1,12 +1,78 @@
 package sqz.checklist.data.database.repository.task
 
+import kotlinx.coroutines.flow.Flow
 import sqz.checklist.data.database.DatabaseProvider
 import sqz.checklist.data.database.Task
-import sqz.checklist.data.database.TaskDatabase
 import sqz.checklist.data.database.TaskDetail
+import sqz.checklist.data.database.model.TaskViewData
 import sqz.checklist.data.storage.manager.StorageManager
 
 interface TaskRepository {
+
+    /**
+     * Get [TaskViewData] list. Not include history task.
+     *
+     * @return [Flow] of [TaskViewData] list.
+     * @see [Task]
+     * @see [TaskDetail]
+     * @see [sqz.checklist.data.database.TaskReminder]
+     */
+    fun getTaskList(): Flow<List<TaskViewData>>
+
+    /**
+     * Get [TaskViewData] list in pinned. Not include history task.
+     *
+     * @return [Flow] of [TaskViewData] list
+     * @see [Task]
+     * @see [TaskDetail]
+     * @see [sqz.checklist.data.database.TaskReminder]
+     */
+    fun getPinnedTaskList(): Flow<List<TaskViewData>>
+
+    /**
+     * Get [TaskViewData] list in reminded. Not include history task.
+     *
+     * @return [Flow] of [TaskViewData] list
+     * @see [Task]
+     * @see [TaskDetail]
+     * @see [sqz.checklist.data.database.TaskReminder]
+     */
+    fun getRemindedTaskList(): Flow<List<TaskViewData>>
+
+    /**
+     * Get [TaskViewData] list in search keywords. Not include history task.
+     *
+     * @param searchQuery The search keywords.
+     * @see [Task]
+     * @see [TaskDetail]
+     * @see [sqz.checklist.data.database.TaskReminder]
+     */
+    fun getSearchedList(searchQuery: String): Flow<List<TaskViewData>>
+
+    /**
+     * Update [Task.isPin] by id.
+     *
+     * @param taskId The id of the task to update.
+     * @param update The new value of [Task.isPin].
+     */
+    suspend fun onTaskPinChange(taskId: Long, update: Boolean)
+
+    /**
+     * Update [Task.isHistoryId] to 1 or max isHistoryId + 1 for a history state.
+     * This will hide task from [getTaskList], [getPinnedTaskList], [getRemindedTaskList].. lists,
+     * but not delete from database.
+     *
+     * @param taskId The id of the task to update.
+     * @see sqz.checklist.data.database.repository.history.TaskHistoryRepository.restoreTaskFromHistoryList
+     */
+    suspend fun removeTaskFromDefaultList(taskId: Long)
+
+    /**
+     * Check if [Task] list is empty. This will not include history task.
+     *
+     * @return `true` if [Task] list is empty
+     */
+    fun isTaskListEmpty(): Flow<Boolean>
 
     /**
      * Get [Task] and [TaskDetail] list by id in a Pair format.

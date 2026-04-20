@@ -1,15 +1,82 @@
 package com.sqz.checklist.common.media
 
+import android.content.Context
+import android.content.Intent
 import android.media.MediaMetadataRetriever
+import android.util.Log
+import android.widget.Toast
 import androidx.annotation.IntRange
+import androidx.core.content.FileProvider
 import com.otaliastudios.transcoder.Transcoder
 import com.otaliastudios.transcoder.TranscoderListener
 import com.otaliastudios.transcoder.strategy.DefaultVideoStrategy
+import com.sqz.checklist.R
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import okio.FileSystem
 import okio.Path
 import okio.Path.Companion.toPath
+import sqz.checklist.data.preferences.PreferencesInCache
+import sqz.checklist.data.storage.manager.StorageManager
+import java.io.FileNotFoundException
 import kotlin.coroutines.resume
+
+/**
+ * Opens a video using an external application via an Intent.
+ * It creates a temporary cache file to share the video with other apps.
+ *
+ * @param videoName The name for the image file.
+ * @param videoPath The okio image path.
+ * @param context The application context.
+ */
+suspend fun openVideoBySystem(
+    videoName: String,
+    videoPath: String,
+    context: Context,
+) = withContext(Dispatchers.IO) {
+    val storageManager = StorageManager.provider()
+    val name = videoName.ifBlank { "unknown_name" }
+
+    val cache = PreferencesInCache(context)
+    cache.waitingDeletedCacheName().let { getCachePath ->
+        if (getCachePath != null) {
+            try { // delete old cache
+                val delMode = StorageManager.DeleteMode.FilePath(getCachePath)
+                storageManager.deleteCacheFile(delMode)
+                Log.d("openVideoBySystem", "Deleted cache: $getCachePath")
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            cache.waitingDeletedCacheName(null)
+        }
+    }
+
+    try {
+        val toCacheFile = storageManager.copyStorageFileToCache(
+            filePath = videoPath,
+            fileSourceName = name
+        )
+        val videoToUri = (toCacheFile.first.toPath().toFile()).let { file ->
+            FileProvider.getUriForFile(
+                context, "${context.packageName}.provider", file
+            )
+        }
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(videoToUri, "video/*")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(
+            Intent.createChooser(intent, context.getString(R.string.open_with))
+        )
+        cache.waitingDeletedCacheName(toCacheFile.first)
+    } catch (_: FileNotFoundException) {
+        Toast.makeText(context, context.getString(R.string.failed_open), Toast.LENGTH_SHORT).show()
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
+}
 
 /**
  * Compresses a video file in place.

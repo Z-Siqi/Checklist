@@ -72,6 +72,8 @@ interface StorageManager {
      * Delete cache file
      *
      * @param mode DeleteMode
+     * @throws okio.IOException if the delete file not existed.
+     * @throws IllegalArgumentException if the path is invalid.
      */
     suspend fun deleteCacheFile(mode: DeleteMode)
 

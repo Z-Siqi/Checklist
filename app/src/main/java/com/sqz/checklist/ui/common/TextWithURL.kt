@@ -1,16 +1,17 @@
 package com.sqz.checklist.ui.common
 
 import android.content.Intent
-import android.net.Uri
 import android.view.SoundEffectConstants
 import android.view.View
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.TextLayoutResult
@@ -23,6 +24,8 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 
 @Composable
 fun UrlText(
@@ -54,13 +57,15 @@ fun UrlText(
         text = text ?: url,
         fontSize = fontSize,
         color = color,
-        modifier = modifier.clickable {
-            view.playSoundEffect(SoundEffectConstants.CLICK)
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(formatURL)).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            view.context.startActivity(intent)
-        },
+        modifier = modifier
+            .clip(RoundedCornerShape(4.dp))
+            .clickable {
+                view.playSoundEffect(SoundEffectConstants.CLICK)
+                val intent = Intent(Intent.ACTION_VIEW, formatURL.toUri()).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                view.context.startActivity(intent)
+            },
         textDecoration = textDecoration,
         fontWeight = fontWeight,
         textAlign = textAlign,

@@ -22,7 +22,7 @@ internal interface TaskDao {
             EXISTS(SELECT 1 FROM taskDetail d WHERE d.taskId = t.id LIMIT 1) AS isDetailExist,
             EXISTS(SELECT 1 FROM reminder r  WHERE r.taskId = t.id AND r.isReminded = 1 LIMIT 1) AS isReminded,
             (SELECT r.reminderTime FROM reminder r WHERE r.taskId = t.id) AS reminderTime
-        FROM task t WHERE isHistoryId < 1 AND isPin = 0
+        FROM task t WHERE isHistoryId < 1
     """
     )
     fun getTaskList(): Flow<List<TaskViewData>>
@@ -52,6 +52,31 @@ internal interface TaskDao {
     """
     )
     fun getRemindedTaskList(): Flow<List<TaskViewData>>
+
+    @Query(
+        """
+        SELECT 
+            t.*,
+            EXISTS(SELECT 1 FROM taskDetail d WHERE d.taskId = t.id LIMIT 1) AS isDetailExist,
+            EXISTS(SELECT 1 FROM reminder r  WHERE r.taskId = t.id AND r.isReminded = 1 LIMIT 1) AS isReminded,
+            (SELECT r.reminderTime FROM reminder r WHERE r.taskId = t.id) AS reminderTime
+        FROM task t WHERE t.isHistoryId = 0 AND description LIKE '%' || :search || '%'
+        ORDER BY t.createDate DESC
+    """
+    )
+    fun searchedList(search: String): Flow<List<TaskViewData>>
+
+    @Query("UPDATE task SET isPin = :to WHERE id = :id")
+    suspend fun onTaskPinChange(id: Long, to: Int)
+
+    @Query("SELECT isHistoryId FROM task WHERE isHistoryId != 0 ORDER BY isHistoryId DESC LIMIT 1")
+    suspend fun getMaxIsHistoryId(): Int?
+
+    @Query("UPDATE task SET isHistoryId = :isHistoryId WHERE id = :id")
+    suspend fun setIsHistoryId(isHistoryId: Int, id: Long)
+
+    @Query("SELECT COUNT(*) = 0 FROM task WHERE isHistoryId = 0")
+    fun isTaskListEmpty(): Flow<Boolean>
 
     @Query("SELECT * FROM task WHERE id = :taskId")
     suspend fun getTask(taskId: Long): Task?

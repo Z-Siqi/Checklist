@@ -4,86 +4,47 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.view.View
 import android.widget.Toast
-import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.input.TextFieldLineLimits
-import androidx.compose.foundation.text.input.rememberTextFieldState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
-import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sqz.checklist.R
+import com.sqz.checklist.common.AndroidEffectFeedback
+import com.sqz.checklist.presentation.task.info.TaskInfoLayout
+import com.sqz.checklist.presentation.task.info.TaskInfoState
+import com.sqz.checklist.presentation.task.list.TaskListLayout
+import com.sqz.checklist.presentation.task.list.TaskListState
 import com.sqz.checklist.presentation.task.modify.TaskModifyLayout
-import sqz.checklist.data.database.Task
-import sqz.checklist.data.database.TaskDetail
-import sqz.checklist.data.database.TaskDetailType
-import com.sqz.checklist.ui.common.dialog.InfoDialog
-import com.sqz.checklist.ui.common.dialog.InfoDialogWithURL
-import com.sqz.checklist.ui.common.dialog.OpenExternalAppDialog
-import com.sqz.checklist.ui.common.media.AudioViewDialog
-import com.sqz.checklist.ui.common.media.PictureViewDialog
-import com.sqz.checklist.ui.common.media.VideoViewDialog
+import com.sqz.checklist.presentation.task.modify.TaskModifyState
 import com.sqz.checklist.ui.common.unit.screenIsWidthAndAPI34Above
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModelPreview
-import com.sqz.checklist.ui.main.task.layout.function.CheckTaskAction
 import com.sqz.checklist.ui.main.task.layout.function.ReminderHandlerListener
-import com.sqz.checklist.ui.main.task.layout.item.LazyList
-import com.sqz.checklist.ui.main.task.layout.item.ListData
 import com.sqz.checklist.ui.theme.Theme
-import kotlin.time.Clock
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.todayIn
-import sqz.checklist.data.database.model.TaskViewData
 import sqz.checklist.data.preferences.PrimaryPreferences
 import kotlin.time.ExperimentalTime
 
@@ -94,10 +55,11 @@ import kotlin.time.ExperimentalTime
 @Composable
 fun TaskLayout(
     scrollBehavior: TopAppBarScrollBehavior,
-    context: Context, view: View,
+    context: Context,
+    view: View,
+    refreshListRequest: MutableState<Boolean>,
     modifier: Modifier = Modifier,
     taskState: TaskLayoutViewModel = viewModel(),
-    listState: ListData = taskState.listState.collectAsState().value
 ) {
     val colors = Theme.color
     val lazyState = rememberLazyListState(
@@ -116,40 +78,60 @@ fun TaskLayout(
             start = left, end = if (left / 3 > 15.dp) 15.dp else left / 3
         ) else modifier
 
-        var currentHeight by remember { mutableIntStateOf(0) }
-        val searchBarSpace = if (currentHeight > 50) (currentHeight + 22) else 72
-        LazyList( // LazyColumn lists
-            listState = listState,
-            lazyState = lazyState,
-            isInSearch = { // Search function
-                taskSearchBar(
-                    searchState = listState.searchView,
-                    taskState = taskState,
-                    modifier = safePaddingForFullscreen
-                ) { currentHeight = it }
+        TaskListLayout(
+            refreshListRequest = refreshListRequest,
+            requestSearch = taskState.onSearchRequest.collectAsState().value,
+            lazyListState = lazyState,
+            config = taskState.listConfig,
+            view = view,
+            externalRequest = {
+                //TODO move to viewModel
+                when (it) {
+                    is TaskListState.SearchProcessed -> {
+                        taskState.onResetSearchRequest()
+                    }
+
+                    is TaskListState.Edit -> {
+                        taskState.requestModify(TaskModifyState.EditTask(it.taskId))
+                    }
+
+                    is TaskListState.Reminder -> {
+                        taskState.reminderHandler.requestReminder(it.taskId)
+                    }
+
+                    is TaskListState.RemoveReminded -> {
+                        taskState.onCloseNotification(it.taskId, view.context)
+                    }
+
+                    is TaskListState.Detail -> {
+                        val state = TaskInfoState(
+                            taskId = it.taskId,
+                            config = TaskInfoState.Config.DetailOnly
+                        )
+                        taskState.requestTaskInfo(state)
+                    }
+
+                    is TaskListState.Info -> {
+                        val state = TaskInfoState(
+                            taskId = it.taskId,
+                            config = TaskInfoState.Config.TaskOnly(
+                                pinChangeAllowed = false
+                            )
+                        )
+                        taskState.requestTaskInfo(state)
+                    }
+                }
             },
-            context = context,
-            taskState = taskState,
-            modifier = safePaddingForFullscreen,
-            searchBarSpace = searchBarSpace
+            modifier = safePaddingForFullscreen.fillMaxSize()
         )
-        if (!listState.unLoading && listState.item.isEmpty()) Column( // Show text if not any task
-            modifier = modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = stringResource(R.string.nothing_need_do),
-                fontWeight = FontWeight.Medium, fontSize = 24.sp,
-                color = MaterialTheme.colorScheme.outline,
-                lineHeight = 30.sp, textAlign = TextAlign.Center
+        taskState.isTaskInfo.collectAsState().value?.let {
+            TaskInfoLayout(
+                state = it,
+                onFinished = { taskState.requestTaskInfo(null) },
+                feedback = AndroidEffectFeedback(view),
+                modifier = modifier
             )
         }
-        if (!listState.unLoading) CheckTaskAction( // processing check & undo
-            taskState = taskState,
-            lazyState = lazyState,
-            context = context
-        )
     }
     val taskCreatedToast = remember { mutableStateOf(false) }
     taskState.isModify.collectAsState().value?.let {
@@ -179,115 +161,6 @@ fun TaskLayout(
         view = view,
         coroutineScope = coroutineScope
     )
-    TaskDetailInfoDialog(
-        onDismissRequest = { taskState.taskDetailData(-1L) },
-        detail = taskState.taskDetailData().collectAsState().value
-    )
-}
-
-@Composable
-private fun TaskDetailInfoDialog(onDismissRequest: () -> Unit, detail: TaskDetail?) {
-    if (detail != null) when (detail.type) {
-        TaskDetailType.Text -> InfoDialog(
-            onDismissRequest = onDismissRequest,
-            text = detail.dataByte.toString(Charsets.UTF_8),
-            title = stringResource(R.string.detail)
-        )
-
-        TaskDetailType.URL -> InfoDialogWithURL(
-            onDismissRequest = onDismissRequest,
-            url = detail.dataByte.toString(Charsets.UTF_8),
-            title = stringResource(R.string.url)
-        )
-
-        TaskDetailType.Application -> OpenExternalAppDialog(
-            onDismissRequest = onDismissRequest,
-            packageName = detail.dataByte.toString(Charsets.UTF_8),
-            title = stringResource(R.string.application)
-        )
-
-        TaskDetailType.Picture -> PictureViewDialog(
-            onDismissRequest = onDismissRequest,
-            byteArray = detail.dataByte, imageName = detail.dataString!!,
-            title = stringResource(R.string.picture)
-        )
-
-        TaskDetailType.Video -> VideoViewDialog(
-            onDismissRequest = onDismissRequest,
-            byteArray = detail.dataByte, videoName = detail.dataString!!,
-            title = stringResource(R.string.video)
-        )
-
-        TaskDetailType.Audio -> AudioViewDialog(
-            onDismissRequest = onDismissRequest,
-            byteArray = detail.dataByte, audioName = detail.dataString!!,
-            title = stringResource(R.string.audio)
-        )
-    }
-}
-
-@Composable
-private fun taskSearchBar(
-    searchState: Boolean,
-    taskState: TaskLayoutViewModel,
-    modifier: Modifier = Modifier,
-    currentHeight: (Int) -> Unit = {}
-): Boolean {
-    val undo = taskState.undo.collectAsState().value
-    val density = LocalDensity.current
-    if (searchState) Column(modifier = modifier.fillMaxSize()) {
-        val textFieldState = rememberTextFieldState()
-        OutlinedCard(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 18.dp, end = 18.dp, top = 12.dp)
-                .heightIn(min = 50.dp)
-                .onGloballyPositioned { layoutCoordinates ->
-                    val heightPx = layoutCoordinates.size.height
-                    currentHeight(with(density) { heightPx.toDp() }.value.toInt())
-                },
-            shape = ShapeDefaults.ExtraLarge
-        ) {
-            Row(Modifier.heightIn(min = 50.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    modifier = Modifier.padding(start = 10.dp),
-                    imageVector = Icons.Filled.Search,
-                    contentDescription = stringResource(id = R.string.search)
-                )
-                BasicTextField(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 9.dp, end = 9.dp, top = 10.dp, bottom = 8.dp)
-                        .horizontalScroll(rememberScrollState()),
-                    state = textFieldState,
-                    lineLimits = TextFieldLineLimits.SingleLine,
-                    textStyle = TextStyle(
-                        fontSize = 24.sp,
-                        textAlign = TextAlign.Start,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    ),
-                    cursorBrush = SolidColor(MaterialTheme.colorScheme.onSurfaceVariant)
-                )
-                var oldText by remember { mutableStateOf("") }
-                if (textFieldState.text.toString() != oldText || undo.onCheckTask) {
-                    LaunchedEffect(key1 = true) {
-                        taskState.searchingText = textFieldState.text.toString()
-                        taskState.updateInSearch(taskState.searchingText)
-                        oldText = textFieldState.text.toString()
-                    }
-                } else if (textFieldState.text.toString().isEmpty()) LaunchedEffect(key1 = true) {
-                    taskState.updateInSearch(initWithAll = true)
-                }
-            }
-        }
-    }
-    if (searchState) BackHandler {
-        taskState.updateNavConnector(
-            NavConnectData(searchState = false),
-            NavConnectData(searchState = true)
-        )
-    }
-    return searchState
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -344,20 +217,16 @@ private fun rememberLazyListState(
     return lazyState
 }
 
+//TODO: Fix preview
 @SuppressLint("ViewModelConstructorInComposable")
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalTime::class)
 @Preview
 @Composable
 private fun Preview() {
-    val task = Task(
-        0,
-        "The quick brown fox jumps over the lazy dog.",
-        Clock.System.todayIn(TimeZone.currentSystemDefault())
-    )
-    val item = listOf(TaskViewData(task, isDetailExist = false, false, null))
     TaskLayout(
         TopAppBarDefaults.exitUntilCollapsedScrollBehavior(),
-        LocalContext.current, LocalView.current, listState = ListData(false, item, item, item),
+        LocalContext.current, LocalView.current,
+        remember { mutableStateOf(false) },
         taskState = TaskLayoutViewModelPreview()
     )
 }

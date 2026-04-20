@@ -2,33 +2,22 @@ package com.sqz.checklist.ui.main.task
 
 import android.content.Context
 import android.util.Log
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sqz.checklist.MainActivity
 import com.sqz.checklist.notification.NotifyManager
+import com.sqz.checklist.presentation.task.info.TaskInfoState
 import com.sqz.checklist.presentation.task.modify.TaskModifyState
 import sqz.checklist.data.database.repository.DatabaseRepository
-import sqz.checklist.data.database.TaskDetail
 import sqz.checklist.data.preferences.PreferencesInCache
 import sqz.checklist.data.preferences.PrimaryPreferences
-import com.sqz.checklist.ui.main.task.handler.ModifyHandler
 import com.sqz.checklist.ui.main.task.handler.ReminderHandler
 import com.sqz.checklist.ui.main.task.layout.NavConnectData
 import com.sqz.checklist.ui.main.task.layout.TopBarMenuClickType
-import com.sqz.checklist.ui.main.task.layout.function.CheckDataState
-import com.sqz.checklist.ui.main.task.layout.item.CardClickType
-import com.sqz.checklist.ui.main.task.layout.item.ListData
-import com.sqz.checklist.ui.common.media.audioMediaPath
-import com.sqz.checklist.ui.common.media.pictureMediaPath
-import com.sqz.checklist.ui.common.media.videoMediaPath
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -37,6 +26,10 @@ import kotlinx.coroutines.launch
 import sqz.checklist.data.database.Task
 import sqz.checklist.data.database.model.TaskViewData
 import sqz.checklist.data.database.repository.Table
+import sqz.checklist.data.storage.audioMediaPath
+import sqz.checklist.data.storage.pictureMediaPath
+import sqz.checklist.data.storage.videoMediaPath
+import sqz.checklist.task.api.list.TaskList
 import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -61,59 +54,33 @@ open class TaskLayoutViewModel : ViewModel() {
 
     fun onTopBarMenuClick(type: TopBarMenuClickType, context: Context) = when (type) {
         TopBarMenuClickType.History -> resetUndo(context)
-        TopBarMenuClickType.Search -> searchView(!_listState.value.searchView)
+        TopBarMenuClickType.Search -> searchView(!_navExtendedConnectData.value.searchState)
         TopBarMenuClickType.BackupRestore -> resetUndo(context)
         TopBarMenuClickType.Settings -> resetUndo(context)
     }
 
-    private val _requestUpdate = MutableStateFlow(false)
-
     private var _init = MutableStateFlow(false)
-    private val _isUpdateRunning = AtomicBoolean(false)
-    private val _listState = MutableStateFlow(ListData())
-    val listState: StateFlow<ListData> = _listState.asStateFlow()
-    private fun updateListState(init: Boolean = false) {
-        if (_isUpdateRunning.get()) return else _isUpdateRunning.set(true)
-        viewModelScope.launch {
-            _listState.update { lists ->
-                val taskDao = MainActivity.taskDatabase.getDatabase().taskDaoOld()
-                lists.copy(
-                    item = taskDao.getAll(),
-                    pinnedItem = taskDao.getAll(0),
-                    isRemindedItem = taskDao.getIsRemindedList(1),
-                    unLoading = false
-                )
-            }.also { Log.d("ViewModel", "List is Update") }
-            if (!init) updateInSearch(searchingText) else _init.value = true
-            delay(220)
-            _isUpdateRunning.set(false)
-        }
+
+    // TODO: Finish refactoring this
+    private val _onSearchRequest = MutableStateFlow<Boolean?>(null)
+
+    fun onResetSearchRequest() {
+        _onSearchRequest.value = null
     }
 
+    val onSearchRequest = _onSearchRequest.asStateFlow()
+
     private fun searchView(setter: Boolean) { //Connect top bar & nav bar search actions
-        _listState.update { it.copy(searchView = setter) }
+        _onSearchRequest.value = setter
         _navExtendedConnectData.update { it.copy(searchState = setter) }
     }
 
     /** Reminder handler **/
     var reminderHandler: ReminderHandler
 
-    /** Modify the task **/
-    var modifyHandler: ModifyHandler
-
     init {
         this.let { viewModel ->
-            reminderHandler = ReminderHandler.instance(viewModel, _requestUpdate, _init)
-            modifyHandler = ModifyHandler.instance(viewModel, _requestUpdate)
-        }
-        if (!_init.value) updateListState(init = true)
-        viewModelScope.launch {
-            _requestUpdate.collect { state ->
-                if (state) {
-                    updateListState()
-                    _requestUpdate.update { false }
-                }
-            }
+            reminderHandler = ReminderHandler.instance(viewModel, _init)
         }
         Log.d("TaskLayoutViewModel", "ViewModel is init")
     }
@@ -122,93 +89,16 @@ open class TaskLayoutViewModel : ViewModel() {
         return PrimaryPreferences(context)
     }
 
-    private val _undo = MutableStateFlow(CheckDataState())
-    val undo: MutableStateFlow<CheckDataState> = _undo
-    fun resetUndo(context: Context? = null) { // reset undo state
-        if (context != null) reminderHandler.cancelHistoryReminder(context = context)
-        _undo.value = CheckDataState()
-    }
-
-    fun taskChecked(id: Long) = _undo.update { // when task is checked
-        modifyHandler.onTaskChecked(id)
-        resetUndo()
-        it.copy(onCheckTask = true, toUndoId = id)
-    }
-
-    /** Process undo button state **/
-    fun undoButtonProcess(lazyState: LazyListState, context: Context): Boolean {
-        if (!primaryPreferences(context).disableUndoButton()) {
-            if (_undo.value.onCheckTask) viewModelScope.launch {
-                if (_undo.value.rememberScroll == null && _undo.value.rememberScrollIndex == null) {
-                    _undo.update {
-                        it.copy(
-                            rememberScroll = lazyState.firstVisibleItemScrollOffset,
-                            rememberScrollIndex = lazyState.firstVisibleItemIndex,
-                        )
-                    }
-                    _undo.value.let { // process timeout
-                        if (it.rememberScroll != null && it.rememberScrollIndex != null) {
-                            if (!_undo.value.onCheckTask) this.cancel()
-                            delay(1500)
-                            val isTimeout =
-                                it.rememberScroll > lazyState.firstVisibleItemScrollOffset + 10 || it.rememberScroll < lazyState.firstVisibleItemScrollOffset - 10
-                            for (i in 1..7) {
-                                if (!_undo.value.onCheckTask) this.cancel()
-                                delay(500)
-                                if (it.rememberScrollIndex != lazyState.firstVisibleItemIndex || isTimeout) break
-                                i
-                            }
-                            resetUndo(context)
-                        }
-                    }
-                }
-            }
-            return _undo.value.onCheckTask
-        } else return false.also { resetUndo(context) }
-    }
-
-    /** Task click action **/
-    fun onTaskItemClick(taskViewData: TaskViewData, type: CardClickType, context: Context) {
-        val task = taskViewData.task
-        when (type) {
-            CardClickType.Pin -> modifyHandler.pinState(task.id, !task.isPin)
-            CardClickType.Detail -> this.taskDetailData(task.id)
-            CardClickType.Reminder -> reminderHandler.requestReminder(task.id)
-            CardClickType.Edit -> this.requestModify(TaskModifyState.EditTask(task.id))
-            CardClickType.Close -> viewModelScope.launch {
-                val reminder = database().getReminderData(task.id)
-                if (!primaryPreferences(context).disableRemoveNotifyInReminded()) try {
-                    reminderHandler.notifyManager.removeShowedNotification(reminder!!.id, context)
-                    database().deleteReminderData(task.id)
-                    updateListState()
-                } catch (e: Exception) {
-                    Log.w("RemoveShowedNotify", "Exception: $e")
-                } else try {
-                    database().deleteReminderData(task.id)
-                    updateListState()
-                } catch (e: Exception) {
-                    Log.w("RemoveRemindedNotify", "Exception: $e")
-                }
-            }
-        }
-    }
-
-    private var _taskDetailId: MutableStateFlow<TaskDetail?> = MutableStateFlow(null)
-    fun taskDetailData(setter: Long? = null): MutableStateFlow<TaskDetail?> {
-        if (setter != null) viewModelScope.launch {
-            if (setter >= 1) {
-                _taskDetailId.value = database().getDetailData(setter)!![0] //TODO: support listed
-            } else _taskDetailId.value = null
-        }
-        return _taskDetailId
+    fun resetUndo(context: Context) { //TODO: Finish refactoring cancelHistoryReminder
+        reminderHandler.cancelHistoryReminder(context = context)
     }
 
     /** Remind task. autoDel and id (del reminder info) **/
-    fun autoDeleteRemindedTaskInfo(context: Context) {
+    fun autoDeleteRemindedTaskInfo(remindedList: List<TaskViewData>, context: Context) { //TODO
         viewModelScope.launch(Dispatchers.IO) {
             val primaryPreferences = PrimaryPreferences(context)
             if (primaryPreferences.recentlyRemindedKeepTime() > 0L) try {
-                for (data in _listState.value.isRemindedItem) {
+                for (data in remindedList) {
                     try {
                         val getReminder = database().getReminderData(data.task.id)!!
                         val timeMillisData = getReminder.reminderTime
@@ -223,7 +113,7 @@ open class TaskLayoutViewModel : ViewModel() {
                     } catch (_: NullPointerException) {
                     }
                 }
-                updateListState()
+                //updateListState()
             } catch (_: NoSuchFieldException) {
                 Log.w("DeleteReminderData", "Noting need to delete")
             }
@@ -246,52 +136,48 @@ open class TaskLayoutViewModel : ViewModel() {
         _removeInvalidFile = true
     }
 
-    /** Get Task is History or Not **/
-    fun getIsHistory(id: Long): Boolean {
-        var value by mutableIntStateOf(-1)
-        fun getIsHistoryId(id: Long) {
-            viewModelScope.launch { value = MainActivity.taskDatabase.getDatabase().taskDaoOld().getIsHistory(id) }
+    private val _listConfig = MutableStateFlow(TaskList.Config())
+    val listConfig = _listConfig.asStateFlow()
+
+    fun updateListConfig(prefs: PrimaryPreferences) {
+        fun Int.prefsLimit(): Int? = this.let {
+            if (it >= 21) null else it
         }
-        getIsHistoryId(id)
-        return value >= 1
+        val config = TaskList.Config(
+            enableUndo = !prefs.disableUndoButton(),
+            autoDelIsHistoryTaskNumber = prefs.allowedNumberOfHistory().prefsLimit()
+        )
+        _listConfig.update { config }
     }
 
-    /** Auto Delete History Task **/
-    fun autoDeleteHistoryTask(start: Int) {
-        viewModelScope.launch(Dispatchers.IO) {
-            database().deleteByHistoryId(maxRetainIdNum = start)
-        }
-    }
-
-    /** Search Task **/
-    var searchingText by mutableStateOf("")
-    fun updateInSearch(
-        searchText: String = "", reset: Boolean = false, initWithAll: Boolean = false
-    ) {
-        suspend fun returnList(): List<TaskViewData> {
-            val taskDao = MainActivity.taskDatabase.getDatabase().taskDaoOld()
-            if (searchText.isNotEmpty()) return taskDao.searchedList(searchText)
-            if (initWithAll || searchingText.isEmpty()) {
-                searchingText = ""
-                return taskDao.getAll()
+    fun onCloseNotification(taskId: Long, context: Context) {
+        //TODO: Finish refactoring this
+        viewModelScope.launch {
+            val reminder = database().getReminderData(taskId)
+            if (!primaryPreferences(context).disableRemoveNotifyInReminded()) try {
+                reminderHandler.notifyManager.removeShowedNotification(reminder!!.id, context)
+                database().deleteReminderData(taskId)
+            } catch (e: Exception) {
+                Log.w("RemoveShowedNotify", "Exception: $e")
+            } else try {
+                database().deleteReminderData(taskId)
+            } catch (e: Exception) {
+                Log.w("RemoveRemindedNotify", "Exception: $e")
             }
-            if (reset) searchingText = ""
-            return listOf()
         }
-        viewModelScope.launch { _listState.update { it.copy(inSearchItem = returnList()) } }
     }
 
-    fun requestUpdateList() {
-        updateListState()
+    private val _isTaskInfo: MutableStateFlow<TaskInfoState?> = MutableStateFlow(null)
+    val isTaskInfo: StateFlow<TaskInfoState?> = _isTaskInfo.asStateFlow()
+
+    fun requestTaskInfo(state: TaskInfoState?) {
+        _isTaskInfo.update { state }
     }
 
     private val _isModify: MutableStateFlow<TaskModifyState?> = MutableStateFlow(null)
     val isModify: StateFlow<TaskModifyState?> = _isModify.asStateFlow()
 
     fun requestModify(state: TaskModifyState?) {
-        if (state == null) {
-            this.updateListState()
-        }
         _isModify.update { state }
     }
 
