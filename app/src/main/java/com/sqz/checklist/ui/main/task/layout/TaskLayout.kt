@@ -2,6 +2,7 @@ package com.sqz.checklist.ui.main.task.layout
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.compose.foundation.layout.WindowInsets
@@ -19,9 +20,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -35,6 +38,7 @@ import com.sqz.checklist.common.AndroidEffectFeedback
 import com.sqz.checklist.presentation.task.info.TaskInfoLayout
 import com.sqz.checklist.presentation.task.info.TaskInfoState
 import com.sqz.checklist.presentation.task.list.TaskListLayout
+import com.sqz.checklist.presentation.task.list.TaskListRequest
 import com.sqz.checklist.presentation.task.list.TaskListState
 import com.sqz.checklist.presentation.task.modify.TaskModifyLayout
 import com.sqz.checklist.presentation.task.modify.TaskModifyState
@@ -78,32 +82,55 @@ fun TaskLayout(
             start = left, end = if (left / 3 > 15.dp) 15.dp else left / 3
         ) else modifier
 
+        var taskListState by remember { mutableStateOf<TaskListState>(TaskListState.None) }
+        taskState.onSearchRequest.collectAsState().value?.let {
+            LaunchedEffect(Unit) {
+                while (taskListState !is TaskListState.None) {
+                    delay(100)
+                    Log.d("TaskLayout", "onSearchRequest delayed")
+                }
+                taskListState = TaskListState.IsSearchRequest(it)
+            }
+        }
+        refreshListRequest.value.let {
+            if (it) LaunchedEffect(Unit) {
+                while (taskListState !is TaskListState.None) {
+                    delay(100)
+                    Log.d("TaskLayout", "refreshListRequest delayed")
+                }
+                taskListState = TaskListState.IsRefreshListRequest
+            }
+        }
         TaskListLayout(
-            refreshListRequest = refreshListRequest,
-            requestSearch = taskState.onSearchRequest.collectAsState().value,
-            lazyListState = lazyState,
+            listState = taskListState,
             config = taskState.listConfig,
             view = view,
             externalRequest = {
                 //TODO move to viewModel
                 when (it) {
-                    is TaskListState.SearchProcessed -> {
+                    is TaskListRequest.SearchProcessed -> {
                         taskState.onResetSearchRequest()
+                        taskListState = TaskListState.None
                     }
 
-                    is TaskListState.Edit -> {
+                    is TaskListRequest.RefreshListProcessed -> {
+                        refreshListRequest.value = false
+                        taskListState = TaskListState.None
+                    }
+
+                    is TaskListRequest.Edit -> {
                         taskState.requestModify(TaskModifyState.EditTask(it.taskId))
                     }
 
-                    is TaskListState.Reminder -> {
+                    is TaskListRequest.Reminder -> {
                         taskState.reminderHandler.requestReminder(it.taskId)
                     }
 
-                    is TaskListState.RemoveReminded -> {
+                    is TaskListRequest.RemoveReminded -> {
                         taskState.onCloseNotification(it.taskId, view.context)
                     }
 
-                    is TaskListState.Detail -> {
+                    is TaskListRequest.Detail -> {
                         val state = TaskInfoState(
                             taskId = it.taskId,
                             config = TaskInfoState.Config.DetailOnly
@@ -111,18 +138,19 @@ fun TaskLayout(
                         taskState.requestTaskInfo(state)
                     }
 
-                    is TaskListState.Info -> {
+                    is TaskListRequest.Info -> {
                         val state = TaskInfoState(
                             taskId = it.taskId,
                             config = TaskInfoState.Config.TaskOnly(
-                                pinChangeAllowed = false
+                                pinChangeAllowed = it.pinChangeAllowed
                             )
                         )
                         taskState.requestTaskInfo(state)
                     }
                 }
             },
-            modifier = safePaddingForFullscreen.fillMaxSize()
+            modifier = safePaddingForFullscreen.fillMaxSize(),
+            lazyListState = lazyState,
         )
         taskState.isTaskInfo.collectAsState().value?.let {
             TaskInfoLayout(

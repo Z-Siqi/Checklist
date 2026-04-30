@@ -1,32 +1,26 @@
 package com.sqz.checklist.presentation.task.list
 
 /**
- * Interface for the action of the task modify.
- *
- * @see sqz.checklist.task.api.list.model.TaskItemModel.ExternalRequest
+ * Interface for the action of the task list.
  */
 sealed interface TaskListState {
 
-    data object SearchProcessed: TaskListState //TODO
+    /** No action needed **/
+    data object None : TaskListState
 
-    data class Info(
-        val taskId: Long,
-        val pinChangeAllowed: Boolean,
-    ): TaskListState
+    /**
+     * Expected to refresh the list.
+     *
+     * This should be a temporal state, reset to [None] after the refresh
+     * is finished (sent request via [TaskListRequest] to notify the external).
+     */
+    data object IsRefreshListRequest : TaskListState
 
-    data class Detail(
-        val taskId: Long
-    ): TaskListState
-
-    data class Edit(
-        val taskId: Long
-    ): TaskListState
-
-    data class Reminder(
-        val taskId: Long
-    ): TaskListState
-
-    data class RemoveReminded(
-        val taskId: Long
-    ): TaskListState
+    /**
+     * Expected to switch the list to search mode.
+     *
+     * This should be a temporal state, reset to [None] after the refresh
+     * is finished (sent request via [TaskListRequest] to notify the external).
+     */
+    data class IsSearchRequest(val searchState: Boolean) : TaskListState
 }

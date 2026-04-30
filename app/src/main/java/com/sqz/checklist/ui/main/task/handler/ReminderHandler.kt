@@ -95,7 +95,7 @@ class ReminderHandler private constructor(
 
 
     /** Checks if the app has permission to set exact alarms. */
-    fun isAlarmPermission(): Boolean = notifyManager.getAlarmPermission()
+    fun isAlarmPermission(context: Context): Boolean = notifyManager.hasAlarmPermission(context)
 
     /**
      * Checks and handles the initial state of notification permissions.
@@ -112,7 +112,7 @@ class ReminderHandler private constructor(
      */
     fun notificationInitState(context: Context, init: Boolean = false): PermissionState {
         val requestPermission = if (!initState.value) PermissionState.Null else {
-            notifyManager.requestPermission(context)
+            notifyManager.checkPermissions(context)
         }
 
         fun makeToast() = Toast.makeText(
@@ -121,7 +121,7 @@ class ReminderHandler private constructor(
         if (init && requestPermission != PermissionState.Both) coroutineScope.launch {
             database().getIsRemindedNum(false)?.collect {
                 if (it >= 1) { // If no permission to send notification for reminder
-                    val reCheck = notifyManager.requestPermission(context)
+                    val reCheck = notifyManager.checkPermissions(context)
                     if (reCheck == PermissionState.Null || reCheck == PermissionState.Alarm) makeToast()
                     else if (reCheck != PermissionState.Both &&
                         database().getModeNumWithNoReminded(ReminderModeType.AlarmManager) >= 1
@@ -160,14 +160,11 @@ class ReminderHandler private constructor(
      */
     suspend fun setReminder(delayDuration: Long, timeUnit: TimeUnit, id: Long, context: Context) {
         _notifyId = this.setAndCheckRandomId()
-        val isAlarmPermission = isAlarmPermission()
-        val delayTime = if (!isAlarmPermission) delayDuration else {
-            System.currentTimeMillis() + delayDuration
-        }
+        val isAlarmPermission = isAlarmPermission(context)
+        val targetTime = System.currentTimeMillis() + timeUnit.toMillis(delayDuration)
         val notification = notifyManager.createNotification(
             notifyId = _notifyId!!,
-            delayDuration = delayTime,
-            timeUnit = timeUnit,
+            targetTime = targetTime,
             context = context
         )
         try { // remove old data first
@@ -181,15 +178,13 @@ class ReminderHandler private constructor(
         val notify = notification.also {
             Log.i("Notification", "Reminder is setting, isAlarmPermission: $isAlarmPermission")
         }
-        val now = Calendar.getInstance()
-        val remindTime = if (isAlarmPermission) delayTime else now.timeInMillis + delayDuration
         val mode = if (isAlarmPermission) ReminderModeType.AlarmManager else {
             ReminderModeType.Worker
         }
         val taskReminder = TaskReminder(
             id = _notifyId!!,
             taskId = id,
-            reminderTime = remindTime,
+            reminderTime = targetTime,
             mode = mode,
             extraData = notify
         )
@@ -317,7 +312,7 @@ class ReminderHandler private constructor(
 
     /** Checks if a specific alarm notification is active. */
     fun checkAlarmNotification(notifyId: Int, context: Context): Boolean? {
-        if (notifyManager.requestPermission(context) == PermissionState.Alarm) {
+        if (notifyManager.checkPermissions(context) == PermissionState.Alarm) {
             return NotificationCreator(context).getAlarmNotificationState(notifyId)
         }
         return null

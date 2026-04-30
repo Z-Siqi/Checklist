@@ -94,6 +94,7 @@ class NotificationCreator(private val context: Context) {
                     .build()
             )
             .setInitialDelay(delayDuration, timeUnit)
+            .addTag(notifyId.toString())
             .build()
         WorkManager.getInstance(context).enqueue(workRequest)
         return workRequest.id

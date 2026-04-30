@@ -13,18 +13,20 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import sqz.checklist.data.database.model.TaskViewData
 import sqz.checklist.data.database.repository.history.TaskHistoryRepository
+import sqz.checklist.data.database.repository.reminder.TaskReminderRepository
 import sqz.checklist.data.database.repository.task.TaskRepository
 import sqz.checklist.task.api.list.TaskList
 import sqz.checklist.task.api.list.model.TaskItemModel
 import sqz.checklist.task.impl.list.item.TaskItem
 import sqz.checklist.task.impl.list.item.UndoProcesser
+import kotlin.time.Clock
 
 internal class TaskListImpl(
     private val config: StateFlow<TaskList.Config>,
     private val taskHistoryRepository: TaskHistoryRepository,
     private val taskRepository: TaskRepository,
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob())
 ) : TaskList {
-    private val scope = CoroutineScope(SupervisorJob())
 
     private val _listInventory: MutableStateFlow<TaskList.Inventory> = MutableStateFlow(
         TaskList.Inventory.Loading
@@ -115,6 +117,31 @@ internal class TaskListImpl(
         _listInventory.update { TaskList.Inventory.Loading }
         val default = this.setDefault()
         _listInventory.update { default }
+    }
+
+    override suspend fun removeRemindedInfoByTime(
+        dbReminder: TaskReminderRepository,
+        removeNotification: suspend (taskId: Long) -> Boolean?,
+        onRemoveNotification: suspend (taskId: Long) -> Unit,
+    ): Int? {
+        val recentlyRemindedKeepTime = config.value.recentlyRemindedKeepTime.also {
+            if (it <= 0L) return null
+        }
+        taskRepository.getRemindedTaskList().stateIn(scope).let { list ->
+            for (data in list.value) {
+                val timeMillisData = data.reminderTime ?: continue
+                val delReminderTime: Boolean =
+                    timeMillisData < (Clock.System.now().toEpochMilliseconds() - recentlyRemindedKeepTime)
+                val removeNotification = removeNotification(data.task.id)
+                if (delReminderTime) {
+                    if (removeNotification == null || removeNotification) {
+                        onRemoveNotification(data.task.id)
+                        dbReminder.deleteRemindedInfo(data.task.id)
+                    }
+                }
+            }
+            return list.value.size
+        }
     }
 
     override fun requestUndo(onUndoTaskId: (Long) -> Unit) {

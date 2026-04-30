@@ -474,18 +474,16 @@ fun ImportTaskDatabase(
 suspend fun restoreNotification(dbInstance: TaskDatabase, context: Context) {
     Log.d("RestoreReminder", "trying to restore all reminder")
     val notificationManager = MutableStateFlow(NotifyManager())
-    notificationManager.value.requestPermission(context)
     val databaseRepository = DatabaseRepository(dbInstance)
     for (data in dbInstance.taskReminderDao().getAll()) {
         if (!data.reminder.isReminded) try {
             val restore = notificationManager.value.createNotification(
                 notifyId = data.reminder.id,
-                delayDuration = data.reminder.reminderTime,
-                timeUnit = TimeUnit.MILLISECONDS,
+                targetTime = data.reminder.reminderTime,
                 context = context
             ).also { Log.d("RestoreReminder", "Restore NotifyId: ${data.reminder.id}") }
             val mode =
-                if (notificationManager.value.getAlarmPermission()) ReminderModeType.AlarmManager else {
+                if (notificationManager.value.hasAlarmPermission(context)) ReminderModeType.AlarmManager else {
                     ReminderModeType.Worker
                 }
             dbInstance.taskReminderDao().updateMode(data.reminder.id, mode, restore)
@@ -502,7 +500,6 @@ private suspend fun cancelAllNotification(dbInstance: TaskDatabase, context: Con
     Log.d("CancelReminder", "trying to cancel all reminder")
     try {
         val notificationManager = MutableStateFlow(NotifyManager())
-        notificationManager.value.requestPermission(context)
         for (data in dbInstance.taskReminderDao().getAll()) {
             when (data.reminder.mode) {
                 ReminderModeType.AlarmManager -> notificationManager.value.cancelNotification(

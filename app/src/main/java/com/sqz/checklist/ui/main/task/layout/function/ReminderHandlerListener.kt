@@ -113,7 +113,7 @@ fun ReminderHandlerListener(
                         onConfirmClick = { timeInMilli ->
                             val preferences =
                                 PrimaryPreferences(context).disableNoScheduleExactAlarmNotice()
-                            if (!reminderHandler.isAlarmPermission() && !preferences) Toast.makeText(
+                            if (!reminderHandler.isAlarmPermission(context) && !preferences) Toast.makeText(
                                 context, context.getString(
                                     R.string.no_SCHEDULE_EXACT_ALARM_permission_explain
                                 ), Toast.LENGTH_SHORT

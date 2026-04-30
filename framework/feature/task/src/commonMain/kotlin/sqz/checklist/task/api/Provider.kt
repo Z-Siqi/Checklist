@@ -1,5 +1,7 @@
 package sqz.checklist.task.api
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.StateFlow
 import sqz.checklist.data.database.repository.history.TaskHistoryRepository
 import sqz.checklist.data.database.repository.task.TaskRepository
@@ -20,11 +22,13 @@ fun taskListProvider(
     config: StateFlow<TaskList.Config>,
     taskHistoryRepository: TaskHistoryRepository,
     taskRepository: TaskRepository,
+    scope: CoroutineScope = CoroutineScope(SupervisorJob())
 ): TaskList {
     return TaskListImpl(
         config = config,
         taskHistoryRepository = taskHistoryRepository,
         taskRepository = taskRepository,
+        scope = scope,
     )
 }
 

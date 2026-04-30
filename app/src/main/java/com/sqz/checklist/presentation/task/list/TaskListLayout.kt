@@ -41,6 +41,8 @@ import kotlinx.coroutines.flow.StateFlow
 import sqz.checklist.common.EffectFeedback
 import sqz.checklist.data.database.repository.history.TaskHistoryRepository
 import sqz.checklist.data.database.repository.history.TaskHistoryRepositoryFake
+import sqz.checklist.data.database.repository.reminder.TaskReminderRepository
+import sqz.checklist.data.database.repository.reminder.TaskReminderRepositoryFake
 import sqz.checklist.data.database.repository.task.TaskRepository
 import sqz.checklist.data.database.repository.task.TaskRepositoryFake
 import sqz.checklist.task.api.list.TaskList
@@ -51,22 +53,15 @@ import sqz.checklist.task.api.list.model.TaskItemModel
  */
 @Composable
 fun TaskListLayout(
-    refreshListRequest: MutableState<Boolean>,
-    requestSearch: Boolean?,
-    lazyListState: LazyListState,
+    listState: TaskListState,
     view: android.view.View,
     config: StateFlow<TaskList.Config>,
-    externalRequest: (TaskListState) -> Unit,
+    externalRequest: (TaskListRequest) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: TaskListViewModel = viewModelFactory(config),
+    lazyListState: LazyListState = rememberLazyListState(),
     feedback: EffectFeedback = AndroidEffectFeedback(view),
 ) {
-    if (refreshListRequest.value) LaunchedEffect(Unit) {
-        //TODO: remove this later
-        viewModel.updateList()
-        refreshListRequest.value = false
-    }
-
     val listInventory by viewModel.listInventory.collectAsState()
     Box(
         modifier = modifier,
@@ -83,38 +78,43 @@ fun TaskListLayout(
             }
             TaskListSceneUI(
                 viewModel = viewModel,
+                view = view,
                 feedback = feedback,
                 lazyListState = lazyListState
             )
         }
     }
-    if (requestSearch != null) LaunchedEffect(Unit) {
+    if (listState is TaskListState.IsRefreshListRequest) LaunchedEffect(Unit) {
+        viewModel.updateList()
+        externalRequest(TaskListRequest.RefreshListProcessed)
+    }
+    if (listState is TaskListState.IsSearchRequest) LaunchedEffect(Unit) {
         //TODO: Finish refactoring this
-        viewModel.setSearchState(requestSearch)
-        externalRequest(TaskListState.SearchProcessed)
+        viewModel.setSearchState(listState.searchState)
+        externalRequest(TaskListRequest.SearchProcessed)
     }
     viewModel.externalRequest.collectAsState().value.let { request ->
         when (request) {
             is TaskItemModel.ExternalRequest.Info -> externalRequest(
-                TaskListState.Info(
+                TaskListRequest.Info(
                     request.taskId, request.pinChangeAllowed
                 )
             )
 
             is TaskItemModel.ExternalRequest.Detail -> externalRequest(
-                TaskListState.Detail(request.taskId)
+                TaskListRequest.Detail(request.taskId)
             )
 
             is TaskItemModel.ExternalRequest.Edit -> externalRequest(
-                TaskListState.Edit(request.taskId)
+                TaskListRequest.Edit(request.taskId)
             )
 
             is TaskItemModel.ExternalRequest.Reminder -> externalRequest(
-                TaskListState.Reminder(request.taskId)
+                TaskListRequest.Reminder(request.taskId)
             )
 
             is TaskItemModel.ExternalRequest.RemoveReminded -> externalRequest(
-                TaskListState.RemoveReminded(request.taskId)
+                TaskListRequest.RemoveReminded(request.taskId)
             )
 
             is TaskItemModel.ExternalRequest.None -> {}
@@ -163,7 +163,10 @@ private fun LoadingState(modifier: Modifier = Modifier) {
 private fun viewModelFactory(config: StateFlow<TaskList.Config>): TaskListViewModel {
     val taskRepository = TaskRepository.provider(MainActivity.taskDatabase)
     val taskHistoryRepository = TaskHistoryRepository.provider(MainActivity.taskDatabase)
-    return viewModel { TaskListViewModel(config, taskHistoryRepository, taskRepository) }
+    val taskReminderRepo = TaskReminderRepository.provider(MainActivity.taskDatabase)
+    return viewModel {
+        TaskListViewModel(config, taskHistoryRepository, taskReminderRepo, taskRepository)
+    }
 }
 
 @Preview
@@ -171,12 +174,13 @@ private fun viewModelFactory(config: StateFlow<TaskList.Config>): TaskListViewMo
 private fun TaskListLayoutPreview() {
     val config = MutableStateFlow(TaskList.Config(enableUndo = true))
     val vmFake = viewModel {
-        TaskListViewModel(config, TaskHistoryRepositoryFake(), TaskRepositoryFake())
+        TaskListViewModel(
+            config, TaskHistoryRepositoryFake(), TaskReminderRepositoryFake(), TaskRepositoryFake()
+        )
     }
     Surface(modifier = Modifier.fillMaxSize()) {
         TaskListLayout(
-            refreshListRequest = remember { mutableStateOf(false) },
-            requestSearch = null,
+            listState = TaskListState.None,
             lazyListState = rememberLazyListState(),
             view = androidx.compose.ui.platform.LocalView.current,
             config = config,

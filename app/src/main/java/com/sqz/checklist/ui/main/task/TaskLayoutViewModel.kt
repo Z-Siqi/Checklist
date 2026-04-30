@@ -83,6 +83,7 @@ open class TaskLayoutViewModel : ViewModel() {
             reminderHandler = ReminderHandler.instance(viewModel, _init)
         }
         Log.d("TaskLayoutViewModel", "ViewModel is init")
+        _init.value = true
     }
 
     private fun primaryPreferences(context: Context): PrimaryPreferences {
@@ -91,34 +92,6 @@ open class TaskLayoutViewModel : ViewModel() {
 
     fun resetUndo(context: Context) { //TODO: Finish refactoring cancelHistoryReminder
         reminderHandler.cancelHistoryReminder(context = context)
-    }
-
-    /** Remind task. autoDel and id (del reminder info) **/
-    fun autoDeleteRemindedTaskInfo(remindedList: List<TaskViewData>, context: Context) { //TODO
-        viewModelScope.launch(Dispatchers.IO) {
-            val primaryPreferences = PrimaryPreferences(context)
-            if (primaryPreferences.recentlyRemindedKeepTime() > 0L) try {
-                for (data in remindedList) {
-                    try {
-                        val getReminder = database().getReminderData(data.task.id)!!
-                        val timeMillisData = getReminder.reminderTime
-                        val delReminderTime: Boolean =
-                            timeMillisData < (System.currentTimeMillis() - primaryPreferences.recentlyRemindedKeepTime())
-                        if (delReminderTime && primaryPreferences.removeNoticeInAutoDelReminded()) {
-                            reminderHandler.notifyManager.removeShowedNotification(
-                                getReminder.id, context
-                            )
-                        }
-                        if (delReminderTime) database().deleteReminderData(data.task.id)
-                    } catch (_: NullPointerException) {
-                    }
-                }
-                //updateListState()
-            } catch (_: NoSuchFieldException) {
-                Log.w("DeleteReminderData", "Noting need to delete")
-            }
-            if (_init.value && !_removeInvalidFile) removeInvalidFile(context)
-        }
     }
 
     /** Remove invalid media file from error **/
@@ -145,7 +118,8 @@ open class TaskLayoutViewModel : ViewModel() {
         }
         val config = TaskList.Config(
             enableUndo = !prefs.disableUndoButton(),
-            autoDelIsHistoryTaskNumber = prefs.allowedNumberOfHistory().prefsLimit()
+            autoDelIsHistoryTaskNumber = prefs.allowedNumberOfHistory().prefsLimit(),
+            recentlyRemindedKeepTime = prefs.recentlyRemindedKeepTime(),
         )
         _listConfig.update { config }
     }

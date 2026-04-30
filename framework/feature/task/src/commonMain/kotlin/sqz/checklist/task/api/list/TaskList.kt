@@ -2,6 +2,7 @@ package sqz.checklist.task.api.list
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
+import sqz.checklist.data.database.repository.reminder.TaskReminderRepository
 import sqz.checklist.task.api.list.model.TaskItemModel
 
 interface TaskList {
@@ -52,6 +53,24 @@ interface TaskList {
      *   the value was [Inventory.Search] before called this method.
      */
     suspend fun updateList()
+
+    /**
+     * Remove the reminder info from the database by reminded time and its config.
+     *
+     * @param dbReminder The repository responsible for deleting the data from the database.
+     * @param removeNotification a callback function to handle whether remove the notification,
+     *   notification can remove once callback is `true` or `null`, otherwise [onRemoveNotification]
+     *   action will be ignored.
+     * @param onRemoveNotification a callback function to handle more behavior such as remove sent
+     *   system notification after remove.
+     * @return The number of items in the reminded list processed, or null if the feature is
+     *   disabled via config.
+     */
+    suspend fun removeRemindedInfoByTime(
+        dbReminder: TaskReminderRepository,
+        removeNotification: suspend (taskId: Long) -> Boolean? = { null },
+        onRemoveNotification: suspend (taskId: Long) -> Unit = {},
+    ): Int?
 
     /**
      * Request to undo the action from the [TaskItemModel.onRemoveAction].
@@ -139,6 +158,7 @@ interface TaskList {
      */
     data class Config(
         val enableUndo: Boolean = false,
-        val autoDelIsHistoryTaskNumber: Int? = null
+        val autoDelIsHistoryTaskNumber: Int? = null,
+        val recentlyRemindedKeepTime: Long = 0L,
     )
 }

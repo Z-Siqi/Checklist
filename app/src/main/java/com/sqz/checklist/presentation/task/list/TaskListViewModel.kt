@@ -1,17 +1,22 @@
 package com.sqz.checklist.presentation.task.list
 
+import android.content.Context
 import android.util.Log
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.sqz.checklist.notification.NotifyManager
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import sqz.checklist.data.database.repository.history.TaskHistoryRepository
+import sqz.checklist.data.database.repository.reminder.TaskReminderRepository
 import sqz.checklist.data.database.repository.task.TaskRepository
 import sqz.checklist.task.api.list.TaskList
 import sqz.checklist.task.api.list.model.TaskItemModel
@@ -20,6 +25,7 @@ import sqz.checklist.task.api.taskListProvider
 class TaskListViewModel(
     config: StateFlow<TaskList.Config>,
     taskHistoryRepository: TaskHistoryRepository,
+    private val taskReminderRepo: TaskReminderRepository,
     private val taskRepository: TaskRepository,
 ) : ViewModel() {
 
@@ -28,6 +34,8 @@ class TaskListViewModel(
         taskHistoryRepository = taskHistoryRepository,
         taskRepository = taskRepository,
     )
+
+    private val _notifyManager = NotifyManager()
 
     val listInventory: StateFlow<TaskList.Inventory> = _taskList.getTaskListInventory
 
@@ -96,11 +104,57 @@ class TaskListViewModel(
         return safeMethod
     }
 
-    fun onFinished(task: TaskItemModel, lazyListState: LazyListState) {
+    fun onFinished(
+        task: TaskItemModel,
+        lazyListState: LazyListState,
+        androidContext: Context,
+    ) {
+        task.taskViewData.let {
+            if (it.isReminded && it.reminderTime != null) viewModelScope.launch {
+                //TODO: remove notification and allow restore notification
+                val reminder = taskReminderRepo.getReminder(it.task.id)
+                val notifyId = reminder?.id ?: return@launch
+                _notifyManager.cancelNotification(
+                    notifyId = notifyId.toString(),
+                    context = androidContext,
+                    delShowedByNotifyId = notifyId,
+                )
+                taskReminderRepo.deleteRemindedInfo(it.task.id)
+            }
+        }
         task.onRemoveAction()
         viewModelScope.launch {
             delay(500)
             this@TaskListViewModel.setUndoBreakFactor(lazyListState)
+        }
+    }
+
+    suspend fun removeRemindedInfoByTime(
+        androidContext: Context,
+    ) = withContext(Dispatchers.Unconfined) {
+        while (true) {
+            _taskList.removeRemindedInfoByTime(
+                dbReminder = taskReminderRepo,
+                removeNotification = {
+                    val reminder = taskReminderRepo.getReminder(it)
+                    val notifyId = reminder?.id ?: return@removeRemindedInfoByTime true
+                    return@removeRemindedInfoByTime !NotifyManager.isNotificationExist(
+                        notifyId = notifyId, context = androidContext
+                    )
+                }
+            ) { // onRemoveNotification
+                val reminder = taskReminderRepo.getReminder(it)
+                val notifyId = reminder?.id ?: return@removeRemindedInfoByTime
+                _notifyManager.removeShowedNotification(notifyId, androidContext)
+                Log.d("removeRemindedInfoByTime", "onRemoveNotification: $it")
+            }.also {
+                when {
+                    it == null -> delay(60_000L)
+                    it > 20 -> delay(120_000L)
+                    it > 10 -> delay(80_000L)
+                    it <= 10 -> delay(60_000L)
+                }
+            }
         }
     }
 

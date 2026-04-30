@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.Flow
 import sqz.checklist.data.database.ReminderModeType
 import sqz.checklist.data.database.TaskReminder
 import sqz.checklist.data.database.model.ReminderViewData
+import sqz.checklist.data.database.model.TaskViewData
 
 @Suppress("AndroidUnresolvedRoomSqlReference")
 @Dao
@@ -93,4 +94,24 @@ interface TaskReminderDao {
      */
     @Delete
     suspend fun delete(reminder: TaskReminder)
+
+    @Query(
+        """
+        SELECT 
+            t.*,
+            EXISTS(SELECT 1 FROM taskDetail d WHERE d.taskId = t.id LIMIT 1) AS isDetailExist,
+            EXISTS(SELECT 1 FROM reminder r  WHERE r.taskId = t.id AND r.isReminded = 1 LIMIT 1) AS isReminded,
+            r.reminderTime
+        FROM task t INNER JOIN reminder r ON r.taskId = t.id 
+        WHERE t.isHistoryId = 0 AND r.isReminded = 1
+        ORDER BY r.reminderTime DESC
+    """
+    )
+    suspend fun getRemindedTaskList(): List<TaskViewData>
+
+    @Query("SELECT * FROM reminder WHERE taskId = :taskId")
+    suspend fun getReminderByTaskId(taskId: Long): TaskReminder?
+
+    @Query("DELETE FROM reminder WHERE taskId = :taskId")
+    suspend fun deleteReminder(taskId: Long): Int
 }

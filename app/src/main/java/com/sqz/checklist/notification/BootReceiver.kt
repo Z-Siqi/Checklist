@@ -8,7 +8,6 @@ import sqz.checklist.data.database.repository.DatabaseRepository
 import sqz.checklist.data.database.ReminderModeType
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import sqz.checklist.data.database.DatabaseProvider
 import sqz.checklist.data.database.getDatabaseBuilder
@@ -24,10 +23,9 @@ class BootReceiver : BroadcastReceiver() {
             intent.action == Intent.ACTION_MY_PACKAGE_REPLACED
         ) {
             Log.d("BootReceiver", "intent.action: ${intent.action}")
-            val notificationManager = MutableStateFlow(NotifyManager())
+            val notificationManager = NotifyManager()
             GlobalScope.launch {
-                notificationManager.value.requestPermission(context)
-                if (notificationManager.value.getAlarmPermission()) {
+                if (notificationManager.hasAlarmPermission(context)) {
                     this@BootReceiver.restoreReminder(
                         notificationManager = notificationManager,
                         context = context
@@ -38,7 +36,7 @@ class BootReceiver : BroadcastReceiver() {
     }
 
     private suspend fun restoreReminder(
-        notificationManager: MutableStateFlow<NotifyManager>,
+        notificationManager: NotifyManager,
         context: Context
     ) {
         val db = DatabaseProvider(getDatabaseBuilder(context)).getDatabase()
@@ -51,10 +49,9 @@ class BootReceiver : BroadcastReceiver() {
                 if (!notification.getAlarmNotificationState(data.reminder.id) &&
                     data.reminder.mode == ReminderModeType.AlarmManager && !data.reminder.isReminded
                 ) {
-                    notificationManager.value.createNotification(
+                    notificationManager.createNotification(
                         notifyId = data.reminder.id,
-                        delayDuration = data.reminder.reminderTime,
-                        timeUnit = TimeUnit.MILLISECONDS,
+                        targetTime = data.reminder.reminderTime,
                         context = context
                     ).also {
                         Log.d("RestoreReminder", "Restore NotifyId: ${data.reminder.id}")

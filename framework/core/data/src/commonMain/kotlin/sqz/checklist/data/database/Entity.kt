@@ -31,7 +31,7 @@ data class Task(
 /**
  * TaskReminder table database entity.
  *
- * @param id primary key.
+ * @param id primary key and also as the system notification ID.
  * @param taskId foreign key to [Task.id].
  * @param reminderTime reminder time as timestamp for the task.
  * @param mode reminder mode of the task.

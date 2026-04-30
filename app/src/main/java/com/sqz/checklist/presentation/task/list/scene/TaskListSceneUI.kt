@@ -1,5 +1,6 @@
 package com.sqz.checklist.presentation.task.list.scene
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -42,6 +43,7 @@ import sqz.checklist.task.api.list.TaskList
 @Composable
 fun BoxScope.TaskListSceneUI(
     viewModel: TaskListViewModel,
+    view: android.view.View,
     feedback: EffectFeedback,
     lazyListState: LazyListState = rememberLazyListState(),
 ) {
@@ -56,6 +58,7 @@ fun BoxScope.TaskListSceneUI(
             DefaultList(
                 scrollState = lazyListState,
                 listData = listInventory as TaskList.Inventory.Default,
+                view = view,
                 feedback = feedback,
                 viewModel = viewModel
             )
@@ -64,6 +67,7 @@ fun BoxScope.TaskListSceneUI(
             SearchList(
                 scrollState = lazyListState,
                 listData = listInventory as TaskList.Inventory.Search,
+                view = view,
                 feedback = feedback,
                 viewModel = viewModel
             )
@@ -91,6 +95,9 @@ fun BoxScope.TaskListSceneUI(
             onClick = viewModel::onUndoClick,
             feedback = feedback,
         )
+    } else LaunchedEffect(Unit) {
+        // run this once undo state false, then loop 1 min a time
+        viewModel.removeRemindedInfoByTime(androidContext = view.context)
     }
 }
 
@@ -98,6 +105,7 @@ fun BoxScope.TaskListSceneUI(
 private fun DefaultList(
     scrollState: LazyListState,
     listData: TaskList.Inventory.Default,
+    view: android.view.View,
     feedback: EffectFeedback,
     viewModel: TaskListViewModel,
 ) {
@@ -126,7 +134,9 @@ private fun DefaultList(
                 TaskCardUI(
                     task = viewModel.safeTaskItemModel(it),
                     listType = TaskList.ListType.Reminded,
-                    onFinished = { viewModel.onFinished(it, scrollState) },
+                    onFinished = {
+                        viewModel.onFinished(it, scrollState, view.context)
+                    },
                     feedback = feedback,
                     fromList = remindedList,
                 )
@@ -150,7 +160,9 @@ private fun DefaultList(
                 TaskCardUI(
                     task = viewModel.safeTaskItemModel(it),
                     listType = TaskList.ListType.Pinned,
-                    onFinished = { viewModel.onFinished(it, scrollState) },
+                    onFinished = {
+                        viewModel.onFinished(it, scrollState, view.context)
+                    },
                     feedback = feedback,
                     fromList = pinnedList,
                 )
@@ -170,7 +182,9 @@ private fun DefaultList(
                 TaskCardUI(
                     task = viewModel.safeTaskItemModel(it),
                     listType = TaskList.ListType.Primary,
-                    onFinished = { viewModel.onFinished(it, scrollState) },
+                    onFinished = {
+                        viewModel.onFinished(it, scrollState, view.context)
+                    },
                     feedback = feedback,
                 )
             }
@@ -201,6 +215,7 @@ private fun LazyListScope.defaultListTitleItem(
 private fun SearchList(
     scrollState: LazyListState,
     listData: TaskList.Inventory.Search,
+    view: android.view.View,
     feedback: EffectFeedback,
     viewModel: TaskListViewModel,
 ) {
@@ -224,7 +239,9 @@ private fun SearchList(
                 TaskCardUI(
                     task = viewModel.safeTaskItemModel(it),
                     listType = TaskList.ListType.Search,
-                    onFinished = { viewModel.onFinished(it, scrollState) },
+                    onFinished = {
+                        viewModel.onFinished(it, scrollState, view.context)
+                    },
                     feedback = feedback,
                 )
             }

@@ -12,13 +12,14 @@ import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.work.WorkManager
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 
 /**
  * This is the Main notification manager.
  * All notification related functions should be called from here.
  * This class is use to create delayed notification for Checklist.
  */
-class NotifyManager : Exception() {
+class NotifyManager {
     companion object {
         fun isNotificationExist(
             notifyId: Int,
@@ -37,96 +38,111 @@ class NotifyManager : Exception() {
         }
     }
 
-    private var permissionChecker: Boolean
-    private var notificationPermission: Boolean
-    private var alarmPermission: Boolean
-    private var repeatTime: Int
+    private var repeatTime: Int = 0
 
-    init {
-        this.permissionChecker = false
-        this.notificationPermission = false
-        this.alarmPermission = false
-        this.repeatTime = 0
-    }
-
-    fun requestPermission(context: Context): PermissionState {
-        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
-            PackageManager.PERMISSION_GRANTED
-        ) this.notificationPermission = true
+    fun checkPermissions(context: Context): PermissionState {
+        val notificationPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ActivityCompat.checkSelfPermission(
+                context, Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+        } else {
+            true
+        }
+        
+        var alarmPermission = false
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            if (alarmManager.canScheduleExactAlarms()) this.alarmPermission = true
-        } else if (this.notificationPermission) this.alarmPermission = true
-        this.permissionChecker = true
+            if (alarmManager.canScheduleExactAlarms()) alarmPermission = true
+        } else {
+            alarmPermission = true
+        }
+
         return when {
-            this.notificationPermission && this.alarmPermission -> PermissionState.Both
-            this.alarmPermission -> PermissionState.Alarm
-            this.notificationPermission -> PermissionState.Notification
+            notificationPermission && alarmPermission -> PermissionState.Both
+            alarmPermission -> PermissionState.Alarm
+            notificationPermission -> PermissionState.Notification
             else -> PermissionState.Null
         }
     }
 
+    fun hasAlarmPermission(context: Context): Boolean {
+        return checkPermissions(context).let { it == PermissionState.Both || it == PermissionState.Alarm }
+    }
+
+    fun hasNotificationPermission(context: Context): Boolean {
+        return checkPermissions(context).let { it == PermissionState.Both || it == PermissionState.Notification }
+    }
+
+    /**
+     * @param targetTime The absolute target time (Epoch milliseconds) to trigger the notification.
+     */
     fun createNotification(
         notifyId: Int,
-        delayDuration: Long,
-        timeUnit: java.util.concurrent.TimeUnit,
+        targetTime: Long,
         context: Context
     ): String {
-        if (!this.permissionChecker) throw Exception("Permission not check! run requestPermission() first!")
-        if (!this.notificationPermission) throw Exception("Notification permission not granted!")
-        if (!this.alarmPermission) Log.w(
+        val hasNotification = hasNotificationPermission(context)
+        val hasAlarm = hasAlarmPermission(context)
+        
+        if (!hasNotification) throw Exception("Notification permission not granted!")
+        if (!hasAlarm) Log.w(
             "ChecklistNotification", "Alarm permission not granted! Notification may arrive late!"
         )
         val notificationCreator = NotificationCreator(context)
-        if (this.alarmPermission) {
+        if (hasAlarm) {
             notificationCreator.createAlarmed(
                 notifyId = notifyId,
-                delayDuration = delayDuration
+                delayDuration = targetTime
             )
             return notifyId.toString()
         } else {
+            val delayDuration = targetTime - System.currentTimeMillis()
             return notificationCreator.createWorker(
                 notifyId = notifyId,
-                delayDuration = delayDuration,
-                timeUnit = timeUnit
+                delayDuration = if (delayDuration > 0) delayDuration else 0L,
+                timeUnit = TimeUnit.MILLISECONDS
             ).toString()
         }
     }
 
     fun cancelNotification(
-        string: String, context: Context,
-        delShowedByNotifyId: Int = -1, forceAsWorkManager: Boolean = false
+        notifyId: String, context: Context,
+        delShowedByNotifyId: Int? = null, forceAsWorkManager: Boolean = false
     ) {
-        if (!this.permissionChecker) this.requestPermission(context) // init if not init
         try {
-            if (this.alarmPermission && !forceAsWorkManager) {
-                val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-                val intent = Intent(context, NotificationReceiver::class.java).apply {
-                    putExtra("notifyId", string.toInt())
+            if (hasAlarmPermission(context) && !forceAsWorkManager) {
+                val notifyId = notifyId.toIntOrNull()
+                if (notifyId != null) {
+                    val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+                    val intent = Intent(context, NotificationReceiver::class.java).apply {
+                        putExtra("notifyId", notifyId)
+                    }
+                    val pendingIntent = PendingIntent.getBroadcast(
+                        context, notifyId, intent,
+                        PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+                    )
+                    if (pendingIntent != null) {
+                        alarmManager.cancel(pendingIntent)
+                    }
                 }
-                val pendingIntent = PendingIntent.getBroadcast(
-                    context, string.toInt(), intent,
-                    PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
-                )
-                alarmManager.cancel(pendingIntent)
             } else {
                 val workManager = WorkManager.getInstance(context)
-                workManager.cancelWorkById(UUID.fromString(string))
+                val notifyId = notifyId.toIntOrNull()
+                if (notifyId != null) {
+                    workManager.cancelAllWorkByTag(notifyId.toString())
+                } else {
+                    try {
+                        workManager.cancelWorkById(UUID.fromString(notifyId))
+                    } catch (_: IllegalArgumentException) {
+                        Log.w("ChecklistNotification", "Not a valid UUID or ID: $notifyId")
+                    }
+                }
                 this.repeatTime = 0
             }
-        } catch (e: NumberFormatException) {
-            Log.w("ChecklistNotification", "NumberFormatException: ${e.message}")
-            if (this.alarmPermission && this.repeatTime < 3) {
-                this.repeatTime++
-                val text = "Detected the reminder not alarmed, trying to cancel as worker manager."
-                Log.i("ChecklistNotification", text)
-                this.cancelNotification(string, context, delShowedByNotifyId, true)
-            }
-            if (this.repeatTime >= 3) Log.e("ChecklistNotification", "ERROR: $e")
         } catch (e: Exception) {
             Log.e("ChecklistNotification", "Exception: ${e.message}")
         }
-        if (delShowedByNotifyId != -1) { // Delete notification if showed
+        if (delShowedByNotifyId != null) { // Delete notification if showed
             this.removeShowedNotification(delShowedByNotifyId, context)
         }
     }
@@ -135,10 +151,5 @@ class NotifyManager : Exception() {
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.cancel(notifyId)
-    }
-
-    fun getAlarmPermission(): Boolean {
-        if (!this.permissionChecker) throw Exception("Permission not check! run requestPermission() first!")
-        return this.alarmPermission
     }
 }
