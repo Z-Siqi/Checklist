@@ -11,7 +11,6 @@ import android.os.Build
 import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.work.WorkManager
-import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 /**
@@ -37,8 +36,6 @@ class NotifyManager {
             return false
         }
     }
-
-    private var repeatTime: Int = 0
 
     fun checkPermissions(context: Context): PermissionState {
         val notificationPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -80,7 +77,7 @@ class NotifyManager {
         notifyId: Int,
         targetTime: Long,
         context: Context
-    ): String {
+    ) {
         val hasNotification = hasNotificationPermission(context)
         val hasAlarm = hasAlarmPermission(context)
         
@@ -94,56 +91,45 @@ class NotifyManager {
                 notifyId = notifyId,
                 delayDuration = targetTime
             )
-            return notifyId.toString()
         } else {
             val delayDuration = targetTime - System.currentTimeMillis()
-            return notificationCreator.createWorker(
+            notificationCreator.createWorker(
                 notifyId = notifyId,
                 delayDuration = if (delayDuration > 0) delayDuration else 0L,
                 timeUnit = TimeUnit.MILLISECONDS
-            ).toString()
+            )
         }
     }
 
     fun cancelNotification(
-        notifyId: String, context: Context,
-        delShowedByNotifyId: Int? = null, forceAsWorkManager: Boolean = false
+        notifyId: Int,
+        context: Context,
+        delShowedByNotifyId: Boolean = true
     ) {
         try {
-            if (hasAlarmPermission(context) && !forceAsWorkManager) {
-                val notifyId = notifyId.toIntOrNull()
-                if (notifyId != null) {
-                    val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-                    val intent = Intent(context, NotificationReceiver::class.java).apply {
-                        putExtra("notifyId", notifyId)
-                    }
-                    val pendingIntent = PendingIntent.getBroadcast(
-                        context, notifyId, intent,
-                        PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
-                    )
-                    if (pendingIntent != null) {
-                        alarmManager.cancel(pendingIntent)
-                    }
-                }
-            } else {
-                val workManager = WorkManager.getInstance(context)
-                val notifyId = notifyId.toIntOrNull()
-                if (notifyId != null) {
-                    workManager.cancelAllWorkByTag(notifyId.toString())
-                } else {
-                    try {
-                        workManager.cancelWorkById(UUID.fromString(notifyId))
-                    } catch (_: IllegalArgumentException) {
-                        Log.w("ChecklistNotification", "Not a valid UUID or ID: $notifyId")
-                    }
-                }
-                this.repeatTime = 0
+            // Cancel Alarm
+            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            val intent = Intent(context, NotificationReceiver::class.java).apply {
+                putExtra("NotificationId", notifyId)
+                putExtra("notifyId", notifyId) // For backwards compatibility
             }
+            val pendingIntent = PendingIntent.getBroadcast(
+                context, notifyId, intent,
+                PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+            )
+            if (pendingIntent != null) {
+                alarmManager.cancel(pendingIntent)
+            }
+
+            // Cancel Worker
+            val workManager = WorkManager.getInstance(context)
+            workManager.cancelAllWorkByTag(notifyId.toString())
+            
         } catch (e: Exception) {
             Log.e("ChecklistNotification", "Exception: ${e.message}")
         }
-        if (delShowedByNotifyId != null) { // Delete notification if showed
-            this.removeShowedNotification(delShowedByNotifyId, context)
+        if (delShowedByNotifyId) { // Delete notification if showed
+            this.removeShowedNotification(notifyId, context)
         }
     }
 

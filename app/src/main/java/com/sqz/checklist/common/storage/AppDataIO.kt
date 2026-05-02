@@ -477,16 +477,19 @@ suspend fun restoreNotification(dbInstance: TaskDatabase, context: Context) {
     val databaseRepository = DatabaseRepository(dbInstance)
     for (data in dbInstance.taskReminderDao().getAll()) {
         if (!data.reminder.isReminded) try {
-            val restore = notificationManager.value.createNotification(
+            notificationManager.value.createNotification(
                 notifyId = data.reminder.id,
                 targetTime = data.reminder.reminderTime,
                 context = context
             ).also { Log.d("RestoreReminder", "Restore NotifyId: ${data.reminder.id}") }
+            
+            // TODO: In the future, stop writing mode and extraData to database, 
+            // as UUID is no longer required and NotifyManager automatically handles fallback modes.
             val mode =
                 if (notificationManager.value.hasAlarmPermission(context)) ReminderModeType.AlarmManager else {
                     ReminderModeType.Worker
                 }
-            dbInstance.taskReminderDao().updateMode(data.reminder.id, mode, restore)
+            dbInstance.taskReminderDao().updateMode(data.reminder.id, mode, "")
             if (data.reminder.reminderTime < System.currentTimeMillis()) {
                 databaseRepository.setIsReminded(data.reminder.id, true)
             }
@@ -501,15 +504,10 @@ private suspend fun cancelAllNotification(dbInstance: TaskDatabase, context: Con
     try {
         val notificationManager = MutableStateFlow(NotifyManager())
         for (data in dbInstance.taskReminderDao().getAll()) {
-            when (data.reminder.mode) {
-                ReminderModeType.AlarmManager -> notificationManager.value.cancelNotification(
-                    data.reminder.id.toString(), context, data.reminder.id
-                )
-
-                ReminderModeType.Worker -> notificationManager.value.cancelNotification(
-                    data.reminder.extraData!!, context, data.reminder.id, true
-                )
-            }
+            notificationManager.value.cancelNotification(
+                notifyId = data.reminder.id, 
+                context = context
+            )
         }
     } catch (e: Exception) {
         Log.w("CancelReminder", "Exception: $e")

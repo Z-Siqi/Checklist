@@ -162,7 +162,7 @@ class ReminderHandler private constructor(
         _notifyId = this.setAndCheckRandomId()
         val isAlarmPermission = isAlarmPermission(context)
         val targetTime = System.currentTimeMillis() + timeUnit.toMillis(delayDuration)
-        val notification = notifyManager.createNotification(
+        notifyManager.createNotification(
             notifyId = _notifyId!!,
             targetTime = targetTime,
             context = context
@@ -175,9 +175,10 @@ class ReminderHandler private constructor(
                 Log.d("SetReminder", "New reminder is setting")
             } else throw e
         }
-        val notify = notification.also {
-            Log.i("Notification", "Reminder is setting, isAlarmPermission: $isAlarmPermission")
-        }
+        Log.i("Notification", "Reminder is setting, isAlarmPermission: $isAlarmPermission")
+        
+        // TODO: In the future, stop writing mode and extraData to database, 
+        // as UUID is no longer required and NotifyManager automatically handles fallback modes.
         val mode = if (isAlarmPermission) ReminderModeType.AlarmManager else {
             ReminderModeType.Worker
         }
@@ -186,7 +187,7 @@ class ReminderHandler private constructor(
             taskId = id,
             reminderTime = targetTime,
             mode = mode,
-            extraData = notify
+            extraData = ""
         )
         database().insertReminderData(taskReminder)
         if (mode == ReminderModeType.Worker) {
@@ -260,16 +261,10 @@ class ReminderHandler private constructor(
     private suspend fun cancelReminderAction(id: Long, reminder: Int?, context: Context) {
         try { // Cancel sent notification
             if (reminder != 0 && reminder != null) {
-                val data = MainActivity.taskDatabase.getDatabase().taskReminderDao().getAll(reminder)
-                if (data != null) when (data.reminder.mode) {
-                    ReminderModeType.AlarmManager -> notifyManager.cancelNotification(
-                        data.reminder.id.toString(), context, reminder
-                    )
-
-                    ReminderModeType.Worker -> notifyManager.cancelNotification(
-                        data.reminder.extraData!!, context, reminder
-                    )
-                }
+                notifyManager.cancelNotification(
+                    notifyId = reminder,
+                    context = context
+                )
             } else {
                 Log.d("CancelFailed", "No reminder data need to cancel")
             }

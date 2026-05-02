@@ -115,9 +115,9 @@ class TaskListViewModel(
                 val reminder = taskReminderRepo.getReminder(it.task.id)
                 val notifyId = reminder?.id ?: return@launch
                 _notifyManager.cancelNotification(
-                    notifyId = notifyId.toString(),
+                    notifyId = notifyId,
                     context = androidContext,
-                    delShowedByNotifyId = notifyId,
+                    delShowedByNotifyId = true,
                 )
                 taskReminderRepo.deleteRemindedInfo(it.task.id)
             }
