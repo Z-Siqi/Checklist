@@ -19,6 +19,8 @@ import androidx.lifecycle.coroutineScope
 import com.sqz.checklist.cache.ONE_DAY_LONG
 import com.sqz.checklist.cache.deleteAllFileWhichInProcessFilesPath
 import com.sqz.checklist.cache.dropEmptyInProcessFilesPath
+import com.sqz.checklist.notification.NotificationHelper
+import com.sqz.checklist.notification.NotifyManager
 import sqz.checklist.data.database.repository.DatabaseRepository
 import com.sqz.checklist.ui.MainLayout
 import com.sqz.checklist.ui.common.unit.isGestureNavigationMode
@@ -29,9 +31,11 @@ import com.sqz.checklist.ui.theme.UISizeLimit
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import sqz.checklist.data.database.DatabaseProvider
 import sqz.checklist.data.database.getDatabaseBuilder
+import sqz.checklist.data.database.repository.reminder.TaskReminderRepository
 import sqz.checklist.data.preferences.PrimaryPreferences
 import sqz.checklist.data.storage.AppDirType
 import sqz.checklist.data.storage.initInternalDirPath
@@ -122,6 +126,28 @@ class MainActivity : ComponentActivity() {
         if (PrimaryPreferences(applicationContext).clearHistoryWhenLeaved()) super.lifecycle.coroutineScope.launch {
             DatabaseRepository(taskDatabase.getDatabase()).deleteAllHistory()
             Log.d("clearHistoryWhenLeaved", "Clear all history")
+        }
+    }
+
+    @Override
+    override fun onResume() {
+        super.onResume()
+        // Check delayed notification, restore if not exist
+        super.lifecycle.coroutineScope.launch(Dispatchers.IO) {
+            delay(1680) // wait BootReceiver
+            val notifyManager = NotifyManager()
+            val reminderRepo = TaskReminderRepository.provider(taskDatabase)
+            val checkFirst = reminderRepo.getReminderViewList().firstOrNull {
+                !it.reminder.isReminded
+            }
+            if (checkFirst == null) return@launch
+            val isDelayedNotificationExist = notifyManager.isDelayedNotificationExist(
+                checkFirst.reminder.id, applicationContext
+            )
+            if (!isDelayedNotificationExist) {
+                NotificationHelper.restoreNotification(taskDatabase, applicationContext)
+                Log.w("MainActivity", "Notification restored due to lost!")
+            }
         }
     }
 

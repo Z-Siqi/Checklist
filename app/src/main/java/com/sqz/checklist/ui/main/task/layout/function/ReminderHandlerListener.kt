@@ -164,10 +164,6 @@ fun ReminderHandlerListener(
                     },
                     fontSize = 15.sp
                 )
-                if (errNotifyId != Int.MAX_VALUE) LaunchedEffect(Unit) {
-                    reminderHandler.restoreNotification(context)
-                    errNotifyId = Int.MAX_VALUE
-                }
             }
         )
 

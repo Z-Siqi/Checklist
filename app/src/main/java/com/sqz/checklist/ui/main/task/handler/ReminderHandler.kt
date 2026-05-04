@@ -27,7 +27,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import sqz.checklist.data.database.Task
 import sqz.checklist.data.database.model.ReminderViewData
-import java.util.Calendar
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 
@@ -97,6 +96,8 @@ class ReminderHandler private constructor(
     /** Checks if the app has permission to set exact alarms. */
     fun isAlarmPermission(context: Context): Boolean = notifyManager.hasAlarmPermission(context)
 
+    private var _lost = false
+
     /**
      * Checks and handles the initial state of notification permissions.
      *
@@ -115,9 +116,13 @@ class ReminderHandler private constructor(
             notifyManager.checkPermissions(context)
         }
 
-        fun makeToast() = Toast.makeText(
-            context, context.getString(R.string.permission_lost_toast), Toast.LENGTH_LONG
-        ).show()
+        fun makeToast() {
+            if (_lost) return
+            Toast.makeText(
+                context, context.getString(R.string.permission_lost_toast), Toast.LENGTH_LONG
+            ).show()
+            _lost = true
+        }
         if (init && requestPermission != PermissionState.Both) coroutineScope.launch {
             database().getIsRemindedNum(false)?.collect {
                 if (it >= 1) { // If no permission to send notification for reminder
@@ -190,12 +195,6 @@ class ReminderHandler private constructor(
             extraData = ""
         )
         database().insertReminderData(taskReminder)
-        if (mode == ReminderModeType.Worker) {
-            // if worker will send notification immediately, this delay is needed
-            // for update list correctly
-            delay(100)
-        }
-        //requestUpdate.update { true }
         _notifyId = null
     }
 
@@ -223,7 +222,7 @@ class ReminderHandler private constructor(
      */
     suspend fun updateNotification(notifyId: Int, task: Task, context: Context) {
         val reminder = database().getReminderData(reminderId = notifyId)
-        NotifyManager.isNotificationExist(notifyId, context) { channelId, postTime ->
+        NotifyManager.isNotificationDisplayed(notifyId, context) { channelId, postTime ->
             NotificationCreator(context).pushedNotificationCreator(
                 channel = NotificationChannelData(
                     id = channelId,
@@ -311,16 +310,5 @@ class ReminderHandler private constructor(
             return NotificationCreator(context).getAlarmNotificationState(notifyId)
         }
         return null
-    }
-
-    /** Force restores all scheduled notifications which cause by unexpected reason */
-    fun restoreNotification(context: Context) {
-        Log.e("ReminderHandler", "trying to call restoreNotification")
-        coroutineScope.launch(Dispatchers.Main) {
-            com.sqz.checklist.common.storage.restoreNotification(
-                MainActivity.taskDatabase.getDatabase(),
-                context
-            )
-        }
     }
 }

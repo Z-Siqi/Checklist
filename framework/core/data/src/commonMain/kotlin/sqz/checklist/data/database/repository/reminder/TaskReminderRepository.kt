@@ -32,11 +32,26 @@ interface TaskReminderRepository {
     suspend fun getReminderViewList(): List<ReminderViewData>
 
     /**
+     * Get [ReminderViewData] by notifyId which is the [TaskReminder.id] (primary key).
+     *
+     * @return [ReminderViewData] or `null` if [notifyId] not found.
+     */
+    suspend fun getReminderView(notifyId: Int): ReminderViewData?
+
+    /**
      * Get [TaskReminder] by taskId
      *
      * @return [TaskReminder] or `null` if [taskId] not found.
      */
     suspend fun getReminder(taskId: Long): TaskReminder?
+
+    /**
+     * Update [TaskReminder.isReminded] state.
+     *
+     * @param notifyId [TaskReminder.id] (primary key)
+     * @param isReminded [TaskReminder.isReminded]
+     */
+    suspend fun updateRemindedState(notifyId: Int, isReminded: Boolean)
 
     /**
      * Delete [TaskReminder] by task ID. Expected to remove the reminder data and the list for

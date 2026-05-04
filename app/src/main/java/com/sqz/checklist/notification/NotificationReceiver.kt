@@ -4,15 +4,13 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
-import com.sqz.checklist.MainActivity
 import com.sqz.checklist.R
-import sqz.checklist.data.database.repository.DatabaseRepository
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import sqz.checklist.data.database.DatabaseProvider
-import sqz.checklist.data.database.TaskDatabase
 import sqz.checklist.data.database.getDatabaseBuilder
+import sqz.checklist.data.database.repository.reminder.TaskReminderRepository
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -39,14 +37,10 @@ class NotificationReceiver : BroadcastReceiver() {
             intent.getIntExtra("NotificationId", Int.MAX_VALUE)
         }
         GlobalScope.launch {
-            val db: TaskDatabase = try {
-                MainActivity.taskDatabase.getDatabase()
-            } catch (_: Exception) {
-                DatabaseProvider(getDatabaseBuilder(context)).getDatabase()
-            }
+            val db = DatabaseProvider(getDatabaseBuilder(context))
             try {
-                val databaseRepository = DatabaseRepository(db)
-                val reminderData = databaseRepository.getReminderData(reminderId = notificationId)!!
+                val reminderRepository = TaskReminderRepository.provider(db)
+                val reminderData = reminderRepository.getReminderView(notificationId)!!
                 val notificationData = NotificationData(
                     id = reminderData.reminder.id,
                     title = reminderData.taskDescription,
@@ -57,12 +51,7 @@ class NotificationReceiver : BroadcastReceiver() {
                     ),
                 )
                 this@NotificationReceiver.createNotification(context, notificationData)
-                databaseRepository.setIsReminded(notificationId, true)
-                try {
-                    MainActivity.taskDatabase
-                } catch (_: Exception) {
-                    db.close()
-                }
+                reminderRepository.updateRemindedState(notificationId, true)
             } catch (e: Exception) {
                 if (e is NullPointerException) {
                     Log.i("NotificationReceiver", "Reminder not found")

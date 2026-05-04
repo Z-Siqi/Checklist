@@ -93,31 +93,34 @@ fun TaskListLayout(
         viewModel.setSearchState(listState.searchState)
         externalRequest(TaskListRequest.SearchProcessed)
     }
-    viewModel.externalRequest.collectAsState().value.let { request ->
-        when (request) {
-            is TaskItemModel.ExternalRequest.Info -> externalRequest(
-                TaskListRequest.Info(
-                    request.taskId, request.pinChangeAllowed
+    val request by viewModel.externalRequest.collectAsState()
+    LaunchedEffect(request) {
+        request.let { request ->
+            when (request) {
+                is TaskItemModel.ExternalRequest.Info -> externalRequest(
+                    TaskListRequest.Info(
+                        request.taskId, request.pinChangeAllowed
+                    )
                 )
-            )
 
-            is TaskItemModel.ExternalRequest.Detail -> externalRequest(
-                TaskListRequest.Detail(request.taskId)
-            )
+                is TaskItemModel.ExternalRequest.Detail -> externalRequest(
+                    TaskListRequest.Detail(request.taskId)
+                )
 
-            is TaskItemModel.ExternalRequest.Edit -> externalRequest(
-                TaskListRequest.Edit(request.taskId)
-            )
+                is TaskItemModel.ExternalRequest.Edit -> externalRequest(
+                    TaskListRequest.Edit(request.taskId)
+                )
 
-            is TaskItemModel.ExternalRequest.Reminder -> externalRequest(
-                TaskListRequest.Reminder(request.taskId)
-            )
+                is TaskItemModel.ExternalRequest.Reminder -> externalRequest(
+                    TaskListRequest.Reminder(request.taskId)
+                )
 
-            is TaskItemModel.ExternalRequest.RemoveReminded -> externalRequest(
-                TaskListRequest.RemoveReminded(request.taskId)
-            )
+                is TaskItemModel.ExternalRequest.RemoveReminded -> externalRequest(
+                    TaskListRequest.RemoveReminded(request.taskId)
+                )
 
-            is TaskItemModel.ExternalRequest.None -> {}
+                is TaskItemModel.ExternalRequest.None -> {}
+            }
         }
         viewModel.resetExternalRequest()
     }

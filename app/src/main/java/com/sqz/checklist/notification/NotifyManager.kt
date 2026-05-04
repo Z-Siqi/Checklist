@@ -11,6 +11,10 @@ import android.os.Build
 import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.work.WorkManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 
 /**
@@ -19,8 +23,15 @@ import java.util.concurrent.TimeUnit
  * This class is use to create delayed notification for Checklist.
  */
 class NotifyManager {
+
     companion object {
-        fun isNotificationExist(
+
+        /**
+         * Check if a notification is displayed.
+         *
+         * @param notifyId The unique identifier of the notification to check.
+         */
+        fun isNotificationDisplayed(
             notifyId: Int,
             context: Context,
             getNotification: (channelId: String, postTime: Long) -> Unit = { _, _ -> }
@@ -35,6 +46,44 @@ class NotifyManager {
             }
             return false
         }
+
+        /**
+         * Check if a worker notification is set.
+         *
+         * This function checks if a `WorkRequest` for a specific notification ID exists,
+         * which indicates whether a worker for that notification is scheduled.
+         *
+         * @param notifyId The unique identifier of the notification to check.
+         * @param context The application context.
+         * @return `true` if the worker is set, `false` otherwise.
+         */
+        fun isWorkerNotificationExist(notifyId: Int, context: Context): Boolean {
+            val workInfos = WorkManager
+                .getInstance(context)
+                .getWorkInfosByTag(notifyId.toString())
+                .get()
+            return workInfos.isNotEmpty()
+        }
+
+        /**
+         * Check if an alarm notification is set.
+         *
+         * This function checks if a `PendingIntent` for a specific notification ID exists,
+         * which indicates whether an alarm for that notification is scheduled.
+         * @param notifyId The unique identifier of the notification to check.
+         * @param context The application context.
+         * @return `true` if the alarm is set, `false` otherwise.
+         */
+        fun isAlarmNotificationExist(notifyId: Int, context: Context): Boolean {
+            val intent = Intent(context, NotificationReceiver::class.java).apply {
+                putExtra("NotificationId", notifyId)
+            }
+            val pendingIntent = PendingIntent.getBroadcast(
+                context, notifyId, intent,
+                PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+            )
+            return pendingIntent != null
+        }
     }
 
     fun checkPermissions(context: Context): PermissionState {
@@ -45,7 +94,7 @@ class NotifyManager {
         } else {
             true
         }
-        
+
         var alarmPermission = false
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -70,6 +119,16 @@ class NotifyManager {
         return checkPermissions(context).let { it == PermissionState.Both || it == PermissionState.Notification }
     }
 
+    fun isDelayedNotificationExist(notifyId: Int, context: Context): Boolean {
+        if (!hasNotificationPermission(context)) {
+            return false
+        }
+        if (hasAlarmPermission(context)) {
+            return isAlarmNotificationExist(notifyId, context)
+        }
+        return isWorkerNotificationExist(notifyId, context)
+    }
+
     /**
      * @param targetTime The absolute target time (Epoch milliseconds) to trigger the notification.
      */
@@ -80,12 +139,24 @@ class NotifyManager {
     ) {
         val hasNotification = hasNotificationPermission(context)
         val hasAlarm = hasAlarmPermission(context)
-        
+
         if (!hasNotification) throw Exception("Notification permission not granted!")
         if (!hasAlarm) Log.w(
             "ChecklistNotification", "Alarm permission not granted! Notification may arrive late!"
         )
         val notificationCreator = NotificationCreator(context)
+        if (targetTime < (System.currentTimeMillis())) { // If target time is already past, send notification immediately
+            val scope = CoroutineScope(SupervisorJob())
+            scope.launch {
+                delay(618)
+                val intent = Intent(context, NotificationReceiver::class.java).apply {
+                    putExtra("NotificationId", notifyId)
+                }
+                context.sendBroadcast(intent)
+                Log.i("ChecklistNotification", "Notification is sent immediately")
+            }
+            return
+        }
         if (hasAlarm) {
             notificationCreator.createAlarmed(
                 notifyId = notifyId,
@@ -124,7 +195,7 @@ class NotifyManager {
             // Cancel Worker
             val workManager = WorkManager.getInstance(context)
             workManager.cancelAllWorkByTag(notifyId.toString())
-            
+
         } catch (e: Exception) {
             Log.e("ChecklistNotification", "Exception: ${e.message}")
         }

@@ -68,6 +68,7 @@ interface TaskItemModel {
      * The external request for the external method to handle.
      *
      * @param None the request is not set.
+     * @param Info the request to get the task information.
      * @param Edit the request to edit the task.
      * @param Reminder the request to set the reminder for the task.
      */

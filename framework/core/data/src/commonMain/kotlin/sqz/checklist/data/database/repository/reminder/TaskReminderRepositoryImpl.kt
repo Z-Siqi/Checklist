@@ -18,11 +18,20 @@ internal class TaskReminderRepositoryImpl(
     }
 
     override suspend fun getReminderViewList(): List<ReminderViewData> {
-        TODO("Not yet implemented")
+        return this.reminderDao().getReminderViewList()
+    }
+
+    override suspend fun getReminderView(notifyId: Int): ReminderViewData? {
+        return this.reminderDao().getReminderView(notifyId)
     }
 
     override suspend fun getReminder(taskId: Long): TaskReminder? {
         return this.reminderDao().getReminderByTaskId(taskId)
+    }
+
+    override suspend fun updateRemindedState(notifyId: Int, isReminded: Boolean) {
+        val booleanToInt = if (isReminded) 1 else 0
+        this.reminderDao().updateIsReminded(notifyId, booleanToInt)
     }
 
     override suspend fun deleteRemindedInfo(taskId: Long) {

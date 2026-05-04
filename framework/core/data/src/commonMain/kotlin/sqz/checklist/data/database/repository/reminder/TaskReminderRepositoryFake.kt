@@ -13,7 +13,15 @@ class TaskReminderRepositoryFake : TaskReminderRepository {
         TODO("Not yet implemented")
     }
 
+    override suspend fun getReminderView(notifyId: Int): ReminderViewData? {
+        TODO("Not yet implemented")
+    }
+
     override suspend fun getReminder(taskId: Long): TaskReminder? {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun updateRemindedState(notifyId: Int, isReminded: Boolean) {
         TODO("Not yet implemented")
     }
 

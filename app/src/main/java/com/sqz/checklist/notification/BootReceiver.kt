@@ -4,7 +4,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
-import sqz.checklist.data.database.repository.DatabaseRepository
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -13,6 +12,7 @@ import sqz.checklist.data.database.getDatabaseBuilder
 
 import com.sqz.checklist.common.device.isResourceReadyForHighPerformance
 import android.app.AlarmManager
+import sqz.checklist.data.database.repository.reminder.TaskReminderRepository
 
 /**
  * Restore delayed notification (reminder) when boot or restart app
@@ -30,7 +30,7 @@ class BootReceiver : BroadcastReceiver() {
                 // If it's just a permission change, verify performance before heavy sync
                 if (intent.action == AlarmManager.ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED) {
                     // Only defer the upgrade (Worker -> Alarm) due to performance.
-                    // If we lost permission (Alarm -> Worker), we must fallback immediately to ensure delivery.
+                    // If we lost permission (Alarm -> Worker), we must fall back immediately to ensure delivery.
                     if (notificationManager.hasAlarmPermission(context) && !isResourceReadyForHighPerformance(context)) {
                         Log.d("BootReceiver", "Ignored sync due to device performance state")
                         return@launch
@@ -49,11 +49,9 @@ class BootReceiver : BroadcastReceiver() {
         notificationManager: NotifyManager,
         context: Context
     ) {
-        val db = DatabaseProvider(getDatabaseBuilder(context)).getDatabase()
-        val dao = db.taskReminderDao()
-        val list = dao.getAll()
-        val databaseRepository = DatabaseRepository(db)
-        val notification = NotificationCreator(context)
+        val db = DatabaseProvider(getDatabaseBuilder(context))
+        val reminderRepo = TaskReminderRepository.provider(db)
+        val list = reminderRepo.getReminderViewList()
         val hasAlarmPermission = notificationManager.hasAlarmPermission(context)
         
         for (data in list) {
@@ -62,7 +60,7 @@ class BootReceiver : BroadcastReceiver() {
                 
                 // Determine if we need to reschedule
                 val needsReschedule = if (hasAlarmPermission) {
-                    !notification.getAlarmNotificationState(data.reminder.id)
+                    !NotifyManager.isAlarmNotificationExist(data.reminder.id, context)
                 } else {
                     // Always re-trigger createNotification since WorkManager uses REPLACE,
                     // handling downgrade cleanly.
@@ -85,10 +83,6 @@ class BootReceiver : BroadcastReceiver() {
                         context = context
                     )
                     Log.d("BootReceiver", "Synced NotifyId: ${data.reminder.id}")
-                }
-                
-                if (data.reminder.reminderTime < System.currentTimeMillis()) {
-                    databaseRepository.setIsReminded(data.reminder.id, true)
                 }
             } catch (e: Exception) {
                 Log.e("BootReceiver", "Failed: ${e.message}")

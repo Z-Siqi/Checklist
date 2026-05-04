@@ -200,17 +200,6 @@ class DatabaseRepository(
     }
 
     /**
-     * Sets the 'isReminded' status for a specific reminder.
-     *
-     * @param reminderId The ID of the reminder to update.
-     * @param state The new boolean status (true for reminded, false for not reminded).
-     */
-    suspend fun setIsReminded(reminderId: Int, state: Boolean) {
-        if (state) this.databaseInstance!!.taskReminderDao().setIsReminded(reminderId, 1)
-        else this.databaseInstance!!.taskReminderDao().setIsReminded(reminderId, 0)
-    }
-
-    /**
      * Moves a task from the history list back to the main list by setting its history ID to 0
      * and then re-sequencing the remaining history items.
      *

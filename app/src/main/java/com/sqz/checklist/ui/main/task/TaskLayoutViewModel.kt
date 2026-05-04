@@ -24,14 +24,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import sqz.checklist.data.database.Task
-import sqz.checklist.data.database.model.TaskViewData
 import sqz.checklist.data.database.repository.Table
 import sqz.checklist.data.storage.audioMediaPath
 import sqz.checklist.data.storage.pictureMediaPath
 import sqz.checklist.data.storage.videoMediaPath
 import sqz.checklist.task.api.list.TaskList
 import java.io.File
-import java.util.concurrent.atomic.AtomicBoolean
 
 open class TaskLayoutViewModel : ViewModel() {
     open fun database(): DatabaseRepository = DatabaseRepository(
@@ -161,7 +159,7 @@ open class TaskLayoutViewModel : ViewModel() {
 
     fun updateNotification(taskId: Long, context: Context) = viewModelScope.launch {
         database().getReminderData(taskId = taskId)?.let {
-            if (NotifyManager.isNotificationExist(it.id, context)) {
+            if (NotifyManager.isNotificationDisplayed(it.id, context)) {
                 val task = database().getTable(Table.Task, taskId)[0] as Task
                 reminderHandler.updateNotification(it.id, task, context)
             }

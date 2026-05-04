@@ -10,9 +10,7 @@ import com.sqz.checklist.notification.NotifyManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import sqz.checklist.data.database.repository.history.TaskHistoryRepository
@@ -138,7 +136,7 @@ class TaskListViewModel(
                 removeNotification = {
                     val reminder = taskReminderRepo.getReminder(it)
                     val notifyId = reminder?.id ?: return@removeRemindedInfoByTime true
-                    return@removeRemindedInfoByTime !NotifyManager.isNotificationExist(
+                    return@removeRemindedInfoByTime !NotifyManager.isNotificationDisplayed(
                         notifyId = notifyId, context = androidContext
                     )
                 }

@@ -22,6 +22,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
 import com.sqz.checklist.MainActivity.Companion.taskDatabase
+import com.sqz.checklist.notification.NotificationHelper
 import com.sqz.checklist.notification.NotifyManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -32,12 +33,10 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import okio.Path.Companion.toPath
 import sqz.checklist.data.database.DatabaseProvider
-import sqz.checklist.data.database.ReminderModeType
 import sqz.checklist.data.database.TaskDatabase
 import sqz.checklist.data.database.TaskDetailType
 import sqz.checklist.data.database.getDatabaseBuilder
 import sqz.checklist.data.database.mergeDatabaseCheckpoint
-import sqz.checklist.data.database.repository.DatabaseRepository
 import sqz.checklist.data.database.taskDatabaseName
 import sqz.checklist.data.preferences.PreferencesInCache
 import sqz.checklist.data.storage.AppDirType
@@ -49,7 +48,6 @@ import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import java.util.concurrent.TimeUnit
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
@@ -272,7 +270,7 @@ class AppDataIO private constructor(application: Application) : AndroidViewModel
                         deleteDbFiles(File(dbPath))
                     }
                     setLoading(90) // restore notification
-                    restoreNotification(taskDatabase.getDatabase(), context)
+                    NotificationHelper.restoreNotification(taskDatabase, context)
                     setLoading(95) // remove invalid file
                     removeInvalidFile(context)
                     if (foundSetting && cache.restoreSettings()) {
@@ -468,34 +466,6 @@ fun ImportTaskDatabase(
         dbState(getIOdbState, appDataIO.getLoadingState().collectAsState(0).value)
     } else if (uri.value == null) {
         dbState(IOdbState.Default, 100)
-    }
-}
-
-suspend fun restoreNotification(dbInstance: TaskDatabase, context: Context) {
-    Log.d("RestoreReminder", "trying to restore all reminder")
-    val notificationManager = MutableStateFlow(NotifyManager())
-    val databaseRepository = DatabaseRepository(dbInstance)
-    for (data in dbInstance.taskReminderDao().getAll()) {
-        if (!data.reminder.isReminded) try {
-            notificationManager.value.createNotification(
-                notifyId = data.reminder.id,
-                targetTime = data.reminder.reminderTime,
-                context = context
-            ).also { Log.d("RestoreReminder", "Restore NotifyId: ${data.reminder.id}") }
-            
-            // TODO: In the future, stop writing mode and extraData to database, 
-            // as UUID is no longer required and NotifyManager automatically handles fallback modes.
-            val mode =
-                if (notificationManager.value.hasAlarmPermission(context)) ReminderModeType.AlarmManager else {
-                    ReminderModeType.Worker
-                }
-            dbInstance.taskReminderDao().updateMode(data.reminder.id, mode, "")
-            if (data.reminder.reminderTime < System.currentTimeMillis()) {
-                databaseRepository.setIsReminded(data.reminder.id, true)
-            }
-        } catch (e: Exception) {
-            Log.w("RestoreReminder", "Exception: $e")
-        }
     }
 }
 

@@ -64,23 +64,6 @@ interface TaskReminderDao {
     suspend fun getModeNum(modeType: ReminderModeType, withoutReminded: Int = -1): Int
 
     /**
-     * Update the `isReminded` status of a reminder.
-     * @param id The ID of the reminder to update.
-     * @param setter The new value for `isReminded` (0 for not reminded, 1 for reminded).
-     */
-    @Query("UPDATE reminder SET isReminded = :setter WHERE id = :id")
-    suspend fun setIsReminded(id: Int, setter: Int)
-
-    /**
-     * Update the mode and extra data for a specific reminder.
-     * @param id The ID of the reminder to update.
-     * @param mode The new [ReminderModeType] for the reminder.
-     * @param extraData The new extra data string for the reminder.
-     */
-    @Query("UPDATE reminder SET mode = :mode, extraData = :extraData WHERE id = :id")
-    suspend fun updateMode(id: Int, mode: ReminderModeType, extraData: String)
-
-    /**
      * Insert one or more reminders. If a reminder with the same primary key already exists,
      * it will be replaced.
      * @param reminder The reminder(s) to insert.
@@ -109,8 +92,31 @@ interface TaskReminderDao {
     )
     suspend fun getRemindedTaskList(): List<TaskViewData>
 
+    @Query(
+        """
+        SELECT 
+            r.*,
+            (SELECT t.description FROM task t WHERE t.id = r.taskId) AS taskDescription
+        FROM reminder r
+    """
+    )
+    suspend fun getReminderViewList(): List<ReminderViewData>
+
+    @Query(
+        """
+        SELECT 
+            r.*,
+            (SELECT t.description FROM task t WHERE t.id = r.taskId) AS taskDescription
+        FROM reminder r WHERE r.id = :notifyId
+    """
+    )
+    suspend fun getReminderView(notifyId: Int): ReminderViewData?
+
     @Query("SELECT * FROM reminder WHERE taskId = :taskId")
     suspend fun getReminderByTaskId(taskId: Long): TaskReminder?
+
+    @Query("UPDATE reminder SET isReminded = :to WHERE id = :notifyId")
+    suspend fun updateIsReminded(notifyId: Int, to: Int)
 
     @Query("DELETE FROM reminder WHERE taskId = :taskId")
     suspend fun deleteReminder(taskId: Long): Int
