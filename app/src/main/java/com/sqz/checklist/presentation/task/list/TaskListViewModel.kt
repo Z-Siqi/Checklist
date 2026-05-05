@@ -131,6 +131,7 @@ class TaskListViewModel(
         androidContext: Context,
     ) = withContext(Dispatchers.Unconfined) {
         while (true) {
+            Log.d("TaskListViewModel", "removeRemindedInfoByTime executed")
             _taskList.removeRemindedInfoByTime(
                 dbReminder = taskReminderRepo,
                 removeNotification = {

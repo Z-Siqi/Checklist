@@ -18,7 +18,11 @@ internal class TaskReminderRepositoryImpl(
     }
 
     override suspend fun getReminderViewList(): List<ReminderViewData> {
-        return this.reminderDao().getReminderViewList()
+        return try {
+            this.reminderDao().getReminderViewList()
+        } catch (_: IllegalArgumentException) {
+            listOf()
+        }
     }
 
     override suspend fun getReminderView(notifyId: Int): ReminderViewData? {

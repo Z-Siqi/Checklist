@@ -119,6 +119,7 @@ class AppDataIO private constructor(application: Application) : AndroidViewModel
             setLoading(1) // remove invalid file
             removeInvalidFile(context)
             setLoading(20) // start backup
+            mergeDatabaseCheckpoint(taskDatabase.getDatabase())
             val dbPath = context.getDatabasePath(taskDatabaseName).absolutePath
             val mediaDir = File(context.filesDir, "media/")
             val prefsDir = File(context.dataDir, "shared_prefs/")
@@ -132,10 +133,13 @@ class AppDataIO private constructor(application: Application) : AndroidViewModel
                 }
                 if (cache.backupSettings()) {
                     setLoading(68) // backup primary_preferences
-                    File(prefsDir, "primary_preferences.xml").inputStream().use { input ->
-                        zipOut.putNextEntry(ZipEntry("primary_preferences.xml"))
-                        input.copyTo(zipOut)
-                        zipOut.closeEntry()
+                    File(prefsDir, "primary_preferences.xml").let {
+                        if (!it.exists()) return@let
+                        it.inputStream().use { input ->
+                            zipOut.putNextEntry(ZipEntry("primary_preferences.xml"))
+                            input.copyTo(zipOut)
+                            zipOut.closeEntry()
+                        }
                     }
                 }
                 setLoading(70) // backup media files
@@ -262,6 +266,7 @@ class AppDataIO private constructor(application: Application) : AndroidViewModel
                     setLoading(75) // delete cache
                     zipFile.delete()
                     setLoading(80) // re-open database
+                    taskDatabase.rebuild()
                     DatabaseProvider.updateBuilder(getDatabaseBuilder(context))
                     setLoading(85) // check database
                     if (!isDatabaseValid(dbPath)) {

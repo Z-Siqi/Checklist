@@ -12,7 +12,7 @@ android {
         applicationId = "com.sqz.checklist"
         minSdk = 26
         targetSdk = 36
-        versionCode = 5300
+        versionCode = 5301
         versionName = "0.5.3-Build_CI"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

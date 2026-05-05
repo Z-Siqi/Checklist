@@ -4,8 +4,7 @@
 
 ![ic_launcher_round](https://github.com/Z-Siqi/Checklist/assets/77391690/e2fa56f6-a865-430d-ae71-10c5c6796211)
 
-[![Download](https://img.shields.io/github/v/tag/Z-Siqi/Checklist?label=Release&color=green)](https://github.com/Z-Siqi/Checklist/releases)
-</br>
+[![Download](https://img.shields.io/github/v/tag/Z-Siqi/Checklist?label=Release&color=green)](https://github.com/Z-Siqi/Checklist/releases)\
 [![Beta](https://img.shields.io/badge/Download-blue?label=Beta)](https://github.com/Z-Siqi/Checklist/raw/master/app/release/app-release.apk)
 [![CI](https://img.shields.io/github/actions/workflow/status/Z-Siqi/Checklist/android.yml?logoColor=sienna&label=CI%20builds&labelColor=sienna&color=seagreen)](https://github.com/Z-Siqi/Checklist/actions/workflows/android.yml)
 
@@ -20,12 +19,12 @@ Looking for a simplicity and practicality in design? Want a design without unnec
 
 ## Screenshot
 
-<img width="300" height="800" alt="Screenshot" src="https://github.com/user-attachments/assets/db4db541-5610-4dd2-914c-2be3eb71f145" />
+<img width="380" height="800" alt="Screenshot" src="https://github.com/user-attachments/assets/db4db541-5610-4dd2-914c-2be3eb71f145" />
 
 
 ***
 
-[<img width="150" height="65" alt="GetItOnGooglePlay" src="https://github.com/user-attachments/assets/d6b938b0-3f67-47b6-905a-8154892212a9" />](https://play.google.com/store/apps/details?id=com.sqz.checklist)
+[<img width="180" height="65" alt="GetItOnGooglePlay" src="https://github.com/user-attachments/assets/d6b938b0-3f67-47b6-905a-8154892212a9" />](https://play.google.com/store/apps/details?id=com.sqz.checklist)
 
 
 ![License](https://img.shields.io/github/license/Z-Siqi/Checklist)
