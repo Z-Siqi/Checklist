@@ -105,17 +105,17 @@ private fun URLTypeCard(url: String, view: android.view.View) {
                 scrollBarTrackColor = MaterialTheme.colorScheme.outlineVariant,
                 scrollBarColor = MaterialTheme.colorScheme.outline,
                 showScrollBar = scrollState.canScrollBackward || scrollState.canScrollForward
-            )
-            .verticalScroll(scrollState),
+            ),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
         )
     ) {
+        val scrollableModifier = Modifier.verticalScroll(scrollState)
         UrlText(
             url = url,
             style = textStyle,
             view = view,
-            modifier = Modifier.padding(10.dp),
+            modifier = scrollableModifier.padding(10.dp),
         )
     }
 }

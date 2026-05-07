@@ -172,7 +172,7 @@ private fun InfoTaskDialogWithPin(
     isSmallScreenSize: Boolean,
     feedback: EffectFeedback,
     modifier: Modifier = Modifier,
-    contentButton: @Composable (() -> Unit) = {},
+    contentButton: @Composable (() -> Unit)? = null,
 ) = InfoTaskDialog(
     description = description,
     onDismissRequest = onDismissRequest,

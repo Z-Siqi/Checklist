@@ -102,8 +102,7 @@ private fun TextTypeCard(text: String) {
                 scrollBarTrackColor = MaterialTheme.colorScheme.outlineVariant,
                 scrollBarColor = MaterialTheme.colorScheme.outline,
                 showScrollBar = scrollState.canScrollBackward || scrollState.canScrollForward
-            )
-            .verticalScroll(scrollState),
+            ),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
         )
@@ -111,8 +110,10 @@ private fun TextTypeCard(text: String) {
         Text(
             text = text,
             style = textStyle,
+            modifier = Modifier
+                .verticalScroll(scrollState)
+                .padding(10.dp),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(10.dp),
         )
     }
 }

@@ -79,13 +79,32 @@ interface StorageManager {
 
     /**
      * File delete mode
+     *
+     * @see deleteTempFile
+     * @see deleteStorageFile
+     * @see deleteCacheFile
      */
     sealed interface DeleteMode {
 
+        /**
+         * Delete all under the type of folder. e.g. [deleteCacheFile] will remove all files under
+         * the `/cache/` folder.
+         */
         object All : DeleteMode
 
+        /**
+         * Delete the file by a specific path which under the category;
+         *   e.g. [deleteStorageFile] will only cover the file under `../media/`, otherwise it will
+         *   throw [IllegalArgumentException].
+         *
+         * **Note**: Make sure the path is full path which can get from [appInternalDirPath] method.
+         */
         data class FilePath(val path: String) : DeleteMode
 
+        /**
+         * delete all file that older than the timestamp that under the type of folder.
+         * e.g. [deleteCacheFile] will remove all files under the `/cache/` folder.
+         */
         data class BeforeTime(val deleteAllFileBefore: Long) : DeleteMode
     }
 

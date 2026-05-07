@@ -31,7 +31,16 @@ internal suspend fun TaskDetail.deleteTaskDetailStorageFile(
             if (isSamePathFind) return
         }
         try {
-            val delMode = StorageManager.DeleteMode.FilePath(it)
+            val toStr = it.let { let ->
+                if (let.startsWith("file:///") || let.startsWith("content://")) {
+                    return@let let.replaceBefore("media", "")
+                }
+                return@let let
+            }
+            val path: String = toStr.let { let ->
+                "${appInternalDirPath(AppDirType.Data)}/${let}"
+            }
+            val delMode = StorageManager.DeleteMode.FilePath(path)
             storageManager.deleteStorageFile(delMode)
         } catch (e: IOException) {
             println("Storage file may deleted before this called, which is unexpected!")

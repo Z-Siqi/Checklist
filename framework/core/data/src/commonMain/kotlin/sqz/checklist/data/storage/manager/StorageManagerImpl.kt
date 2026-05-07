@@ -36,13 +36,13 @@ internal class StorageManagerImpl(
     }
 
     internal fun sanitizeFileName(fileName: String): String {
-        if (fileName.length > 255) {
-            val deleteLength = fileName.substring(fileName.length - 252, fileName.length)
-            return this.sanitizeFileName("...$deleteLength")
-        }
         var sanitizedFileName = fileName.replace(illegalFileNameCharsRegex, "-")
         if (sanitizedFileName.uppercase() in reservedFileNames) {
             sanitizedFileName = "file-$sanitizedFileName"
+        }
+        if (fileName.length > 253) {
+            val deleteLength = fileName.substring(fileName.length - 250, fileName.length)
+            return this.sanitizeFileName("...$deleteLength")
         }
         return sanitizedFileName
     }
@@ -62,7 +62,11 @@ internal class StorageManagerImpl(
         val timestamp = Clock.System.now().toEpochMilliseconds()
         val salt = (0..999).random().toString().padStart(3, '0')
 
-        val storedFileName = "${timestamp}_${salt}_${fileName.replace(" ", "-")}"
+        val storedFileName = "${timestamp}_${salt}_${fileName.replace(" ", "-")}".let {
+            if (it.length > 253) {
+                it.substring(0, 253)
+            } else it
+        }
         val dest = dir / storedFileName
 
         inputSource().buffer().use { src ->
@@ -162,6 +166,11 @@ internal class StorageManagerImpl(
 
             is StorageManager.DeleteMode.FilePath -> {
                 if (!mode.path.startsWith(appInternalDirPath(AppDirType.Data))) {
+                    if (mode.path.startsWith("media/")) {
+                        val errText =
+                            "Invalid path due to may not start with `appInternalDirPath(AppDirType.Data)`: ${mode.path}"
+                        throw IllegalArgumentException(errText)
+                    }
                     throw IllegalArgumentException("Invalid path: ${mode.path}")
                 }
                 val dir: Path = mode.path.toPath()

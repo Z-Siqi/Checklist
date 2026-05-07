@@ -18,6 +18,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -89,6 +90,9 @@ fun ModifyDetailListDialogUI(
             onConfirm = onConfirm,
             detailState = detailState,
         )
+    }
+    LaunchedEffect(detailState.size) {
+        if (detailState.isEmpty()) onConfirm()
     }
 }
 
@@ -186,13 +190,15 @@ private fun ThisDialogFuncButton(
 ) = Row {
     Spacer(modifier = Modifier.weight(1f))
     val dismissTextRid = detailState.let {
-        if (it.size <= 1) R.string.dismiss else R.string.back
+        if (it.size == 1) R.string.dismiss else R.string.back
     }
-    TextButton(onClick = onDismiss) {
-        Text(
-            text = stringResource(dismissTextRid),
-            fontWeight = FontWeight.SemiBold
-        )
+    if (detailState.isNotEmpty()) {
+        TextButton(onClick = onDismiss) {
+            Text(
+                text = stringResource(dismissTextRid),
+                fontWeight = FontWeight.SemiBold
+            )
+        }
     }
     TextButton(onClick = onConfirm) {
         Text(

@@ -55,6 +55,8 @@ import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.MutableState
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -239,27 +241,39 @@ private fun DetailTypeMenu(
     BoxWithConstraints {
         var menuExpanded by remember { mutableStateOf(false) }
         val mWidth = maxWidth
-        val animationModifier = Modifier.animateContentSize(
-            animationSpec = spring(
-                dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessLow
-            )
-        )
-        OutlinedButton(
-            onClick = { menuExpanded = !menuExpanded },
-            modifier = animationModifier.widthIn(min = mWidth / 1.618f)
-        ) {
-            val typeTextRid: Int = getTypeTextRid(detailType) ?: R.string.click_select_detail_type
-            Text(
-                text = stringResource(typeTextRid),
-                autoSize = TextAutoSize.StepBased(
-                    minFontSize = 5.sp, maxFontSize = LocalTextStyle.current.fontSize
-                ),
-                maxLines = 1
-            )
-            Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = null)
+        Column {
+            val density = LocalDensity.current
+            var parentWidthDp by remember { mutableStateOf(0.dp) }
+            OutlinedButton(
+                onClick = { menuExpanded = !menuExpanded },
+                modifier = Modifier
+                    .animateContentSize(
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessLow
+                        )
+                    )
+                    .widthIn(min = mWidth / 1.618f)
+                    .onGloballyPositioned { layoutCoordinates ->
+                        val widthPx = layoutCoordinates.size.width
+                        parentWidthDp = with(density) { widthPx.toDp() }
+                    },
+                enabled = true,
+            ) {
+                val typeTextRid: Int = getTypeTextRid(detailType) ?: R.string.click_select_detail_type
+                Text(
+                    text = stringResource(typeTextRid),
+                    autoSize = TextAutoSize.StepBased(
+                        minFontSize = 5.sp, maxFontSize = LocalTextStyle.current.fontSize
+                    ),
+                    maxLines = 1
+                )
+                Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = null)
+            }
             val focusManager = LocalFocusManager.current
             DropdownMenuPopup(
-                modifier = Modifier.clip(ShapeDefaults.Large),
+                modifier = Modifier
+                    .widthIn(min = parentWidthDp)
+                    .clip(ShapeDefaults.Large),
                 expanded = menuExpanded,
                 onDismissRequest = {
                     menuExpanded = false
