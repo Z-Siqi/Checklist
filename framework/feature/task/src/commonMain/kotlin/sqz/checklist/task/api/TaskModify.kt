@@ -38,6 +38,14 @@ interface TaskModify {
     val getModifyState: StateFlow<ModifyState>
 
     /**
+     * Determines if the current task modify has unsaved changes compared to the originally loaded data
+     * or if it's a new task with input.
+     *
+     * @return a [StateFlow] emitting `true` if there are unsaved changes, `false` otherwise.
+     */
+    val isModified: StateFlow<Boolean>
+
+    /**
      * Update loading state for process the thing that may take a while.
      *
      * This function will update [State] to `Loading`; App can be show loading UI once

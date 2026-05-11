@@ -12,10 +12,12 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sqz.checklist.MainActivity
+import com.sqz.checklist.common.AndroidEffectFeedback
 import com.sqz.checklist.presentation.task.modify.dialog.detail.TaskModifyForDetailUI
 import com.sqz.checklist.presentation.task.modify.dialog.task.TaskModifyForTaskUI
 import com.sqz.checklist.ui.common.dialog.ProcessingDialog
 import kotlinx.coroutines.delay
+import sqz.checklist.common.EffectFeedback
 import sqz.checklist.data.database.repository.task.TaskRepository
 import sqz.checklist.data.database.repository.task.TaskRepositoryFake
 import sqz.checklist.data.preferences.PrimaryPreferences
@@ -59,6 +61,7 @@ fun TaskModifyLayout(
     modifyState: TaskModifyState,
     onFinished: (taskId: Long?) -> Unit,
     requestReminder: (taskId: Long) -> Unit,
+    feedback: EffectFeedback,
     modifier: Modifier = Modifier,
     viewModel: TaskModifyViewModel = viewModelFactory()
 ) {
@@ -102,12 +105,14 @@ fun TaskModifyLayout(
                     viewModel.confirmModify(requestReminder) { finishedId.value = it }
                 },
                 viewModel = viewModel,
+                feedback = feedback,
                 modifier = modifier,
             )
         } else {
             TaskModifyForDetailUI(
                 preference = preference,
                 viewModel = viewModel,
+                feedback = feedback,
                 modifier = modifier,
             )
         }
@@ -131,6 +136,7 @@ private fun Preview() {
         modifyState = TaskModifyState.AddTask,
         onFinished = {},
         requestReminder = {},
+        feedback = AndroidEffectFeedback(LocalView.current),
         viewModel = vmFake
     )
 }

@@ -175,6 +175,7 @@ fun TaskLayout(
                 taskState.requestModify(null)
                 taskId?.let { let -> taskState.updateNotification(let, context) }
             },
+            feedback = AndroidEffectFeedback(view)
         )
     }
     if (taskCreatedToast.value) LaunchedEffect(Unit) {

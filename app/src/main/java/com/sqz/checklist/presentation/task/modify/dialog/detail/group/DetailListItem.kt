@@ -40,8 +40,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.sqz.checklist.R
+import com.sqz.checklist.common.AndroidEffectFeedback
 import com.sqz.checklist.presentation.task.modify.dialog.detail.getTypeTextRid
 import com.sqz.checklist.ui.common.TextTooltipBox
+import sqz.checklist.common.EffectFeedback
 import sqz.checklist.task.api.TaskModify
 
 /** This method expected to be called only within this package and its sub-packages. **/
@@ -54,6 +56,7 @@ internal fun DetailListItem(
     dragMode: Boolean,
     clearFocusState: MutableState<Boolean>,
     isSmallScreenSize: Boolean,
+    feedback: EffectFeedback,
 ) {
     val cardModifier = itemContentData.itemModifier.let { modifier ->
         if (!dragMode) {
@@ -93,8 +96,14 @@ internal fun DetailListItem(
                 onDescriptionChanged = {
                     onDescriptionChanged(itemContentData.index, it)
                 },
-                onRemove = { onRemove(itemContentData.index) },
-                onModify = { onListItemSelect(itemContentData.index) },
+                onRemove = {
+                    onRemove(itemContentData.index)
+                    feedback.onClickEffect()
+                },
+                onModify = {
+                    onListItemSelect(itemContentData.index)
+                    feedback.onClickEffect()
+                },
                 clearFocusState = clearFocusState,
                 detailItem = itemContentData.item,
             )
@@ -210,11 +219,12 @@ private fun DetailListItemPreview() {
     )
     DetailListItem(
         itemContentData = itemContentData,
-        onDescriptionChanged = {_, _ ->},
+        onDescriptionChanged = { _, _ -> },
         onListItemSelect = {},
         onRemove = {},
         dragMode = false,
         clearFocusState = remember { mutableStateOf(false) },
-        isSmallScreenSize = false
+        isSmallScreenSize = false,
+        feedback = AndroidEffectFeedback(androidx.compose.ui.platform.LocalView.current)
     )
 }

@@ -4,7 +4,6 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
 import android.util.Log
-import android.view.SoundEffectConstants
 import android.view.View
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -59,6 +58,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import com.sqz.checklist.R
+import com.sqz.checklist.common.AndroidEffectFeedback
 import com.sqz.checklist.common.fileUriDecoder
 import com.sqz.checklist.common.media.getAlbumArt
 import com.sqz.checklist.common.media.toMinute
@@ -67,6 +67,7 @@ import com.sqz.checklist.ui.common.unit.pxToDp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import okio.Path.Companion.toPath
+import sqz.checklist.common.EffectFeedback
 import sqz.checklist.data.storage.StorageHelper.isMediaPath
 import sqz.checklist.data.storage.StorageHelper.isTempPath
 import sqz.checklist.data.storage.manager.StorageManager
@@ -80,6 +81,7 @@ internal fun AudioTypeBoard(
     audioState: TaskModify.Detail.TypeState.Audio,
     onStateChange: (TaskModify.Detail.TypeState.Audio) -> Unit,
     isSmallScreenSize: Boolean,
+    feedback: EffectFeedback
 ) {
     var isLoading by rememberSaveable { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
@@ -135,13 +137,14 @@ internal fun AudioTypeBoard(
                 AudioPreviewPlayer(
                     audioState = audioState,
                     context = view.context,
-                    isSmallScreenSize = isSmallScreenSize
+                    isSmallScreenSize = isSmallScreenSize,
+                    feedback = feedback
                 )
             }
         }
         OutlinedButton(
             onClick = {
-                view.playSoundEffect(SoundEffectConstants.CLICK)
+                feedback.onClickEffect()
                 launcher.launch("audio/*")
             },
             modifier = Modifier.fillMaxWidth(),
@@ -185,6 +188,7 @@ private fun AudioPreviewPlayer(
     audioState: TaskModify.Detail.TypeState.Audio,
     context: Context,
     isSmallScreenSize: Boolean,
+    feedback: EffectFeedback,
 ) {
     audioState.let {
         if (it.path.isBlank() || !it.path.isTempPath() && !it.path.isMediaPath()) {
@@ -285,6 +289,7 @@ private fun AudioPreviewPlayer(
             } else {
                 exoPlayer.play().also { isPlaying = true }
             }
+            feedback.onTapEffect()
         }) {
             Text(
                 text = buttonText,
@@ -344,12 +349,14 @@ private fun AudioPreviewPlayer(
 @Preview
 @Composable
 private fun AudioTypeBoardPreview() {
+    val v = LocalView.current
     Surface {
         AudioTypeBoard(
-            view = LocalView.current,
+            view = v,
             audioState = TaskModify.Detail.TypeState.Audio(),
             onStateChange = {},
-            isSmallScreenSize = false
+            isSmallScreenSize = false,
+            feedback = AndroidEffectFeedback(v)
         )
     }
 }

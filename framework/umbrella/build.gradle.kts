@@ -4,9 +4,9 @@ plugins {
 }
 
 kotlin {
-    androidLibrary {
+    android {
         namespace = "sqz.checklist.umbrella"
-        compileSdk = 36
+        compileSdk = 37
     }
 
     val exportDependencies = listOf(

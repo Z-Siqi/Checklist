@@ -15,9 +15,9 @@ kotlin {
     // Target declarations - add or remove as needed below. These define
     // which platforms this KMP module supports.
     // See: https://kotlinlang.org/docs/multiplatform-discover-project.html#targets
-    androidLibrary {
+    android {
         namespace = "sqz.checklist.data"
-        compileSdk = 36
+        compileSdk = 37
         minSdk = 24
 
         withHostTestBuilder {

@@ -7,15 +7,8 @@ plugins {
 
 kotlin {
     android {
-        lint {
-            checkGeneratedSources = false
-            disable += "RestrictedApi"
-        }
-    }
-
-    androidLibrary {
         namespace = "sqz.checklist.common"
-        compileSdk = 36
+        compileSdk = 37
         minSdk = 24
 
         withHostTestBuilder {
@@ -25,6 +18,11 @@ kotlin {
             sourceSetTreeName = "test"
         }.configure {
             instrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        }
+
+        lint {
+            checkGeneratedSources = false
+            disable += "RestrictedApi"
         }
     }
 

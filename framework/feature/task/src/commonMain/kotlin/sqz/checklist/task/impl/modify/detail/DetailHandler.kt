@@ -18,7 +18,6 @@ import sqz.checklist.data.storage.StorageHelper.isMediaPath
 import sqz.checklist.data.storage.StorageHelper.isTempPath
 import sqz.checklist.data.storage.manager.StorageManager
 import sqz.checklist.task.api.TaskModify
-import kotlin.collections.map
 
 internal class DetailHandler(
     private val detailIn: List<TaskDetail>?,
@@ -28,6 +27,45 @@ internal class DetailHandler(
 ) : TaskModify.Detail {
     // Selected item index
     private val _selectedItemIndex: MutableStateFlow<Int?> = MutableStateFlow(null)
+
+    fun isModified(state: TaskModify.ModifyState): Boolean {
+        val currentDetails = state.detailState
+        if (detailIn == null) {
+            if (!currentDetails.isNullOrEmpty() && currentDetails.last().typeState == null) {
+                return false
+            }
+            return !currentDetails.isNullOrEmpty()
+        } else {
+            if (currentDetails == null) {
+                return detailIn.isNotEmpty()
+            } else if (currentDetails.size != detailIn.size) {
+                return try {
+                    currentDetails[_selectedItemIndex.value!!].typeState != null
+                } catch (e: Exception) {
+                    if (e !is NullPointerException && e !is IndexOutOfBoundsException) {
+                        throw e
+                    }
+                    true
+                }
+            } else if (currentDetails.isEmpty() && detailIn.isEmpty()) {
+                return false
+            } else {
+                // Sizes are equal and > 0, let's convert and check.
+                // Wait, some currentDetails might be invalid, but we only compare if they differ
+                // actually we can just compare the mapped values
+                try {
+                    val finalDetail = currentDetails.map {
+                        DetailHelper.convertToDatabaseDetail(it).copy(taskId = detailIn.first().taskId)
+                    }.mapIndexed { index, it -> it.copy(id = detailIn[index].id) }
+                    
+                    return finalDetail != detailIn
+                } catch (_: Exception) {
+                    // If convertToDatabaseDetail throws or fails, it implies modified or invalid
+                    return true
+                }
+            }
+        }
+    }
 
     // Implement the functionality of the interface
     override val getSelectedItem: StateFlow<TaskModify.Detail.UIState?> = combine(
@@ -48,6 +86,8 @@ internal class DetailHandler(
         initialValue = null
     )
 
+
+    // Cache the original state before editing for rollback purposes
     private var _cacheSelectedItem = MutableStateFlow<TaskModify.Detail.TypeState?>(null)
 
     // Temp file path
@@ -61,6 +101,14 @@ internal class DetailHandler(
         oldState: TaskModify.Detail.TypeState?,
         newState: TaskModify.Detail.TypeState? = null
     ) {
+        newState?.let { // ensure _waitDelete won't contains valid path
+            if (it.containsPath()) {
+                it.getFilePath()?.let { newPath ->
+                    _waitDelete.remove(newPath)
+                }
+            }
+        }
+
         if (oldState?.containsPath() ?: false) { // process old files
             val getPathStr = oldState.getFilePath() ?: throw IllegalStateException("No file path")
             newState?.let { // stop process if new path is same
@@ -72,7 +120,7 @@ internal class DetailHandler(
                 throw IllegalStateException("Invalid file path")
             }
             if (getPathStr.isTempPath()) {
-                if (oldState == _cacheSelectedItem) {
+                if (oldState == _cacheSelectedItem.value) {
                     return
                 }
                 _temp.remove(oldState)?.let {
@@ -167,7 +215,7 @@ internal class DetailHandler(
     )
     override fun unselectItem(rollback: Boolean) {
         val idx = _selectedItemIndex.value ?: throw IndexOutOfBoundsException("No selected item")
-        if (rollback) { //TODO: test _cacheSelectedItem whether effect temp/media delete
+        if (rollback) {
             if (_cacheSelectedItem.value == null) {
                 this.removeItem(null)
                 return

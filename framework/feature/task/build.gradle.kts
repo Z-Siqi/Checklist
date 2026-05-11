@@ -4,9 +4,9 @@ plugins {
     alias(libs.plugins.android.lint)
 }
 kotlin {
-    androidLibrary {
+    android {
         namespace = "sqz.checklist.task"
-        compileSdk = 36
+        compileSdk = 37
     }
 
     iosX64()

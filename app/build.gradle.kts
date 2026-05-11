@@ -6,13 +6,13 @@ plugins {
 
 android {
     namespace = "com.sqz.checklist"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.sqz.checklist"
         minSdk = 26
-        targetSdk = 36
-        versionCode = 5301
+        targetSdk = 37
+        versionCode = 5302
         versionName = "0.5.3-Build_CI"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

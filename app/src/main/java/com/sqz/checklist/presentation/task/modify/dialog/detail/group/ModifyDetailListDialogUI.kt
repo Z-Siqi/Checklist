@@ -34,14 +34,17 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sqz.checklist.R
+import com.sqz.checklist.common.AndroidEffectFeedback
 import com.sqz.checklist.presentation.task.modify.dialog.detail.DetailModifyDialogScaffold
 import com.sqz.checklist.ui.common.unit.isSmallScreenSizeForDialog
 import com.sqz.checklist.ui.common.unit.pxToDp
+import sqz.checklist.common.EffectFeedback
 import sqz.checklist.task.api.TaskModify.Detail
 
 @Composable
 fun ModifyDetailListDialogUI(
     allowAddToList: Boolean,
+    isModified: Boolean,
     onDismissRequest: () -> Unit,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
@@ -51,6 +54,7 @@ fun ModifyDetailListDialogUI(
     onItemMoved: (fromIndex: Int, toIndex: Int) -> Unit,
     onItemRemove: (index: Int) -> Unit,
     detailState: List<Detail.UIState>,
+    feedback: EffectFeedback,
     modifier: Modifier = Modifier,
 ) {
     val isSmallScreenSize = isSmallScreenSizeForDialog()
@@ -61,6 +65,7 @@ fun ModifyDetailListDialogUI(
         onDismissRequest = onDismissRequest,
         onDialogBackgroundClick = {},
         isSmallScreenSize = isSmallScreenSize,
+        isModified = isModified,
         modifier = modifier,
     ) {
         ThisTitle()
@@ -73,21 +78,25 @@ fun ModifyDetailListDialogUI(
             onItemRemove = onItemRemove,
             detailState = detailState,
             onListItemSelect = onListItemSelect,
-            isSmallScreenSize = isSmallScreenSize
+            isSmallScreenSize = isSmallScreenSize,
+            feedback = feedback
         )
         Spacer(modifier = Modifier.height(if (isSmallScreenSize) 8.dp else 15.dp))
         FuncButtons(
             allowAddToList = allowAddToList,
-            onAddClick = onAddNewDetail,
-            onDragClick = { dragMode = it },
+            onAddClick = { onAddNewDetail().also { feedback.onClickEffect() } },
+            onDragClick = {
+                dragMode = it
+                feedback.onClickEffect()
+            },
             dragState = dragMode,
         )
         if (dragMode) {
             Spacer(modifier = Modifier.height(if (isSmallScreenSize) 8.dp else 15.dp))
         }
         ThisDialogFuncButton(
-            onDismiss = onDismiss,
-            onConfirm = onConfirm,
+            onDismiss = { onDismiss().also { feedback.onClickEffect() } },
+            onConfirm = { onConfirm().also { feedback.onClickEffect() } },
             detailState = detailState,
         )
     }
@@ -107,6 +116,7 @@ private fun DetailList(
     onItemRemove: (index: Int) -> Unit,
     detailState: List<Detail.UIState>,
     isSmallScreenSize: Boolean,
+    feedback: EffectFeedback,
 ) {
     val windowSize = LocalWindowInfo.current.containerSize
     val heightLimit = windowSize.height.pxToDp().let {
@@ -133,7 +143,8 @@ private fun DetailList(
                 onRemove = onItemRemove,
                 dragMode = dragMode,
                 clearFocusState = clearFocusState,
-                isSmallScreenSize = isSmallScreenSize
+                isSmallScreenSize = isSmallScreenSize,
+                feedback = feedback
             )
         }
     }
@@ -220,14 +231,16 @@ private fun ModifyDetailListDialogUIPreview() {
     Surface(modifier = Modifier.fillMaxSize()) {
         ModifyDetailListDialogUI(
             allowAddToList = true,
+            isModified = false,
             onDismissRequest = {},
             onDismiss = {},
             onConfirm = {},
             onAddNewDetail = {},
             onListItemSelect = {},
-            onDescriptionChanged = {_, _ ->},
-            onItemMoved = {_, _ ->},
+            onDescriptionChanged = { _, _ -> },
+            onItemMoved = { _, _ -> },
             onItemRemove = {},
+            feedback = AndroidEffectFeedback(androidx.compose.ui.platform.LocalView.current),
             detailState = detailState,
         )
     }

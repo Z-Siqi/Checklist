@@ -26,12 +26,16 @@ internal fun DetailModifyDialogScaffold(
     onDismissRequest: () -> Unit,
     onDialogBackgroundClick: () -> Unit,
     isSmallScreenSize: Boolean,
+    isModified: Boolean,
     modifier: Modifier = Modifier,
     content: @Composable (ColumnScope.() -> Unit),
 ) {
     Dialog(
         onDismissRequest = onDismissRequest,
-        properties = DialogProperties(usePlatformDefaultWidth = false),
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            dismissOnClickOutside = !isModified
+        ),
     ) {
         val surfaceModifier = Modifier.let { modifier ->
             if (!isSmallScreenSize) {

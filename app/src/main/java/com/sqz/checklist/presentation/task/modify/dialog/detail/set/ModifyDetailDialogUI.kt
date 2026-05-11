@@ -66,6 +66,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.util.fastForEach
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sqz.checklist.R
+import com.sqz.checklist.common.AndroidEffectFeedback
 import com.sqz.checklist.presentation.task.modify.TaskModifyViewModel
 import com.sqz.checklist.presentation.task.modify.dialog.detail.DetailModifyDialogScaffold
 import com.sqz.checklist.presentation.task.modify.dialog.detail.getTypeTextRid
@@ -75,6 +76,7 @@ import com.sqz.checklist.ui.common.TieredFlowAlignment
 import com.sqz.checklist.ui.common.unit.isSmallScreenSizeForDialog
 import com.sqz.checklist.ui.common.unit.pxToDp
 import com.sqz.checklist.ui.common.unit.pxToDpInt
+import sqz.checklist.common.EffectFeedback
 import sqz.checklist.data.database.TaskDetailType
 import sqz.checklist.data.database.model.Platform
 import sqz.checklist.data.database.repository.task.TaskRepositoryFake
@@ -84,6 +86,7 @@ import sqz.checklist.task.api.TaskModify
 @Composable
 fun ModifyDetailDialogUI(
     onDismissRequest: () -> Unit,
+    isModified: Boolean,
     onTypeStateChange: (TaskModify.Detail.TypeState) -> Unit,
     onSelectChange: (TaskDetailType) -> Unit,
     onDismiss: () -> Unit,
@@ -93,6 +96,7 @@ fun ModifyDetailDialogUI(
     modifyType: TaskModify.Task.ModifyType,
     isListConfirm: Boolean,
     detailUIState: TaskModify.Detail.UIState,
+    feedback: EffectFeedback,
     modifier: Modifier = Modifier,
 ) {
     val isSmallScreenSize = isSmallScreenSizeForDialog()
@@ -105,6 +109,7 @@ fun ModifyDetailDialogUI(
             clearFocusState.value = true
         },
         isSmallScreenSize = isSmallScreenSize,
+        isModified = isModified,
         modifier = modifier
     ) {
         ThisDialogTitle(
@@ -116,6 +121,7 @@ fun ModifyDetailDialogUI(
             onRemove = onRemove,
             onSelectChange = onSelectChange,
             detailType = detailUIState.typeState,
+            feedback = feedback,
         )
         Spacer(modifier = Modifier.height(if (isSmallScreenSize) 4.dp else 8.dp))
         TypeInfoModifyBoard(
@@ -123,14 +129,15 @@ fun ModifyDetailDialogUI(
             clearFocusState = clearFocusState,
             onTypeStateChange = onTypeStateChange,
             detailUIState = detailUIState,
-            isSmallScreenSize = isSmallScreenSize
+            isSmallScreenSize = isSmallScreenSize,
+            feedback = feedback,
         )
         Spacer(modifier = Modifier.height(if (isSmallScreenSize) 10.dp else 24.dp))
         ThisDialogFuncButton(
             isSmallScreenSize = isSmallScreenSize,
-            onDismiss = onDismiss,
-            onConfirm = onConfirm,
-            onListConfirm = onListConfirm,
+            onDismiss = { onDismiss().also { feedback.onClickEffect() } },
+            onConfirm = { onConfirm().also { feedback.onClickEffect() } },
+            onListConfirm = { onListConfirm().also { feedback.onClickEffect() } },
             detailUIState = detailUIState,
             isListConfirm = isListConfirm,
         )
@@ -144,6 +151,7 @@ private fun TypeInfoModifyBoard(
     onTypeStateChange: (TaskModify.Detail.TypeState) -> Unit,
     detailUIState: TaskModify.Detail.UIState,
     isSmallScreenSize: Boolean,
+    feedback: EffectFeedback,
 ) = when (detailUIState.typeState) {
 
     is TaskModify.Detail.TypeState.Text -> TextTypeStateCard(
@@ -167,18 +175,21 @@ private fun TypeInfoModifyBoard(
         fromPlatform = Platform.Android, //TODO: imp this
         onStateChange = onTypeStateChange,
         isSmallScreenSize = isSmallScreenSize,
+        feedback = feedback,
     )
 
     is TaskModify.Detail.TypeState.Picture -> PictureTypeCard(
         view = view,
         pictureState = detailUIState.typeState as TaskModify.Detail.TypeState.Picture,
         onStateChange = onTypeStateChange,
+        feedback = feedback
     )
 
     is TaskModify.Detail.TypeState.Video -> VideoTypeBoard(
         view = view,
         videoState = detailUIState.typeState as TaskModify.Detail.TypeState.Video,
-        onStateChange = onTypeStateChange
+        onStateChange = onTypeStateChange,
+        feedback = feedback,
     )
 
     is TaskModify.Detail.TypeState.Audio -> AudioTypeBoard(
@@ -186,6 +197,7 @@ private fun TypeInfoModifyBoard(
         audioState = detailUIState.typeState as TaskModify.Detail.TypeState.Audio,
         onStateChange = onTypeStateChange,
         isSmallScreenSize = isSmallScreenSize,
+        feedback = feedback,
     )
 
     else -> EmptyTypeStateCard(isSmallScreenSize = isSmallScreenSize)
@@ -236,6 +248,7 @@ private fun DetailTypeMenu(
     onRemove: () -> Unit,
     onSelectChange: (TaskDetailType) -> Unit,
     detailType: TaskModify.Detail.TypeState?,
+    feedback: EffectFeedback,
 ) = Row {
     Spacer(modifier = Modifier.weight(1f))
     BoxWithConstraints {
@@ -245,11 +258,15 @@ private fun DetailTypeMenu(
             val density = LocalDensity.current
             var parentWidthDp by remember { mutableStateOf(0.dp) }
             OutlinedButton(
-                onClick = { menuExpanded = !menuExpanded },
+                onClick = {
+                    menuExpanded = !menuExpanded
+                    feedback.onClickEffect()
+                },
                 modifier = Modifier
                     .animateContentSize(
                         animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessLow
+                            dampingRatio = Spring.DampingRatioNoBouncy,
+                            stiffness = Spring.StiffnessLow
                         )
                     )
                     .widthIn(min = mWidth / 1.618f)
@@ -259,7 +276,8 @@ private fun DetailTypeMenu(
                     },
                 enabled = true,
             ) {
-                val typeTextRid: Int = getTypeTextRid(detailType) ?: R.string.click_select_detail_type
+                val typeTextRid: Int =
+                    getTypeTextRid(detailType) ?: R.string.click_select_detail_type
                 Text(
                     text = stringResource(typeTextRid),
                     autoSize = TextAutoSize.StepBased(
@@ -295,6 +313,7 @@ private fun DetailTypeMenu(
                                 onSelectChange(it)
                                 focusManager.clearFocus()
                                 menuExpanded = false
+                                feedback.onClickEffect()
                             },
                             text = { Text(text = stringResource(textRid)) },
                         )
@@ -304,7 +323,7 @@ private fun DetailTypeMenu(
         }
     }
     TextTooltipBox(textRid = R.string.delete) {
-        FilledTonalIconButton(onClick = onRemove) {
+        FilledTonalIconButton(onClick = { onRemove().also { feedback.onClickEffect() } }) {
             Icon(
                 painter = painterResource(R.drawable.delete),
                 contentDescription = stringResource(R.string.delete)
@@ -375,7 +394,8 @@ private fun ThisDialogFuncButton(
     mergeWhenPossible = true,
     bottomAlignment = TieredFlowAlignment.End,
     topContent = {
-        val listTextRid = if (isListConfirm) R.string.confirm_enter_list else R.string.list_management
+        val listTextRid =
+            if (isListConfirm) R.string.confirm_enter_list else R.string.list_management
         TextTooltipBox(textRid = listTextRid) {
             FilledTonalButton(
                 onClick = onListConfirm,
@@ -432,11 +452,13 @@ private fun ModifyDetailDialogUIPreview() {
     val state = vmFake.taskModify.collectAsState().value
     ModifyDetailDialogUI(
         onDismissRequest = {},
+        isModified = false,
         onTypeStateChange = {},
         onSelectChange = vmFake::onDetailItemTypeChange,
         onDismiss = {}, onRemove = {}, onConfirm = {}, onListConfirm = {},
         modifyType = TaskModify.Task.ModifyType.NewTask(),
         isListConfirm = false,
         detailUIState = state.detailState!!.first(),
+        feedback = AndroidEffectFeedback(v)
     )
 }

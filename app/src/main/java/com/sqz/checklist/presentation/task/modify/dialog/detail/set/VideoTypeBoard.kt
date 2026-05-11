@@ -59,7 +59,7 @@ internal fun VideoTypeBoard(
     view: View,
     videoState: TaskModify.Detail.TypeState.Video,
     onStateChange: (TaskModify.Detail.TypeState.Video) -> Unit,
-    feedback: EffectFeedback = AndroidEffectFeedback(view),
+    feedback: EffectFeedback,
 ) {
     var isLoading by rememberSaveable { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
@@ -214,11 +214,13 @@ private fun VideoPreviewPlayer(videoState: TaskModify.Detail.TypeState.Video) {
 @Preview
 @Composable
 private fun VideoTypeBoardPreview() {
+    val v = LocalView.current
     Surface {
         VideoTypeBoard(
-            view = LocalView.current,
+            view = v,
             videoState = TaskModify.Detail.TypeState.Video(),
-            onStateChange = {}
+            onStateChange = {},
+            feedback = AndroidEffectFeedback(v)
         )
     }
 }

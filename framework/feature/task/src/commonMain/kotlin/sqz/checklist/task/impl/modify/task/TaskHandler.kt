@@ -13,6 +13,18 @@ class TaskHandler(
     private val modifyState: MutableStateFlow<TaskModify.ModifyState>,
 ) : TaskModify.Task {
 
+    fun isModified(state: TaskModify.ModifyState): Boolean {
+        val taskState = state.taskState ?: return false
+        if (taskIn == null) {
+            return taskState.description.isNotEmpty() ||
+                    (taskState.type as? TaskModify.Task.ModifyType.NewTask)?.let {
+                        it.isPin || it.withReminder
+                    } == true
+        } else {
+            return taskState.description != taskIn.description
+        }
+    }
+
     override fun updateDescription(description: String) {
         modifyState.update {
             it.copy(taskState = it.taskState!!.copy(description = description))

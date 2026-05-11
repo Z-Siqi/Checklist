@@ -3,8 +3,11 @@ package sqz.checklist.task.impl.modify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import sqz.checklist.data.database.Task
@@ -178,6 +181,14 @@ internal class TaskModifyImpl(
 
     // Implement the functionality of the interface
     override val getModifyState: StateFlow<TaskModify.ModifyState> = _modifyState.asStateFlow()
+
+    // Implement the functionality of the interface
+    override val isModified: StateFlow<Boolean> = _modifyState.map { state ->
+        if (state.state != TaskModify.State.Modify) return@map false
+        val taskMod = if (::_taskHandler.isInitialized) _taskHandler.isModified(state) else false
+        val detailMod = if (::_detailHandler.isInitialized) _detailHandler.isModified(state) else false
+        taskMod || detailMod
+    }.stateIn(scope, SharingStarted.Eagerly, false)
 
     // Implement the functionality of the interface
     override fun updateLoading(isLoading: Boolean) {

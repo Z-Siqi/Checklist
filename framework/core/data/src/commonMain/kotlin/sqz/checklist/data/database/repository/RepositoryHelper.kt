@@ -38,6 +38,9 @@ internal suspend fun TaskDetail.deleteTaskDetailStorageFile(
                 return@let let
             }
             val path: String = toStr.let { let ->
+                if (let.startsWith(appInternalDirPath(AppDirType.Data))) {
+                    return@let let
+                }
                 "${appInternalDirPath(AppDirType.Data)}/${let}"
             }
             val delMode = StorageManager.DeleteMode.FilePath(path)

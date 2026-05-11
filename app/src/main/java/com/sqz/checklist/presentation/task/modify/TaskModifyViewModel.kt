@@ -35,6 +35,8 @@ class TaskModifyViewModel(
 
     val showTaskDialog = _showTaskDialog.asStateFlow()
 
+    val isModified: StateFlow<Boolean> = _taskModify.isModified
+
     fun switchDialog() {
         if (_showTaskDialog.value) { // switch to detail dialog
             _taskModify.getModifyState.value.detailState?.let {
@@ -112,7 +114,6 @@ class TaskModifyViewModel(
     }
 
     fun onDismissRequest() {
-        //TODO: add checker to make sure user not miss click incorrect area
         this.cancelModify()
     }
 
@@ -238,7 +239,7 @@ class TaskModifyViewModel(
         } ?: this.unselectItem()
     }
 
-    fun onDetailItemDismiss(isRequest: Boolean) {
+    fun onDetailItemDismiss() {
         if (_taskModify.getModifyState.value.detailState!!.size == 1) {
             this.switchDialog()
         }

@@ -68,6 +68,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sqz.checklist.R
+import com.sqz.checklist.common.AndroidEffectFeedback
 import com.sqz.checklist.presentation.task.modify.TaskModifyViewModel
 import com.sqz.checklist.ui.common.AdaptiveTieredFlowLayout
 import com.sqz.checklist.ui.common.TextTooltipBox
@@ -80,6 +81,7 @@ import com.sqz.checklist.ui.theme.UISizeLimit
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import sqz.checklist.common.EffectFeedback
 import sqz.checklist.data.database.repository.task.TaskRepositoryFake
 import sqz.checklist.data.storage.manager.StorageManagerFake
 import sqz.checklist.task.api.TaskModify
@@ -95,14 +97,16 @@ internal fun TaskModifyDialogForTask(
     onConfirm: () -> Unit,
     taskUIState: TaskModify.Task.UIState,
     isDetailSet: Boolean,
+    isModified: Boolean,
+    feedback: EffectFeedback,
     modifier: Modifier = Modifier,
 ) {
     val focus = remember { FocusManager() }
     val isSmallScreenSize = isSmallScreenSizeForDialog()
-    ThisDialog(onDismissRequest, isSmallScreenSize, focus, modifier) {
+    ThisDialog(onDismissRequest, isModified, isSmallScreenSize, focus, modifier) {
         ThisDialogTitle(
             taskModifyType = taskUIState.type,
-            onTypeChange = onTypeChange,
+            onTypeChange = { onTypeChange(it).also { feedback.onClickEffect() } },
             isSmallScreenSize = isSmallScreenSize
         )
         Spacer(modifier = Modifier.height(if (isSmallScreenSize) 8.dp else 20.dp))
@@ -115,10 +119,10 @@ internal fun TaskModifyDialogForTask(
         Spacer(modifier = Modifier.height(if (isSmallScreenSize) 10.dp else 24.dp))
         ThisDialogButtons(
             taskModifyType = taskUIState.type,
-            onTypeChange = onTypeChange,
-            onCancel = onCancel,
-            onConfirm = onConfirm,
-            onDetailRequest = onDetailRequest,
+            onTypeChange = { onTypeChange(it).also { feedback.onClickEffect() } },
+            onCancel = { onCancel().also { feedback.onClickEffect() } },
+            onConfirm = { onConfirm().also { feedback.onClickEffect() } },
+            onDetailRequest = { onDetailRequest().also { feedback.onClickEffect() } },
             taskDescription = taskUIState.description,
             isSmallScreenSize = isSmallScreenSize,
             isDetailSet = isDetailSet,
@@ -387,6 +391,7 @@ private fun ThisDialogButtons(
 @Composable
 private fun ThisDialog(
     onDismissRequest: () -> Unit,
+    isModified: Boolean,
     isSmallScreenSize: Boolean,
     focus: FocusManager,
     modifier: Modifier = Modifier,
@@ -394,7 +399,10 @@ private fun ThisDialog(
 ) {
     Dialog(
         onDismissRequest = onDismissRequest,
-        properties = DialogProperties(usePlatformDefaultWidth = false),
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            dismissOnClickOutside = !isModified
+        ),
     ) {
         val surfaceModifier = Modifier.let { modifier ->
             if (!isSmallScreenSize) {
@@ -445,6 +453,7 @@ private fun Preview() {
     TaskModifyDialogForTask(
         taskUIState = vmFake.taskModify.collectAsState().value.taskState!!,
         onDetailRequest = {}, onTextChange = {}, onTypeChange = {},
-        onDismissRequest = {}, onCancel = {}, onConfirm = {}, isDetailSet = false
+        onDismissRequest = {}, onCancel = {}, onConfirm = {}, isDetailSet = false,
+        isModified = false, feedback = AndroidEffectFeedback(v)
     )
 }

@@ -74,6 +74,7 @@ import com.sqz.checklist.ui.common.unit.pxToDp
 import com.sqz.checklist.ui.common.unit.toDp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import sqz.checklist.common.EffectFeedback
 import sqz.checklist.data.database.model.Platform
 import sqz.checklist.task.api.TaskModify
 
@@ -87,6 +88,7 @@ internal fun AppTypeStateBoard(
     fromPlatform: Platform?,
     onStateChange: (TaskModify.Detail.TypeState.Application) -> Unit,
     isSmallScreenSize: Boolean,
+    feedback: EffectFeedback,
 ) {
     val supportedPlatform = fromPlatform == Platform.Android
     var localAppInfoList by rememberSaveable { mutableStateOf(mapOf<String, String>()) }
@@ -119,6 +121,7 @@ internal fun AppTypeStateBoard(
             SearchBar(
                 searchQuery = searchQuery,
                 clearFocusState = clearFocusState,
+                feedback = feedback,
             )
             Spacer(modifier = Modifier.height(4.dp))
         }
@@ -133,7 +136,10 @@ internal fun AppTypeStateBoard(
             ) else {
                 val savedPackage = appState.launchToken?.decodeToString()
                 InstalledAppList(
-                    onSelected = { onStateChange(appState.copy(launchToken = it.encodeToByteArray())) },
+                    onSelected = {
+                        onStateChange(appState.copy(launchToken = it.encodeToByteArray()))
+                        feedback.onClickEffect()
+                    },
                     selectedPackage = savedPackage,
                     localAppList = filteredAppList,
                     view = view,
@@ -169,10 +175,14 @@ private suspend fun getAppList(context: Context) = withContext(Dispatchers.IO) {
 private fun SearchBar(
     searchQuery: MutableState<String?>,
     clearFocusState: MutableState<Boolean>,
+    feedback: EffectFeedback,
 ) = Row(modifier = Modifier.animateContentSize()) {
     val focus = LocalFocusManager.current
     if (searchQuery.value == null) {
-        FilledTonalButton(onClick = { searchQuery.value = "" }) {
+        FilledTonalButton(onClick = {
+            searchQuery.value = ""
+            feedback.onClickEffect()
+        }) {
             Icon(
                 imageVector = Icons.Default.Search,
                 contentDescription = stringResource(R.string.search)
@@ -209,6 +219,7 @@ private fun SearchBar(
                     } else {
                         searchQuery.value = null
                     }
+                    feedback.onClickEffect()
                 }) {
                     Icon(
                         imageVector = Icons.Default.Clear,

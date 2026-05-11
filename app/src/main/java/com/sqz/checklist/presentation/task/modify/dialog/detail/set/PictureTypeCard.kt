@@ -68,7 +68,7 @@ internal fun PictureTypeCard(
     view: View,
     pictureState: TaskModify.Detail.TypeState.Picture,
     onStateChange: (TaskModify.Detail.TypeState.Picture) -> Unit,
-    feedback: EffectFeedback = AndroidEffectFeedback(view),
+    feedback: EffectFeedback,
 ) {
     var isLoading by rememberSaveable { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
