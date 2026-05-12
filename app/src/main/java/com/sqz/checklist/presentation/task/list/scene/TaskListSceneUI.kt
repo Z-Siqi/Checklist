@@ -1,5 +1,6 @@
 package com.sqz.checklist.presentation.task.list.scene
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -42,6 +43,7 @@ import sqz.checklist.task.api.list.TaskList
 @Composable
 fun BoxScope.TaskListSceneUI(
     viewModel: TaskListViewModel,
+    onSearchCancel: () -> Unit,
     view: android.view.View,
     feedback: EffectFeedback,
     lazyListState: LazyListState = rememberLazyListState(),
@@ -66,6 +68,7 @@ fun BoxScope.TaskListSceneUI(
             SearchList(
                 scrollState = lazyListState,
                 listData = listInventory as TaskList.Inventory.Search,
+                onSearchCancel = onSearchCancel,
                 view = view,
                 feedback = feedback,
                 viewModel = viewModel
@@ -214,12 +217,18 @@ private fun LazyListScope.defaultListTitleItem(
 private fun SearchList(
     scrollState: LazyListState,
     listData: TaskList.Inventory.Search,
+    onSearchCancel: () -> Unit,
     view: android.view.View,
     feedback: EffectFeedback,
     viewModel: TaskListViewModel,
 ) {
     val searchQuery = listData.searchQuery
     val searchList by listData.inSearchList.collectAsState(initial = listOf())
+
+    BackHandler {
+        viewModel.setSearchState(false)
+        onSearchCancel()
+    }
 
     LazyColumn(state = scrollState) {
         item {

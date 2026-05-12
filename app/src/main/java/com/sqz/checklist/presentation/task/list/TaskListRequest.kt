@@ -9,6 +9,8 @@ sealed interface TaskListRequest {
 
     data object SearchProcessed: TaskListRequest //TODO
 
+    data object SearchCanceled: TaskListRequest
+
     data object RefreshListProcessed: TaskListRequest
 
     data class Info(

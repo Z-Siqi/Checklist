@@ -183,15 +183,15 @@ class TaskListViewModel(
         _taskList.requestUndo { /*TODO: also undo notification*/ }
     }
 
-    fun onSearchStateChange() {
+    /*fun onSearchStateChange() {
         if (_taskList.getTaskListInventory.value is TaskList.Inventory.Search) {
             _taskList.onSearchRequest(null)
             return
         }
         _taskList.onSearchRequest("")
-    }
+    }*/
 
-    fun setSearchState(request: Boolean) { //TODO: Finish refactoring this
+    fun setSearchState(request: Boolean) {
         if (_taskList.getTaskListInventory.value is TaskList.Inventory.Search) {
             if (request) return
             _taskList.onSearchRequest(null)

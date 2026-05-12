@@ -113,6 +113,10 @@ fun TaskLayout(
                         taskListState = TaskListState.None
                     }
 
+                    is TaskListRequest.SearchCanceled -> {
+                        taskState.searchView(false)
+                    }
+
                     is TaskListRequest.RefreshListProcessed -> {
                         refreshListRequest.value = false
                         taskListState = TaskListState.None

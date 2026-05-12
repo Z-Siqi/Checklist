@@ -38,6 +38,10 @@ internal class TaskRepositoryImpl(
         return this.taskDao().searchedList(searchQuery)
     }
 
+    override suspend fun getTaskSum(): Long {
+        return this.taskDao().getTaskListSize()
+    }
+
     override suspend fun onTaskPinChange(taskId: Long, update: Boolean) {
         if (taskId == 0L) {
             return

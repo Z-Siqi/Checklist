@@ -66,6 +66,9 @@ internal interface TaskDao {
     )
     fun searchedList(search: String): Flow<List<TaskViewData>>
 
+    @Query("SELECT COUNT(*) FROM task WHERE isHistoryId = 0")
+    suspend fun getTaskListSize(): Long
+
     @Query("UPDATE task SET isPin = :to WHERE id = :id")
     suspend fun onTaskPinChange(id: Long, to: Int)
 
