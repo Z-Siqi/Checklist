@@ -50,6 +50,13 @@ interface TaskRepository {
     fun getSearchedList(searchQuery: String): Flow<List<TaskViewData>>
 
     /**
+     * Get the total count of tasks. Not include history task.
+     *
+     * @return The count of tasks.
+     */
+    suspend fun getTaskSum(): Long
+
+    /**
      * Update [Task.isPin] by id.
      *
      * @param taskId The id of the task to update.

@@ -17,6 +17,7 @@ import sqz.checklist.data.database.repository.reminder.TaskReminderRepository
 import sqz.checklist.data.database.repository.task.TaskRepository
 import sqz.checklist.task.api.list.TaskList
 import sqz.checklist.task.api.list.model.TaskItemModel
+import sqz.checklist.task.impl.list.item.InventoryLoader
 import sqz.checklist.task.impl.list.item.TaskItem
 import sqz.checklist.task.impl.list.item.UndoProcesser
 import kotlin.time.Clock
@@ -28,11 +29,12 @@ internal class TaskListImpl(
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob())
 ) : TaskList {
 
-    private val _listInventory: MutableStateFlow<TaskList.Inventory> = MutableStateFlow(
-        TaskList.Inventory.Loading
+    private val _inventory = InventoryLoader(
+        scope = scope,
+        taskRepository = taskRepository,
     )
 
-    override val getTaskListInventory: StateFlow<TaskList.Inventory> = _listInventory.asStateFlow()
+    override val getTaskListInventory: StateFlow<TaskList.Inventory> = _inventory.getInventory()
 
     private val _undoProcesser = UndoProcesser(
         scope = scope,
@@ -77,46 +79,15 @@ internal class TaskListImpl(
         }
     }
 
-    private fun setDefault(): TaskList.Inventory.Default {
-        val default = TaskList.Inventory.Default(
-            primaryList = this.mapTaskList(taskRepository.getTaskList()),
-            remindedList = this.mapTaskList(taskRepository.getRemindedTaskList()),
-            pinnedList = this.mapTaskList(taskRepository.getPinnedTaskList()),
-        )
-        return default
-    }
-
-    private fun setSearch(searchQuery: String): TaskList.Inventory.Search {
-        val search = TaskList.Inventory.Search(
-            searchQuery = searchQuery, inSearchList = this.mapTaskList(
-                taskRepository.getSearchedList(searchQuery)
-            )
-        )
-        return search
-    }
-
     override suspend fun updateList() {
-        if (_listInventory.value is TaskList.Inventory.Loading) _listInventory.update {
-            this.setDefault()
-        }.also {
-            if (config.value.autoDelIsHistoryTaskNumber == null) return
+        _inventory.updateList(afterInitUpdate = {
+            if (config.value.autoDelIsHistoryTaskNumber == null) return@updateList
             scope.launch {
                 taskHistoryRepository.deleteOldHistoryTask(
                     numOfAllowedHistory = config.value.autoDelIsHistoryTaskNumber!!
                 )
             }
-            return
-        }
-        if (_listInventory.value is TaskList.Inventory.Search) {
-            val searchQuery = (_listInventory.value as TaskList.Inventory.Search).searchQuery
-            _listInventory.update { TaskList.Inventory.Loading }
-            val search = this.setSearch(searchQuery)
-            _listInventory.update { search }
-            return
-        }
-        _listInventory.update { TaskList.Inventory.Loading }
-        val default = this.setDefault()
-        _listInventory.update { default }
+        }) { this.mapTaskList(it) }
     }
 
     override suspend fun removeRemindedInfoByTime(
@@ -131,7 +102,8 @@ internal class TaskListImpl(
             for (data in list.value) {
                 val timeMillisData = data.reminderTime ?: continue
                 val delReminderTime: Boolean =
-                    timeMillisData < (Clock.System.now().toEpochMilliseconds() - recentlyRemindedKeepTime)
+                    timeMillisData < (Clock.System.now()
+                        .toEpochMilliseconds() - recentlyRemindedKeepTime)
                 val removeNotification = removeNotification(data.task.id)
                 if (delReminderTime) {
                     if (removeNotification == null || removeNotification) {
@@ -158,21 +130,13 @@ internal class TaskListImpl(
     }
 
     override fun onSearchRequest(query: String?) {
-        if (_listInventory.value !is TaskList.Inventory.Search) {
-            if (query != null) _listInventory.update {
-                this@TaskListImpl.setSearch(query)
-            }
-            return
+        _inventory.setSearch(query) {
+            this.mapTaskList(it)
         }
-        if (query == null) {
-            _listInventory.update { this@TaskListImpl.setDefault() }
-            return
-        }
-        _listInventory.update { this@TaskListImpl.setSearch(query) }
     }
 
     override fun isInventoryEmpty(): Flow<Boolean> {
-        if (_listInventory.value is TaskList.Inventory.Loading) {
+        if (_inventory.getInventory().value is TaskList.Inventory.Loading) {
             throw NullPointerException("Inventory cannot be loading state!")
         }
         return taskRepository.isTaskListEmpty()

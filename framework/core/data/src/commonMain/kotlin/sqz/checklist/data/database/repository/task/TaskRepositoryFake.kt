@@ -48,6 +48,10 @@ class TaskRepositoryFake : TaskRepository {
         return this.getTaskList()
     }
 
+    override suspend fun getTaskSum(): Long {
+        return 2
+    }
+
     override suspend fun onTaskPinChange(taskId: Long, update: Boolean) {
         println("onTaskPinChange - taskId: $taskId; update: $update")
     }

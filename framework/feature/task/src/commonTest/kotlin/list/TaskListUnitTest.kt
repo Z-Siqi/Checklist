@@ -1,5 +1,6 @@
 package sqz.checklist.task.list
 
+import app.cash.turbine.test
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
@@ -8,7 +9,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.yield
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import sqz.checklist.data.database.Task
@@ -44,6 +47,9 @@ class TaskListUnitTest {
         override fun getPinnedTaskList(): Flow<List<TaskViewData>> = pinnedListFlow
         override fun getRemindedTaskList(): Flow<List<TaskViewData>> = remindedListFlow
         override fun getSearchedList(searchQuery: String): Flow<List<TaskViewData>> = searchedListFlow
+        override suspend fun getTaskSum(): Long {
+            return taskListFlow.value.size.toLong()
+        }
 
         override suspend fun onTaskPinChange(taskId: Long, update: Boolean) {
             pinnedTaskId = taskId
@@ -95,6 +101,12 @@ class TaskListUnitTest {
             MutableStateFlow(TaskList.Config()), TaskHistoryRepositoryFake(), repository
         )
         taskList.onSearchRequest("test")
+        advanceUntilIdle()
+        yield()
+        taskList.getTaskListInventory.test {
+            val inventory = (awaitItem() as TaskList.Inventory.Search)
+            assertEquals("test", inventory.searchQuery)
+        }
         val inventory = taskList.getTaskListInventory.value
         assertTrue(inventory is TaskList.Inventory.Search)
         assertEquals("test", inventory.searchQuery)
@@ -107,8 +119,13 @@ class TaskListUnitTest {
             MutableStateFlow(TaskList.Config()), TaskHistoryRepositoryFake(), repository
         )
         taskList.onSearchRequest("test")
+        taskList.getTaskListInventory.test {
+            assertTrue(awaitItem() is TaskList.Inventory.Search)
+        }
         taskList.onSearchRequest(null)
-        assertTrue(taskList.getTaskListInventory.value is TaskList.Inventory.Default)
+        taskList.getTaskListInventory.test {
+            assertTrue(awaitItem() is TaskList.Inventory.Default)
+        }
     }
 
     @Test
@@ -150,10 +167,7 @@ class TaskListUnitTest {
         val items = inventory.primaryList.first()
         val item = items[0]
         item.onRemoveAction()
-        while (repository.removedTaskId == null) {
-            delay(10000)
-            if (repository.removedTaskId != null) break
-        }
+        advanceUntilIdle()
         assertEquals(20L, repository.removedTaskId)
     }
 
@@ -190,18 +204,12 @@ class TaskListUnitTest {
         val item = items[0]
 
         item.onRemoveAction()
-        while (!taskList.getUndoState.value) {
-            delay(10000)
-            if (taskList.getUndoState.value) break
+        taskList.getUndoState.test {
+            assertTrue(awaitItem())
+            var undoId: Long? = null
+            taskList.requestUndo { undoId = it }
+            awaitItem()
+            assertEquals(50L, undoId)
         }
-        assertTrue(taskList.getUndoState.value)
-        
-        var undoId: Long? = null
-        taskList.requestUndo { undoId = it }
-        while (undoId == null) {
-            delay(10000)
-            if (undoId != null) break
-        }
-        assertEquals(50L, undoId)
     }
 }

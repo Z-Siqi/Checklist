@@ -68,7 +68,7 @@ open class TaskLayoutViewModel : ViewModel() {
 
     val onSearchRequest = _onSearchRequest.asStateFlow()
 
-    private fun searchView(setter: Boolean) { //Connect top bar & nav bar search actions
+    fun searchView(setter: Boolean) { //Connect top bar & nav bar search actions
         _onSearchRequest.value = setter
         _navExtendedConnectData.update { it.copy(searchState = setter) }
     }

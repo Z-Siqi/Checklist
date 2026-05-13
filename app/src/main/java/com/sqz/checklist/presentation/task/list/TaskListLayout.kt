@@ -75,6 +75,7 @@ fun TaskListLayout(
             }
             TaskListSceneUI(
                 viewModel = viewModel,
+                onSearchCancel = { externalRequest(TaskListRequest.SearchCanceled) },
                 view = view,
                 feedback = feedback,
                 lazyListState = lazyListState
