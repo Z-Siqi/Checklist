@@ -72,7 +72,7 @@ import sqz.checklist.data.storage.StorageHelper.isMediaPath
 import sqz.checklist.data.storage.StorageHelper.isTempPath
 import sqz.checklist.data.storage.manager.StorageManager
 import sqz.checklist.data.storage.openUriSource
-import sqz.checklist.task.api.TaskModify
+import sqz.checklist.task.api.modify.TaskModify
 
 /** This method expected to be called only within this package and its sub-packages. **/
 @Composable

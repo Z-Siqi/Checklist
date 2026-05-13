@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
 import sqz.checklist.data.database.Task
-import sqz.checklist.task.api.TaskModify
+import sqz.checklist.task.api.modify.TaskModify
 import kotlin.time.Clock
 
 class TaskHandler(

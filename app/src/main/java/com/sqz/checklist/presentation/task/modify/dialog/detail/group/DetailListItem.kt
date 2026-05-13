@@ -44,7 +44,7 @@ import com.sqz.checklist.common.AndroidEffectFeedback
 import com.sqz.checklist.presentation.task.modify.dialog.detail.getTypeTextRid
 import com.sqz.checklist.ui.common.TextTooltipBox
 import sqz.checklist.common.EffectFeedback
-import sqz.checklist.task.api.TaskModify
+import sqz.checklist.task.api.modify.TaskModify
 
 /** This method expected to be called only within this package and its sub-packages. **/
 @Composable

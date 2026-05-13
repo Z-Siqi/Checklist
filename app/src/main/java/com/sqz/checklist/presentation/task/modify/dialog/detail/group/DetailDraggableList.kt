@@ -26,7 +26,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
-import sqz.checklist.task.api.TaskModify
+import sqz.checklist.task.api.modify.TaskModify
 
 /** This method expected to be called only within this package and its sub-packages. **/
 internal data class ItemContentData(

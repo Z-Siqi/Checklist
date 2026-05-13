@@ -4,7 +4,7 @@ import kotlinx.coroutines.test.runTest
 import sqz.checklist.data.database.TaskDetailType
 import sqz.checklist.data.database.repository.task.TaskRepositoryFake
 import sqz.checklist.data.storage.manager.StorageManagerFake
-import sqz.checklist.task.api.TaskModify
+import sqz.checklist.task.api.modify.TaskModify
 import sqz.checklist.task.api.taskModifyProvider
 import kotlin.test.BeforeTest
 import kotlin.test.Test

@@ -15,7 +15,7 @@ import sqz.checklist.data.database.TaskDetail
 import sqz.checklist.data.database.TaskDetailType
 import sqz.checklist.data.database.repository.task.TaskRepository
 import sqz.checklist.data.storage.manager.StorageManager
-import sqz.checklist.task.api.TaskModify
+import sqz.checklist.task.api.modify.TaskModify
 import sqz.checklist.task.impl.modify.detail.DetailHandler
 import sqz.checklist.task.impl.modify.task.TaskHandler
 

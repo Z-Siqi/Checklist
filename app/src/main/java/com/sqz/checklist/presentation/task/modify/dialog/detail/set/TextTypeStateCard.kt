@@ -31,7 +31,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.Preview
 import com.sqz.checklist.R
 import com.sqz.checklist.ui.common.verticalColumnScrollbar
-import sqz.checklist.task.api.TaskModify
+import sqz.checklist.task.api.modify.TaskModify
 
 /** This method expected to be called only within this package and its sub-packages. **/
 @OptIn(ExperimentalLayoutApi::class)

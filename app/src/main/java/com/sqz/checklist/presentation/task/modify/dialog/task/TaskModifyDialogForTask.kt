@@ -84,7 +84,7 @@ import kotlinx.coroutines.flow.update
 import sqz.checklist.common.EffectFeedback
 import sqz.checklist.data.database.repository.task.TaskRepositoryFake
 import sqz.checklist.data.storage.manager.StorageManagerFake
-import sqz.checklist.task.api.TaskModify
+import sqz.checklist.task.api.modify.TaskModify
 
 /** This method expected to be called only within this package and its sub-packages. **/
 @Composable

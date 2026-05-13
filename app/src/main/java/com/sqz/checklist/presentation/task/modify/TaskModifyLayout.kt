@@ -23,7 +23,7 @@ import sqz.checklist.data.database.repository.task.TaskRepositoryFake
 import sqz.checklist.data.preferences.PrimaryPreferences
 import sqz.checklist.data.storage.manager.StorageManager
 import sqz.checklist.data.storage.manager.StorageManagerFake
-import sqz.checklist.task.api.TaskModify
+import sqz.checklist.task.api.modify.TaskModify
 
 /**
  * Composable function for a dialog to add or edit a task.

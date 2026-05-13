@@ -8,6 +8,7 @@ import sqz.checklist.data.database.repository.task.TaskRepository
 import sqz.checklist.data.storage.manager.StorageManager
 import sqz.checklist.task.api.info.TaskInfo
 import sqz.checklist.task.api.list.TaskList
+import sqz.checklist.task.api.modify.TaskModify
 import sqz.checklist.task.impl.info.TaskInfoImpl
 import sqz.checklist.task.impl.list.TaskListImpl
 import sqz.checklist.task.impl.modify.TaskModifyImpl

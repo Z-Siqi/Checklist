@@ -17,7 +17,7 @@ import sqz.checklist.data.database.TaskDetailType
 import sqz.checklist.data.storage.StorageHelper.isMediaPath
 import sqz.checklist.data.storage.StorageHelper.isTempPath
 import sqz.checklist.data.storage.manager.StorageManager
-import sqz.checklist.task.api.TaskModify
+import sqz.checklist.task.api.modify.TaskModify
 
 internal class DetailHandler(
     private val detailIn: List<TaskDetail>?,

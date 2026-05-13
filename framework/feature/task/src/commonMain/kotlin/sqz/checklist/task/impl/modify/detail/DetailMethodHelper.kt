@@ -1,8 +1,8 @@
 package sqz.checklist.task.impl.modify.detail
 
 import sqz.checklist.data.database.TaskDetailType
-import sqz.checklist.task.api.TaskModify.Detail
-import sqz.checklist.task.api.TaskModify.Detail.TypeState
+import sqz.checklist.task.api.modify.TaskModify.Detail
+import sqz.checklist.task.api.modify.TaskModify.Detail.TypeState
 
 /**
  * Convert a [TaskDetailType] to an empty [Detail.TypeState].

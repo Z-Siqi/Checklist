@@ -6,7 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import com.sqz.checklist.presentation.task.modify.TaskModifyViewModel
 import sqz.checklist.common.EffectFeedback
-import sqz.checklist.task.api.TaskModify
+import sqz.checklist.task.api.modify.TaskModify
 
 @Composable
 fun TaskModifyForTaskUI(

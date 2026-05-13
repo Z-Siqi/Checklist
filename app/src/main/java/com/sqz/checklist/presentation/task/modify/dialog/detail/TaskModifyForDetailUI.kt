@@ -10,7 +10,7 @@ import com.sqz.checklist.presentation.task.modify.dialog.detail.group.ModifyDeta
 import com.sqz.checklist.presentation.task.modify.dialog.detail.set.ModifyDetailDialogUI
 import sqz.checklist.common.EffectFeedback
 import sqz.checklist.data.preferences.PrimaryPreferences
-import sqz.checklist.task.api.TaskModify
+import sqz.checklist.task.api.modify.TaskModify
 
 @Composable
 fun TaskModifyForDetailUI(

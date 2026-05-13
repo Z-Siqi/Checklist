@@ -7,8 +7,8 @@ import sqz.checklist.data.platform
 import sqz.checklist.data.storage.StorageHelper.isDataPath
 import sqz.checklist.data.storage.StorageHelper.isMediaPath
 import sqz.checklist.data.storage.StorageHelper.isTempPath
-import sqz.checklist.task.api.TaskModify
-import sqz.checklist.task.api.TaskModify.Detail
+import sqz.checklist.task.api.modify.TaskModify
+import sqz.checklist.task.api.modify.TaskModify.Detail
 
 internal object DetailHelper {
 

@@ -39,7 +39,7 @@ import com.sqz.checklist.presentation.task.modify.dialog.detail.DetailModifyDial
 import com.sqz.checklist.ui.common.unit.isSmallScreenSizeForDialog
 import com.sqz.checklist.ui.common.unit.pxToDp
 import sqz.checklist.common.EffectFeedback
-import sqz.checklist.task.api.TaskModify.Detail
+import sqz.checklist.task.api.modify.TaskModify.Detail
 
 @Composable
 fun ModifyDetailListDialogUI(

@@ -19,7 +19,7 @@ import sqz.checklist.data.database.repository.task.TaskRepository
 import sqz.checklist.data.preferences.PrimaryPreferences
 import sqz.checklist.data.storage.StorageHelper.isDataPath
 import sqz.checklist.data.storage.manager.StorageManager
-import sqz.checklist.task.api.TaskModify
+import sqz.checklist.task.api.modify.TaskModify
 import sqz.checklist.task.api.taskModifyProvider
 import kotlin.math.roundToInt
 
