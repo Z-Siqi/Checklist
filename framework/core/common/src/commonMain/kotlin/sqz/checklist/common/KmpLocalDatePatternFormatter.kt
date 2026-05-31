@@ -70,8 +70,8 @@ object KmpLocalDatePatternFormatter {
     fun format(
         date: LocalDate,
         pattern: String,
-        shortMonths: MonthNames = MonthNames.Companion.ENGLISH_ABBREVIATED,
-        fullMonths: MonthNames = MonthNames.Companion.ENGLISH_FULL,
+        shortMonths: MonthNames = MonthNames.ENGLISH_ABBREVIATED,
+        fullMonths: MonthNames = MonthNames.ENGLISH_FULL,
         preferNumericMonthWhenTextNotLocalized: Boolean = false
     ): String {
         if (pattern.isBlank()) return fallback(date, "blank pattern")

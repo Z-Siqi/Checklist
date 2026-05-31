@@ -55,6 +55,8 @@ kotlin {
                 implementation(libs.okio)
                 implementation(libs.kotlinx.datetime)
                 // Add KMP dependencies here
+
+                api(project(":framework:core:model"))
             }
         }
 

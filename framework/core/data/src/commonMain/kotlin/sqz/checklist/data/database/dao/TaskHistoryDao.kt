@@ -14,6 +14,9 @@ interface TaskHistoryDao {
     @Query("SELECT * FROM task WHERE isHistoryId >= 1 ORDER BY isHistoryId ASC")
     fun getTaskHistoryList(): Flow<List<Task>>
 
+    @Query("SELECT COUNT(*) = 0 FROM task WHERE isHistoryId >= 1")
+    fun isTaskHistoryListEmpty(): Flow<Boolean>
+
     @Query("SELECT * FROM task WHERE isHistoryId >= 1 ORDER BY isHistoryId ASC")
     suspend fun getAllHistorySource(): List<Task>
 

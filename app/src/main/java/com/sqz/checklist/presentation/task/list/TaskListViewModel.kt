@@ -31,6 +31,7 @@ class TaskListViewModel(
         config = config,
         taskHistoryRepository = taskHistoryRepository,
         taskRepository = taskRepository,
+        scope = viewModelScope
     )
 
     private val _notifyManager = NotifyManager()

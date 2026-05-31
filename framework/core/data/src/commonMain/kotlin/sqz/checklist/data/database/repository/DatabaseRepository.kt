@@ -1,28 +1,14 @@
 package sqz.checklist.data.database.repository
 
 import kotlinx.coroutines.flow.Flow
-import kotlinx.datetime.LocalDate
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.todayIn
-import okio.FileNotFoundException
 import sqz.checklist.data.database.ReminderModeType
-import sqz.checklist.data.database.Task
 import sqz.checklist.data.database.TaskDatabase
-import sqz.checklist.data.database.TaskDetail
-import sqz.checklist.data.database.TaskDetailType
 import sqz.checklist.data.database.TaskReminder
 import sqz.checklist.data.database.model.ReminderViewData
-import sqz.checklist.data.storage.AppDirType
-import sqz.checklist.data.storage.appInternalDirPath
-import sqz.checklist.data.storage.manager.StorageManager
-import kotlin.time.Clock
-import kotlin.time.ExperimentalTime
 
 class DatabaseRepository(
     private val databaseInstance: TaskDatabase?
-) : Exception() {
-    @OptIn(ExperimentalTime::class)
-    private val curTime: LocalDate = Clock.System.todayIn(TimeZone.currentSystemDefault())
+) {
 
     /**
      * Inserts a new task reminder into the database.
@@ -50,25 +36,6 @@ class DatabaseRepository(
     }
 
     /**
-     * A private helper function to execute different logic based on whether a [TaskDetail] contains media.
-     *
-     * @param withoutMedia A suspend lambda to execute for non-media types.
-     * @param withMedia A suspend lambda to execute for media types.
-     * @param taskDetail The [TaskDetail] to evaluate.
-     * @return The result of the executed lambda.
-     */
-    private suspend fun taskDetailType(
-        withoutMedia: suspend () -> Unit, withMedia: suspend () -> Unit, taskDetail: TaskDetail
-    ) = when (taskDetail.type) {
-        TaskDetailType.Text -> withoutMedia()
-        TaskDetailType.URL -> withoutMedia()
-        TaskDetailType.Application -> withoutMedia()
-        TaskDetailType.Audio -> withMedia()
-        TaskDetailType.Picture -> withMedia()
-        TaskDetailType.Video -> withMedia()
-    }
-
-    /**
      * Deletes the reminder data associated with a specific task ID.
      *
      * @param taskId The ID of the task whose reminder should be deleted.
@@ -80,68 +47,6 @@ class DatabaseRepository(
         val reminder =
             reminderDao.getByTaskId(taskId = taskId) ?: throw NullPointerException("No id data!")
         reminderDao.delete(reminder)
-    }
-
-    /**
-     * Deletes a task by its ID. It also deletes all associated media files and can optionally
-     * re-arrange the history IDs.
-     *
-     * @param taskId The ID of the task to delete.
-     * @param arrangeHistoryId If true, the history IDs will be re-sequenced after deletion.
-     */
-    suspend fun deleteTask(taskId: Long, arrangeHistoryId: Boolean = false) {
-        val taskDao = this.databaseInstance!!.taskDaoOld()
-        this.deleteAllMediaByTaskId(taskId)
-        taskDao.delete(Task(id = taskId, description = "", createDate = curTime))
-        if (arrangeHistoryId) this.arrangeHistoryId()
-    }
-
-    /**
-     * Deletes all tasks marked as history, including their associated media files.
-     */
-    suspend fun deleteAllHistory() {
-        val taskDao = this.databaseInstance!!.taskDaoOld()
-        for (data in taskDao.getAllOrderByIsHistoryId()) {
-            this.deleteAllMediaByTaskId(data.id)
-        }
-        taskDao.deleteAllHistory()
-    }
-
-    /**
-     * A private helper to delete all media files (audio, picture, video) associated with a given task ID.
-     *
-     * @param taskId The ID of the task whose media should be deleted.
-     */
-    private suspend fun deleteAllMediaByTaskId(taskId: Long) {
-        val taskDao = this.databaseInstance!!.taskDaoOld()
-        taskDao.getTaskDetail(taskId).let {
-            if (it.isEmpty()) return
-            for (getTaskDetail in it) {
-                try {
-                    this@DatabaseRepository.taskDetailType(
-                        withoutMedia = {}, withMedia = {
-                            val storageManager = StorageManager.provider()
-                            val toStr = getTaskDetail.dataByte.decodeToString().let { let ->
-                                if (let.startsWith("file:///") || let.startsWith("content://")) {
-                                    return@let let.replaceBefore("media", "")
-                                }
-                                return@let let
-                            }
-                            val path: String = toStr.let { let ->
-                                "${appInternalDirPath(AppDirType.Data)}/${let}"
-                            }
-                            val delMode = StorageManager.DeleteMode.FilePath(path)
-                            try {
-                                storageManager.deleteStorageFile(delMode)
-                            } catch (_: FileNotFoundException) {
-                            }
-                        },
-                        taskDetail = getTaskDetail
-                    )
-                } catch (_: Exception) {
-                }
-            }
-        }
     }
 
     /**
@@ -197,30 +102,5 @@ class DatabaseRepository(
      */
     suspend fun getModeNumWithNoReminded(modeType: ReminderModeType): Int {
         return this.databaseInstance!!.taskReminderDao().getModeNum(modeType, 1)
-    }
-
-    /**
-     * Moves a task from the history list back to the main list by setting its history ID to 0
-     * and then re-sequencing the remaining history items.
-     *
-     * @param id The ID of the task to move out of history.
-     */
-    suspend fun isHistoryIdToMain(id: Long) {
-        this.databaseInstance!!.taskDaoOld().setHistoryId(0, id)
-        this.arrangeHistoryId()
-    }
-
-    /**
-     * Private helper to re-sequence the `isHistoryId` for all items currently in history.
-     * This ensures the IDs are contiguous (1, 2, 3, ...).
-     */
-    private suspend fun arrangeHistoryId() {
-        val allIsHistoryIdList = this.databaseInstance!!.taskDaoOld().getAllIsHistoryId()
-        val arrangeIdList = allIsHistoryIdList.mapIndexed { index, data ->
-            data.copy(isHistoryId = index + 1)
-        }
-        for (data in arrangeIdList) {
-            this.databaseInstance.taskDaoOld().setIsHistoryId(data.isHistoryId, data.id)
-        }
     }
 }

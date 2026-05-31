@@ -75,8 +75,11 @@ internal interface TaskDao {
     @Query("SELECT isHistoryId FROM task WHERE isHistoryId != 0 ORDER BY isHistoryId DESC LIMIT 1")
     suspend fun getMaxIsHistoryId(): Int?
 
+    @Query("SELECT * FROM task WHERE isHistoryId = :isHistoryId LIMIT 1")
+    suspend fun getTaskByHistoryId(isHistoryId: Long): Task?
+
     @Query("UPDATE task SET isHistoryId = :isHistoryId WHERE id = :id")
-    suspend fun setIsHistoryId(isHistoryId: Int, id: Long)
+    suspend fun setIsHistoryId(isHistoryId: Long, id: Long)
 
     @Query("SELECT COUNT(*) = 0 FROM task WHERE isHistoryId = 0")
     fun isTaskListEmpty(): Flow<Boolean>

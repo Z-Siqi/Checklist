@@ -19,7 +19,7 @@
     <string name="open_with">打開方式</string>
     <string name="failed_open">打開失敗!</string>
     <string name="processing">正在處理…</string>
-    <string name="full_date_short">yyyy 年 mm 月 dd 日 hh:mm a</string>
+    <string name="full_date_short">yyyy 年 MM 月 dd 日 hh:mm a</string>
 
     <!-- MainLayout -->
     <string name="tasks">任務</string>
@@ -32,8 +32,10 @@
     <string name="report_normal_file_size">如果檔案大小不大於 %1$sMB，請向開發人員報告</string>
 
     <!-- TaskLayout -->
-    <string name="task_date_format">yyyy 年 mm 月 dd 日</string>
+    <string name="task_date_format">yyyy 年 MM 月 dd 日</string>
+    <string name="todo_tasks">待辦任務</string>
     <string name="task_creation_time">創建日期: %1$s</string>
+    <string name="task_finish_time">任務完成於: %1$s</string>
     <string name="check">檢查</string>
     <string name="undo">撤回</string>
     <string name="reminder">提醒</string>

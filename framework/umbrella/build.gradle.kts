@@ -12,7 +12,9 @@ kotlin {
     val exportDependencies = listOf(
         project(":framework:core:common"),
         project(":framework:core:data"),
+        project(":framework:core:model"),
         project(":framework:feature:task"),
+        project(":framework:feature:history"),
     )
 
     listOf(

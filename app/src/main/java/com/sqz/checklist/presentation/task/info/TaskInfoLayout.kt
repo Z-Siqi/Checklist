@@ -68,6 +68,7 @@ fun TaskInfoLayout(
         var isDialogSwitched by rememberSaveable { mutableStateOf(false) }
         if (it.pinChangeAllowed) {
             InfoTaskDialogUI(
+                enableDetailButton = it.detail.isNotEmpty(),
                 onDetailClick = { isDialogSwitched = true },
                 pinned = it.task.isPin,
                 onPinChange = { viewModel.onPinChange() },
@@ -78,6 +79,7 @@ fun TaskInfoLayout(
             )
         } else {
             InfoTaskDialogUI(
+                enableDetailButton = it.detail.isNotEmpty(),
                 onDetailClick = { isDialogSwitched = true },
                 description = it.task.description,
                 onDismissRequest = viewModel::clearTaskInfo,
@@ -88,7 +90,7 @@ fun TaskInfoLayout(
         if (isDialogSwitched) {
             InfoDetailDialogUI(
                 details = it.detail,
-                onDismissRequest = viewModel::clearTaskInfo,
+                onDismissRequest = { isDialogSwitched.let { isDialogSwitched = false } },
                 feedback = feedback,
                 modifier = modifier
             )

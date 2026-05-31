@@ -32,7 +32,9 @@
 
     <!-- TaskLayout -->
     <string name="task_date_format">dd MMM yyyy</string>
+    <string name="todo_tasks">To-do tasks</string>
     <string name="task_creation_time">Task creation time: %1$s</string>
+    <string name="task_finish_time">Task completed at: %1$s</string>
     <string name="check">Check</string>
     <string name="undo">Undo</string>
     <string name="reminder">reminder</string>

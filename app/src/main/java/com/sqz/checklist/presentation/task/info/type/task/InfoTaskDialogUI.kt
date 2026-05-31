@@ -73,6 +73,7 @@ fun InfoTaskDialogUI(
 /** Info Task Dialog With Detail Button **/
 @Composable
 fun InfoTaskDialogUI(
+    enableDetailButton: Boolean,
     onDetailClick: () -> Unit,
     description: String,
     onDismissRequest: () -> Unit,
@@ -80,13 +81,16 @@ fun InfoTaskDialogUI(
     modifier: Modifier = Modifier,
 ) {
     val isSmallScreenSize = isSmallScreenSizeForDialog()
+    val contentButton: @Composable (() -> Unit) = {
+        DetailButton(isSmallScreenSize, onDetailClick)
+    }
     InfoTaskDialog(
         description = description,
         onDismissRequest = onDismissRequest,
         isSmallScreenSize = isSmallScreenSize,
         feedback = feedback,
         modifier = modifier,
-        contentButton = { DetailButton(isSmallScreenSize, onDetailClick) }
+        contentButton = if (enableDetailButton) contentButton else null
     )
 }
 
@@ -115,6 +119,7 @@ fun InfoTaskDialogUI(
 /** Info Task Dialog With Pin Changeable and Detail Button **/
 @Composable
 fun InfoTaskDialogUI(
+    enableDetailButton: Boolean,
     onDetailClick: () -> Unit,
     pinned: Boolean,
     onPinChange: (Boolean) -> Unit,
@@ -124,6 +129,9 @@ fun InfoTaskDialogUI(
     modifier: Modifier = Modifier,
 ) {
     val isSmallScreenSize = isSmallScreenSizeForDialog()
+    val contentButton: @Composable (() -> Unit) = {
+        DetailButton(isSmallScreenSize, onDetailClick)
+    }
     InfoTaskDialogWithPin(
         pinned = pinned,
         onPinChange = onPinChange,
@@ -132,9 +140,8 @@ fun InfoTaskDialogUI(
         isSmallScreenSize = isSmallScreenSize,
         feedback = feedback,
         modifier = modifier,
-    ) {
-        DetailButton(isSmallScreenSize, onDetailClick)
-    }
+        contentButton = if (enableDetailButton) contentButton else null
+    )
 }
 
 @Composable

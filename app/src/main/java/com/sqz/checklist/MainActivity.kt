@@ -21,7 +21,6 @@ import com.sqz.checklist.cache.deleteAllFileWhichInProcessFilesPath
 import com.sqz.checklist.cache.dropEmptyInProcessFilesPath
 import com.sqz.checklist.notification.NotificationHelper
 import com.sqz.checklist.notification.NotifyManager
-import sqz.checklist.data.database.repository.DatabaseRepository
 import com.sqz.checklist.ui.MainLayout
 import com.sqz.checklist.ui.common.unit.isGestureNavigationMode
 import com.sqz.checklist.ui.theme.ChecklistTheme
@@ -35,6 +34,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import sqz.checklist.data.database.DatabaseProvider
 import sqz.checklist.data.database.getDatabaseBuilder
+import sqz.checklist.data.database.repository.history.TaskHistoryRepository
 import sqz.checklist.data.database.repository.reminder.TaskReminderRepository
 import sqz.checklist.data.preferences.PrimaryPreferences
 import sqz.checklist.data.storage.AppDirType
@@ -124,7 +124,7 @@ class MainActivity : ComponentActivity() {
 
     private fun clearHistoryWhenLeaved() {
         if (PrimaryPreferences(applicationContext).clearHistoryWhenLeaved()) super.lifecycle.coroutineScope.launch {
-            DatabaseRepository(taskDatabase.getDatabase()).deleteAllHistory()
+            TaskHistoryRepository.provider(taskDatabase).deleteOldHistoryTask(0)
             Log.d("clearHistoryWhenLeaved", "Clear all history")
         }
     }

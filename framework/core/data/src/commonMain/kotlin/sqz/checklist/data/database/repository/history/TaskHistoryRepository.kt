@@ -16,6 +16,13 @@ interface TaskHistoryRepository {
     fun getTaskHistoryList(): Flow<List<Task>>
 
     /**
+     * Check if [Task] with [Task.isHistoryId]` != 0` list is empty. This will not include history task.
+     *
+     * @return `true` if [Task] list is empty
+     */
+    fun isTaskHistoryListEmpty(): Flow<Boolean>
+
+    /**
      * Update [Task.isHistoryId] to 0 for remove history state.
      * This will show task from
      * [sqz.checklist.data.database.repository.task.TaskRepository.getTaskList],

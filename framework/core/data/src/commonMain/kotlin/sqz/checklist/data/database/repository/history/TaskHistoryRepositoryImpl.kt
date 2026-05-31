@@ -16,6 +16,10 @@ internal class TaskHistoryRepositoryImpl(
         return this.historyDao().getTaskHistoryList()
     }
 
+    override fun isTaskHistoryListEmpty(): Flow<Boolean> {
+        return this.historyDao().isTaskHistoryListEmpty()
+    }
+
     override suspend fun restoreTaskFromHistoryList(taskId: Long) {
         this.historyDao().resetIsHistoryId(taskId)
     }

@@ -24,80 +24,13 @@ import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.NavigationRailItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import com.sqz.checklist.R
 import com.sqz.checklist.ui.main.NavMode
-import com.sqz.checklist.ui.common.dialog.WarningAlertDialog
 import com.sqz.checklist.ui.theme.Theme
-
-@Composable
-fun TaskHistoryNavBar(
-    mode: NavMode,
-    view: View,
-    modifier: Modifier = Modifier,
-    historyState: TaskHistoryViewModel,
-) {
-    val selectState = historyState.selectState.collectAsState().value
-
-    var deleteAllView by rememberSaveable { mutableStateOf(false) }
-    var redoAllView by rememberSaveable { mutableStateOf(false) }
-    if (deleteAllView) {
-        WarningAlertDialog(
-            onDismissRequest = { deleteAllView = false },
-            onConfirmButtonClick = {
-                historyState.doAllTask(TaskHistoryViewModel.DoTaskAction.Delete)
-                deleteAllView = false
-            },
-            textString = stringResource(R.string.delete_all_history)
-        )
-    }
-    if (redoAllView) {
-        WarningAlertDialog(
-            onDismissRequest = { redoAllView = false },
-            onConfirmButtonClick = {
-                historyState.doAllTask(TaskHistoryViewModel.DoTaskAction.Redo)
-                redoAllView = false
-            },
-            textString = stringResource(R.string.redo_all_history)
-        )
-    }
-
-    NavigationSelector(
-        mode = mode,
-        selected = selectState.onSelect,
-        deleteClick = {
-            if (selectState.onSelect) historyState.removeFromHistory(
-                TaskHistoryViewModel.DoTaskAction.Delete,
-                selectState.selectedId
-            ) else {
-                deleteAllView = true
-            }
-        },
-        redoClick = {
-            if (selectState.onSelect) historyState.removeFromHistory(
-                TaskHistoryViewModel.DoTaskAction.Redo,
-                selectState.selectedId
-            ) else {
-                redoAllView = true
-            }
-        },
-        view = view,
-        modifier = modifier
-    )
-
-    LaunchedEffect(true) {
-        if (selectState.onSelect) historyState.resetSelectState()
-    }
-}
 
 private data class TaskHistoryColors(
     val containerColor: Color, val contentColor: Color,
@@ -105,7 +38,7 @@ private data class TaskHistoryColors(
 )
 
 @Composable
-private fun NavigationSelector(
+fun NavigationSelector( //TODO: Refactor this
     mode: NavMode,
     selected: Boolean, deleteClick: () -> Unit, redoClick: () -> Unit,
     view: View, modifier: Modifier = Modifier,

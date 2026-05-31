@@ -2,6 +2,7 @@ package sqz.checklist.data.database.repository.history
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
 import sqz.checklist.data.database.Task
@@ -17,6 +18,10 @@ class TaskHistoryRepositoryFake : TaskHistoryRepository {
         )
         val task2 = task1.copy(id = 2, description = "Task 2")
         return flowOf(listOf(task1, task2))
+    }
+
+    override fun isTaskHistoryListEmpty(): Flow<Boolean> {
+        return getTaskHistoryList().map { it.isEmpty() }
     }
 
     override suspend fun restoreTaskFromHistoryList(taskId: Long) {

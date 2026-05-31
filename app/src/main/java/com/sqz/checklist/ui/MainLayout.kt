@@ -38,9 +38,6 @@ import com.sqz.checklist.ui.main.NavMode
 import com.sqz.checklist.ui.main.backup.BackupAndRestoreLayout
 import com.sqz.checklist.ui.main.backup.BackupRestoreTopBar
 import com.sqz.checklist.ui.main.history.task.HistoryTopBar
-import com.sqz.checklist.ui.main.history.task.TaskHistory
-import com.sqz.checklist.ui.main.history.task.TaskHistoryNavBar
-import com.sqz.checklist.ui.main.history.task.TaskHistoryViewModel
 import com.sqz.checklist.ui.main.settings.SettingsLayoutViewModel
 import com.sqz.checklist.ui.main.settings.SettingsTopBar
 import com.sqz.checklist.ui.main.settings.layout.SettingsLayout
@@ -51,6 +48,7 @@ import com.sqz.checklist.ui.main.task.layout.TaskLayoutTopBar
 import com.sqz.checklist.ui.main.task.layout.TopBarExtendedMenu
 import com.sqz.checklist.ui.main.task.layout.taskExtendedNavButton
 import com.sqz.checklist.ui.common.unit.isLandscape
+import com.sqz.checklist.ui.main.history.task.TaskHistoryScreen
 import sqz.checklist.data.preferences.PrimaryPreferences
 
 enum class MainLayoutNav {
@@ -72,7 +70,6 @@ fun MainLayout(modifier: Modifier, context: Context, view: View) {
 
     // ViewModel
     val taskLayoutViewModel: TaskLayoutViewModel = viewModel()
-    val taskHistoryViewModel: TaskHistoryViewModel = viewModel()
     val settingsLayoutViewModel: SettingsLayoutViewModel = viewModel()
 
     // Top bar
@@ -143,12 +140,12 @@ fun MainLayout(modifier: Modifier, context: Context, view: View) {
         )
     }
     val taskHistoryNavBar: @Composable (mode: NavMode) -> Unit = { mode ->
-        TaskHistoryNavBar(
+        /*TaskHistoryNavBar(
             mode = mode,
             view = view,
             historyState = taskHistoryViewModel,
             modifier = Modifier
-        )
+        )*/
     }
 
     // Set Navigation bar mode (Navigation Bar or Navigation Rail)
@@ -162,14 +159,14 @@ fun MainLayout(modifier: Modifier, context: Context, view: View) {
     ContentLayout(
         topBar = when (currentRoute) {
             MainLayoutNav.TaskLayout.name -> taskLayoutTopBar
-            MainLayoutNav.TaskHistory.name -> taskHistoryTopBar
+            MainLayoutNav.TaskHistory.name -> nul //taskHistoryTopBar
             MainLayoutNav.BackupRestore.name -> backupRestoreTopBar
             MainLayoutNav.Settings.name -> settingsTopBar
             else -> nul
         },
         bottomBar = {
             when (currentRoute) {
-                MainLayoutNav.TaskHistory.name -> taskHistoryNavBar(navMode)
+                MainLayoutNav.TaskHistory.name -> nul() //taskHistoryNavBar(navMode)
                 MainLayoutNav.BackupRestore.name -> nul()
                 MainLayoutNav.Unknown.name -> nul()
                 else -> mainNavigationBar(navMode)
@@ -178,7 +175,7 @@ fun MainLayout(modifier: Modifier, context: Context, view: View) {
         navigationRail = {
             when (currentRoute) {
                 MainLayoutNav.TaskLayout.name -> mainNavigationBar(navRailMode)
-                MainLayoutNav.TaskHistory.name -> taskHistoryNavBar(navRailMode)
+                MainLayoutNav.TaskHistory.name -> nul() //taskHistoryNavBar(navRailMode)
                 MainLayoutNav.Settings.name -> mainNavigationBar(navRailMode)
                 else -> nul()
             }
@@ -207,7 +204,11 @@ fun MainLayout(modifier: Modifier, context: Context, view: View) {
                 )
             }
             composable(MainLayoutNav.TaskHistory.name) {
-                TaskHistory(historyState = taskHistoryViewModel)
+                //TaskHistory(historyState = taskHistoryViewModel)
+                TaskHistoryScreen(
+                    navController = navController,
+                    modifier = modifier,
+                )
             }
             composable(MainLayoutNav.BackupRestore.name) {
                 BackupAndRestoreLayout(refreshListRequest = refreshListRequest, view = view) {

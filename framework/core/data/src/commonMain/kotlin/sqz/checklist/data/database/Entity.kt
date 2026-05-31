@@ -16,7 +16,7 @@ import kotlinx.datetime.LocalDate
  * @param doingState not implemented yet.
  * @param isPin mark task is pinned or not.
  * @param isHistoryId if > 0 means the task has been checked and should only visible in history
- *        screen. Then expected will delete the task from database if `isHistoryId` > expected value.
+ *        screen. Then expected the task can delete from database only if `isHistoryId` >= 1.
  */
 @Entity(tableName = "task")
 data class Task(
@@ -25,7 +25,7 @@ data class Task(
     @ColumnInfo val createDate: LocalDate,
     @ColumnInfo val doingState: String? = null, // not implemented
     @ColumnInfo val isPin: Boolean = false,
-    @ColumnInfo val isHistoryId: Int = 0,
+    @ColumnInfo val isHistoryId: Long = 0,
 )
 
 /**

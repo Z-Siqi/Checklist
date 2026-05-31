@@ -173,7 +173,7 @@ private fun DefaultList(
         if (remindedList.isEmpty() && pinnedList.isEmpty()) item {
             Spacer(modifier = Modifier.height(15.dp))
         } else defaultListTitleItem(
-            text = { "To-do tasks" },
+            text = { stringResource(R.string.todo_tasks) },
             textColor = { MaterialTheme.colorScheme.outline }
         )
         items(

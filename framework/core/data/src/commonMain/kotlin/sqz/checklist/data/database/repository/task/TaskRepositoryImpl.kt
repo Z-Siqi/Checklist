@@ -1,5 +1,6 @@
 package sqz.checklist.data.database.repository.task
 
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import sqz.checklist.data.database.DatabaseProvider
 import sqz.checklist.data.database.Task
@@ -15,6 +16,8 @@ import sqz.checklist.data.storage.StorageHelper.isCachePath
 import sqz.checklist.data.storage.StorageHelper.platformDataPathToSafetyPath
 import sqz.checklist.data.storage.appInternalDirPath
 import sqz.checklist.data.storage.manager.StorageManager
+import kotlin.random.Random
+import kotlin.time.Clock
 
 internal class TaskRepositoryImpl(
     private val db: DatabaseProvider,
@@ -55,8 +58,17 @@ internal class TaskRepositoryImpl(
     override suspend fun removeTaskFromDefaultList(taskId: Long) {
         //TODO: change historyId as time long in future
         val dao = this.taskDao()
-        val getMaxIsHistoryId = dao.getMaxIsHistoryId() ?: 0
-        dao.setIsHistoryId(getMaxIsHistoryId + 1, taskId)
+        //val getMaxIsHistoryId = dao.getMaxIsHistoryId() ?: 0
+        //dao.setIsHistoryId(getMaxIsHistoryId + 1, taskId)
+        val curTime = Clock.System.now().toEpochMilliseconds()
+        while (true) {
+            if (dao.getTaskByHistoryId(curTime) != null) {
+                delay(Random.nextLong(1, 10))
+                continue
+            }
+            dao.setIsHistoryId(curTime, taskId)
+            break
+        }
     }
 
     override fun isTaskListEmpty(): Flow<Boolean> {
