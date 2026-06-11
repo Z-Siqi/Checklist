@@ -1,252 +1,140 @@
 package com.sqz.checklist.ui
 
 import android.content.Context
-import android.util.Log
 import android.view.SoundEffectConstants
 import android.view.View
 import android.widget.Toast
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberTopAppBarState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.sqz.checklist.R
-import com.sqz.checklist.ui.main.NavBarLayout
-import com.sqz.checklist.ui.main.NavExtendedButtonData
-import com.sqz.checklist.ui.main.NavMode
+import com.sqz.checklist.ui.common.ContentScaffold
+import com.sqz.checklist.ui.common.TextTooltipBox
 import com.sqz.checklist.ui.main.backup.BackupAndRestoreLayout
 import com.sqz.checklist.ui.main.backup.BackupRestoreTopBar
-import com.sqz.checklist.ui.main.history.task.HistoryTopBar
+import com.sqz.checklist.ui.main.history.task.taskHistoryScreen
 import com.sqz.checklist.ui.main.settings.SettingsLayoutViewModel
 import com.sqz.checklist.ui.main.settings.SettingsTopBar
 import com.sqz.checklist.ui.main.settings.layout.SettingsLayout
-import com.sqz.checklist.ui.main.settings.settingsExtendedNavButton
 import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
-import com.sqz.checklist.ui.main.task.layout.TaskLayout
-import com.sqz.checklist.ui.main.task.layout.TaskLayoutTopBar
-import com.sqz.checklist.ui.main.task.layout.TopBarExtendedMenu
-import com.sqz.checklist.ui.main.task.layout.taskExtendedNavButton
-import com.sqz.checklist.ui.common.unit.isLandscape
-import com.sqz.checklist.ui.main.history.task.TaskHistoryScreen
-import sqz.checklist.data.preferences.PrimaryPreferences
+import com.sqz.checklist.ui.main.task.taskScreen
+import com.sqz.checklist.ui.nav.RootNavRoute
+import com.sqz.checklist.ui.nav.group.home.homeNavGroup
 
 enum class MainLayoutNav {
-    TaskLayout,
-    TaskHistory,
     Settings,
     BackupRestore,
-    Unknown,
 }
 
-/** Top level of MainLayout **/
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun MainLayout(modifier: Modifier, context: Context, view: View) {
     val navController = rememberNavController()
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
-    var disableBackButton by rememberSaveable { mutableStateOf(false) }
 
-    // ViewModel
-    val taskLayoutViewModel: TaskLayoutViewModel = viewModel()
+    val refreshListRequest = rememberSaveable { mutableStateOf(false) }
     val settingsLayoutViewModel: SettingsLayoutViewModel = viewModel()
+    val taskState: TaskLayoutViewModel = viewModel()
 
-    // Top bar
-    val topBarState = rememberTopAppBarState()
-    var canScroll by rememberSaveable { mutableStateOf(true) }
-    val scrollBehavior =
-        if (canScroll) TopAppBarDefaults.exitUntilCollapsedScrollBehavior(topBarState)
-        else TopAppBarDefaults.pinnedScrollBehavior() //fix scroll bug when open with landscape mode
-            .also { if (it.state.heightOffset != 0f) it.state.heightOffset = 0f }
-    val taskLayoutTopBar = @Composable {
-        val onMenuClick: @Composable (MutableState<Boolean>) -> Unit =
-            { state -> // setter: open menu. getter: get whether need close menu.
-                TopBarExtendedMenu( // menu UI
-                    state = state,
-                    navController = navController,
-                    onClickType = taskLayoutViewModel::onTopBarMenuClick,
-                    view = view
-                )
-            }
-        canScroll = TaskLayoutTopBar(scrollBehavior, topBarState, onMenuClick, view)
-    }
-    val taskHistoryTopBar = @Composable {
-        HistoryTopBar(onClick = {
-            navController.popBackStack()
-            view.playSoundEffect(SoundEffectConstants.CLICK)
-        })
-    }
-    val backupRestoreTopBar = @Composable {
-        BackupRestoreTopBar(onClick = {
-            if (!disableBackButton) navController.popBackStack() else Toast.makeText(
-                context, context.getString(R.string.back_disabled_notice), Toast.LENGTH_SHORT
-            ).show()
-            view.playSoundEffect(SoundEffectConstants.CLICK)
-        })
-    }
-    val settingsTopBar = @Composable {
-        SettingsTopBar(onBack = {
-            navController.popBackStack()
-            settingsLayoutViewModel.resetSearchState()
-        }, view = view)
-    }
-
-    // Navigation bar
-    val mainNavigationBar: @Composable (mode: NavMode) -> Unit = { mode ->
-        val extendedButtonData = when (currentRoute) {
-            // TaskLayout Extended Nav Button function
-            MainLayoutNav.TaskLayout.name -> taskExtendedNavButton(
-                mode = mode, view = view, viewModel = taskLayoutViewModel
-            )
-            // SettingsLayout Extended Nav Button function
-            MainLayoutNav.Settings.name -> settingsExtendedNavButton(
-                viewModel = settingsLayoutViewModel, view = view
-            )
-            // The else should never happen, never be called
-            else -> NavExtendedButtonData()
-        }
-        NavBarLayout(
-            mode = mode,
-            extendedButtonData = extendedButtonData,
-            selected = { index -> index.name == currentRoute },
-            onNavClick = { index ->
-                if (index.name != currentRoute) navController.navigate(index.name) {
-                    popUpTo(0)
-                }
-                if (currentRoute == MainLayoutNav.Settings.name) settingsLayoutViewModel.resetSearchState()
-            },
-            modifier = Modifier
-        )
-    }
-    val taskHistoryNavBar: @Composable (mode: NavMode) -> Unit = { mode ->
-        /*TaskHistoryNavBar(
-            mode = mode,
-            view = view,
-            historyState = taskHistoryViewModel,
-            modifier = Modifier
-        )*/
-    }
-
-    // Set Navigation bar mode (Navigation Bar or Navigation Rail)
-    val landscapeMinWidthLimit = isLandscape(288.dp)
-    val navMode = if (!landscapeMinWidthLimit) NavMode.NavBar else NavMode.Disable
-    val navRailMode = if (landscapeMinWidthLimit) NavMode.NavRail else NavMode.Disable
-
-    // Layout
-    val nulLog = { Log.d("MainLayout", "Navigation bar or Top bar is disable") }
-    val nul = @Composable { Spacer(modifier = Modifier).also { nulLog() } }
-    ContentLayout(
-        topBar = when (currentRoute) {
-            MainLayoutNav.TaskLayout.name -> taskLayoutTopBar
-            MainLayoutNav.TaskHistory.name -> nul //taskHistoryTopBar
-            MainLayoutNav.BackupRestore.name -> backupRestoreTopBar
-            MainLayoutNav.Settings.name -> settingsTopBar
-            else -> nul
-        },
-        bottomBar = {
-            when (currentRoute) {
-                MainLayoutNav.TaskHistory.name -> nul() //taskHistoryNavBar(navMode)
-                MainLayoutNav.BackupRestore.name -> nul()
-                MainLayoutNav.Unknown.name -> nul()
-                else -> mainNavigationBar(navMode)
-            }
-        },
-        navigationRail = {
-            when (currentRoute) {
-                MainLayoutNav.TaskLayout.name -> mainNavigationBar(navRailMode)
-                MainLayoutNav.TaskHistory.name -> nul() //taskHistoryNavBar(navRailMode)
-                MainLayoutNav.Settings.name -> mainNavigationBar(navRailMode)
-                else -> nul()
-            }
-        },
-        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
+    NavHost(
+        navController = navController,
+        startDestination = RootNavRoute.Home,
+        modifier = modifier,
     ) {
-        val refreshConfigRequest = rememberSaveable { mutableStateOf(true) }
-        val refreshListRequest = rememberSaveable { mutableStateOf(false) }
-        NavHost(
-            navController = navController,
-            startDestination = MainLayoutNav.TaskLayout.name
-        ) {
-            composable(MainLayoutNav.TaskLayout.name) {
-                if (refreshConfigRequest.value && currentRoute == MainLayoutNav.TaskLayout.name) {
-                    LaunchedEffect(Unit) {
-                        taskLayoutViewModel.updateListConfig(PrimaryPreferences(context))
-                        refreshConfigRequest.value = false
+        homeNavGroup(route = RootNavRoute.Home::class) { homeNavController, homeVM ->
+            taskScreen(
+                homeViewModel = homeVM,
+                homeNavController = homeNavController,
+                rootNavController = navController,
+                taskState = taskState,
+                view = view,
+                refreshListRequest = refreshListRequest,
+            )
+        }
+
+        taskHistoryScreen(
+            route = RootNavRoute.TaskHistory::class,
+            rootNavController = navController,
+            modifier = modifier,
+        )
+
+        composable(MainLayoutNav.BackupRestore.name) { //TODO: Finish refactoring this
+            val disableBackButton = rememberSaveable { mutableStateOf(false) }
+            ContentScaffold(
+                topBar = {
+                    BackupRestoreTopBar(onClick = {
+                        if (!disableBackButton.value) {
+                            navController.popBackStack()
+                        } else {
+                            Toast.makeText(
+                                context,
+                                R.string.back_disabled_notice,
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                        }
+                        view.playSoundEffect(SoundEffectConstants.CLICK)
+                    })
+                }
+            ) {
+                BackupAndRestoreLayout(
+                    refreshListRequest = refreshListRequest,
+                    view = view,
+                ) {
+                    disableBackButton.value = it
+                }
+            }
+        }
+
+        composable(MainLayoutNav.Settings.name) { //TODO: Finish refactoring this
+            ContentScaffold(
+                topBar = {
+                    SettingsTopBar(
+                        onBack = {
+                            navController.popBackStack()
+                            settingsLayoutViewModel.resetSearchState()
+                        },
+                        view = view,
+                    )
+                },
+                floatingActionButton = {
+                    val buttonText = stringResource(
+                        if (settingsLayoutViewModel.getSearchState()) R.string.cancel else R.string.search
+                    )
+                    TextTooltipBox(text = buttonText) {
+                        FloatingActionButton(
+                            onClick = {
+                                if (settingsLayoutViewModel.getSearchState()) {
+                                    settingsLayoutViewModel.resetSearchState()
+                                } else {
+                                    settingsLayoutViewModel.requestSearch()
+                                }
+                                view.playSoundEffect(SoundEffectConstants.CLICK)
+                            }
+                        ) {
+                            val icon = if (settingsLayoutViewModel.getSearchState()) {
+                                Icons.Filled.Close
+                            } else {
+                                Icons.Filled.Search
+                            }
+                            Icon(icon, contentDescription = buttonText)
+                        }
                     }
                 }
-                TaskLayout(
-                    refreshListRequest = refreshListRequest,
-                    scrollBehavior = scrollBehavior,
-                    context = context,
+            ) {
+                SettingsLayout(
+                    viewModel = settingsLayoutViewModel,
                     view = view,
-                    taskState = taskLayoutViewModel
                 )
-            }
-            composable(MainLayoutNav.TaskHistory.name) {
-                //TaskHistory(historyState = taskHistoryViewModel)
-                TaskHistoryScreen(
-                    navController = navController,
-                    modifier = modifier,
-                )
-            }
-            composable(MainLayoutNav.BackupRestore.name) {
-                BackupAndRestoreLayout(refreshListRequest = refreshListRequest, view = view) {
-                    disableBackButton = it
-                }
-            }
-            composable(MainLayoutNav.Settings.name) {
-                LaunchedEffect(Unit) {
-                    refreshConfigRequest.value = true
-                }
-                SettingsLayout(viewModel = settingsLayoutViewModel, view = view)
             }
         }
     }
-}
-
-@Composable
-private fun ContentLayout(
-    modifier: Modifier = Modifier,
-    topBar: @Composable () -> Unit = {},
-    bottomBar: @Composable () -> Unit = {},
-    navigationRail: @Composable () -> Unit = {},
-    floatingActionButton: @Composable () -> Unit = {},
-    content: @Composable (paddingValues: PaddingValues) -> Unit = {}
-) = Row(modifier = modifier) {
-    Surface(
-        modifier = Modifier.weight(1f)
-    ) {
-        Scaffold(
-            topBar = topBar,
-            bottomBar = bottomBar,
-            floatingActionButton = floatingActionButton,
-            contentWindowInsets = WindowInsets(),
-        ) { paddingValues ->
-            Surface(modifier = Modifier.padding(paddingValues)) {
-                content(paddingValues)
-            }
-        }
-    }
-    Surface { navigationRail() }
 }

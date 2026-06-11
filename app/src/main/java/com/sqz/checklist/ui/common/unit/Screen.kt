@@ -2,8 +2,12 @@ package com.sqz.checklist.ui.common.unit
 
 import android.provider.Settings
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.only
+import androidx.compose.material3.NavigationRailDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.platform.LocalContext
@@ -79,4 +83,14 @@ fun isSmallScreenSizeForDialog(): Boolean {
     val widthRequired = widthDp < smallInSmallestEdgeSize
     val heightRequired = heightDp < smallInLargestEdgeSize
     return widthRequired && heightRequired
+}
+
+@Composable
+fun NavigationRailDefaults.rightSideWindowInsets(): WindowInsets {
+    val windowInsets = this.let {
+        WindowInsets.displayCutout.only(
+            WindowInsetsSides.Vertical + WindowInsetsSides.End
+        )
+    }
+    return windowInsets
 }

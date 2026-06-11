@@ -1,7 +1,6 @@
 package com.sqz.checklist.ui.main.history.task
 
 import android.os.Build
-import android.util.Log
 import android.view.SoundEffectConstants
 import android.view.View
 import androidx.compose.foundation.background
@@ -29,7 +28,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import com.sqz.checklist.R
-import com.sqz.checklist.ui.main.NavMode
 import com.sqz.checklist.ui.theme.Theme
 
 private data class TaskHistoryColors(
@@ -39,7 +37,7 @@ private data class TaskHistoryColors(
 
 @Composable
 fun NavigationSelector( //TODO: Refactor this
-    mode: NavMode,
+    isLandscape: Boolean,
     selected: Boolean, deleteClick: () -> Unit, redoClick: () -> Unit,
     view: View, modifier: Modifier = Modifier,
 ) {
@@ -51,13 +49,10 @@ fun NavigationSelector( //TODO: Refactor this
         selectedIconColor = themeColors.navBarSelectedIconColor,
         disabledIconColor = themeColors.navBarDisabledIconColor,
     )
-    when (mode) {
-        NavMode.NavBar -> NavBar(colors, selected, deleteClick, redoClick, view, modifier)
-        NavMode.NavRail -> NavRailBar(colors, selected, deleteClick, redoClick, view, modifier)
-        NavMode.Disable -> {
-            val nulLog = { Log.d("NavBarLayout", "The task history navigation bar is disable") }
-            Spacer(modifier = modifier).also { nulLog() }
-        }
+    if (isLandscape) {
+        NavRailBar(colors, selected, deleteClick, redoClick, view, modifier)
+    } else {
+        NavBar(colors, selected, deleteClick, redoClick, view, modifier)
     }
 }
 

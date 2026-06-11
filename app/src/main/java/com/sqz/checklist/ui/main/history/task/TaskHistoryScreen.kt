@@ -1,105 +1,131 @@
 package com.sqz.checklist.ui.main.history.task
 
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.exclude
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.only
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.dialog
+import androidx.navigation.compose.navigation
+import androidx.navigation.toRoute
 import com.sqz.checklist.common.AndroidEffectFeedback
 import com.sqz.checklist.presentation.history.task.TaskHistoryLayout
 import com.sqz.checklist.presentation.history.task.TaskHistoryRequest
 import com.sqz.checklist.presentation.history.task.TaskHistoryState
 import com.sqz.checklist.presentation.task.info.TaskInfoLayout
 import com.sqz.checklist.presentation.task.info.TaskInfoState
-import com.sqz.checklist.ui.main.NavMode
+import com.sqz.checklist.ui.common.ContentScaffold
+import com.sqz.checklist.ui.common.unit.isLandscape
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.serialization.Serializable
 import sqz.checklist.history.api.task.TaskHistory
+import kotlin.reflect.KClass
 
-@Composable
-fun TaskHistoryScreen( //TODO: refactor nav feature
-    navController: NavHostController,
+private sealed interface TaskHistoryScreen {
+
+    @Serializable
+    data object MainRoute : TaskHistoryScreen
+
+    @Serializable
+    data class TaskInfoDialogRoute(val taskId: Long) : TaskHistoryScreen
+}
+
+fun <T : Any> NavGraphBuilder.taskHistoryScreen(
+    route: KClass<T>,
+    rootNavController: NavHostController,
     modifier: Modifier = Modifier,
 ) {
-    val viewModel: TaskHistoryScreenViewModel = viewModel { TaskHistoryScreenViewModel() }
-    val view = LocalView.current
-    val historyState = remember { mutableStateOf<TaskHistoryState>(TaskHistoryState.None) }
-    val navButtonState = rememberSaveable { mutableStateOf<Boolean?>(null) }
-    Scaffold(
-        topBar = {
-            HistoryTopBar(onClick = { navController.popBackStack() })
-        },
-        bottomBar = { //TODO: Nav rail
-            NavigationSelector(
-                mode = NavMode.NavBar,
-                selected = navButtonState.value == false,
-                deleteClick = { historyState.value = TaskHistoryState.Delete },
-                redoClick = { historyState.value = TaskHistoryState.Redo },
-                view = view,
-            )
-        },
-        //contentWindowInsets = WindowInsets(),
-    ) { paddingValues ->
-        Surface(
-            modifier = modifier.padding(paddingValues),
-            color = MaterialTheme.colorScheme.surface
-        ) {
-            TaskHistoryLayout(
-                externalState = historyState.value,
-                onRequest = {
-                    when (it) {
-                        is TaskHistoryRequest.StateProcessed -> {
-                            historyState.value = TaskHistoryState.None
-                        }
+    navigation(
+        route = route,
+        startDestination = TaskHistoryScreen.MainRoute,
+    ) {
+        composable(route = TaskHistoryScreen.MainRoute::class) {
+            val view = LocalView.current
+            val historyState = remember { mutableStateOf<TaskHistoryState>(TaskHistoryState.None) }
+            val navButtonState = rememberSaveable { mutableStateOf<Boolean?>(null) }
 
-                        is TaskHistoryRequest.AllowDelOrRedo -> {
-                            navButtonState.value = it.toAll
-                        }
-
-                        is TaskHistoryRequest.TaskInfoRequest -> {
-                            val state = TaskInfoState(
-                                taskId = it.taskId,
-                                config = TaskInfoState.Config.TaskAndDetail(false)
-                            )
-                            viewModel.requestTaskInfo(state)
-                        }
-                    }
+            val isLandscape = isLandscape()
+            ContentScaffold(
+                topBar = {
+                    HistoryTopBar(onClick = rootNavController::popBackStack)
                 },
-                config = MutableStateFlow(TaskHistory.Config()),
+                bottomBar = {
+                    if (!isLandscape) NavigationSelector(
+                        isLandscape = false,
+                        selected = navButtonState.value == false,
+                        deleteClick = { historyState.value = TaskHistoryState.Delete },
+                        redoClick = { historyState.value = TaskHistoryState.Redo },
+                        view = view,
+                    )
+                },
+                navigationRail = {
+                    if (isLandscape) NavigationSelector(
+                        isLandscape = true,
+                        selected = navButtonState.value == false,
+                        deleteClick = { historyState.value = TaskHistoryState.Delete },
+                        redoClick = { historyState.value = TaskHistoryState.Redo },
+                        view = view,
+                    )
+                },
+                contentWindowInsets = ScaffoldDefaults.contentWindowInsets.only(
+                    WindowInsetsSides.Vertical + WindowInsetsSides.Start
+                ).exclude(WindowInsets.navigationBars)
+            ) {
+                Surface(
+                    modifier = modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.surface,
+                ) {
+                    TaskHistoryLayout(
+                        externalState = historyState.value,
+                        onRequest = {
+                            when (it) {
+                                is TaskHistoryRequest.StateProcessed -> {
+                                    historyState.value = TaskHistoryState.None
+                                }
+
+                                is TaskHistoryRequest.AllowDelOrRedo -> {
+                                    navButtonState.value = it.toAll
+                                }
+
+                                is TaskHistoryRequest.TaskInfoRequest -> {
+                                    rootNavController.navigate(
+                                        TaskHistoryScreen.TaskInfoDialogRoute(it.taskId)
+                                    )
+                                }
+                            }
+                        },
+                        config = MutableStateFlow(TaskHistory.Config()),
+                        feedback = AndroidEffectFeedback(view),
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+            }
+        }
+
+        dialog(route = TaskHistoryScreen.TaskInfoDialogRoute::class) { backStackEntry ->
+            val view = LocalView.current
+            val taskInfoDialog: TaskHistoryScreen.TaskInfoDialogRoute = backStackEntry.toRoute()
+            TaskInfoLayout(
+                state = TaskInfoState(
+                    taskId = taskInfoDialog.taskId,
+                    config = TaskInfoState.Config.TaskAndDetail(false)
+                ),
+                onFinished = rootNavController::popBackStack,
                 feedback = AndroidEffectFeedback(view),
-                modifier = Modifier.fillMaxSize(),
+                modifier = modifier,
             )
         }
     }
-    viewModel.isTaskInfo.collectAsState().value?.let {
-        TaskInfoLayout(
-            state = it,
-            onFinished = { viewModel.requestTaskInfo(null) },
-            feedback = AndroidEffectFeedback(view),
-            modifier = modifier
-        )
-    }
-}
-
-private class TaskHistoryScreenViewModel: ViewModel() {
-
-    private val _isTaskInfo: MutableStateFlow<TaskInfoState?> = MutableStateFlow(null)
-
-    fun requestTaskInfo(state: TaskInfoState?) {
-        _isTaskInfo.update { state }
-    }
-
-    val isTaskInfo: StateFlow<TaskInfoState?> = _isTaskInfo.asStateFlow()
 }

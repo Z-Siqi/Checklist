@@ -75,7 +75,7 @@ fun TaskListLayout(
             }
             TaskListSceneUI(
                 viewModel = viewModel,
-                onSearchCancel = { externalRequest(TaskListRequest.SearchCanceled) },
+                onSearchCancel = { externalRequest(TaskListRequest.SearchProcessed(false)) },
                 view = view,
                 feedback = feedback,
                 lazyListState = lazyListState
@@ -87,9 +87,9 @@ fun TaskListLayout(
         externalRequest(TaskListRequest.RefreshListProcessed)
     }
     if (listState is TaskListState.IsSearchRequest) LaunchedEffect(Unit) {
-        //TODO: Finish refactoring this
-        viewModel.setSearchState(listState.searchState)
-        externalRequest(TaskListRequest.SearchProcessed)
+        viewModel.onSearchStateChange().also { searchState ->
+            externalRequest(TaskListRequest.SearchProcessed(searchState))
+        }
     }
     val request by viewModel.externalRequest.collectAsState()
     LaunchedEffect(request) {
@@ -117,7 +117,7 @@ fun TaskListLayout(
                     TaskListRequest.RemoveReminded(request.taskId)
                 )
 
-                is TaskItemModel.ExternalRequest.None -> {}
+                is TaskItemModel.ExternalRequest.None -> Unit
             }
         }
         viewModel.resetExternalRequest()

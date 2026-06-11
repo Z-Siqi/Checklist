@@ -22,5 +22,5 @@ sealed interface TaskListState {
      * This should be a temporal state, reset to [None] after the refresh
      * is finished (sent request via [TaskListRequest] to notify the external).
      */
-    data class IsSearchRequest(val searchState: Boolean) : TaskListState
+    data object IsSearchRequest : TaskListState
 }

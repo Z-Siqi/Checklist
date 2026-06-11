@@ -20,6 +20,7 @@ import androidx.navigation.NavHostController
 import com.sqz.checklist.R
 import sqz.checklist.data.preferences.PrimaryPreferences
 import com.sqz.checklist.ui.MainLayoutNav
+import com.sqz.checklist.ui.nav.RootNavRoute
 
 enum class TopBarMenuClickType { History, Search, BackupRestore, Settings }
 
@@ -37,7 +38,7 @@ fun TopBarExtendedMenu(
     val primaryPreferences = PrimaryPreferences(view.context)
     val taskHistoryClick = {
         onClickType(TopBarMenuClickType.History, view.context)
-        navController.navigate(MainLayoutNav.TaskHistory.name)
+        navController.navigate(RootNavRoute.TaskHistory)
     }
     val searchClick = { onClickType(TopBarMenuClickType.Search, view.context) }
     val backupRestoreClick = {

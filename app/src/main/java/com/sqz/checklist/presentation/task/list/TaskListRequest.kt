@@ -7,30 +7,17 @@ package com.sqz.checklist.presentation.task.list
  */
 sealed interface TaskListRequest {
 
-    data object SearchProcessed: TaskListRequest //TODO
+    data object RefreshListProcessed : TaskListRequest
 
-    data object SearchCanceled: TaskListRequest
+    data class Info(val taskId: Long, val pinChangeAllowed: Boolean) : TaskListRequest
 
-    data object RefreshListProcessed: TaskListRequest
+    data class Detail(val taskId: Long) : TaskListRequest
 
-    data class Info(
-        val taskId: Long,
-        val pinChangeAllowed: Boolean,
-    ): TaskListRequest
+    data class Edit(val taskId: Long) : TaskListRequest
 
-    data class Detail(
-        val taskId: Long
-    ): TaskListRequest
+    data class Reminder(val taskId: Long) : TaskListRequest
 
-    data class Edit(
-        val taskId: Long
-    ): TaskListRequest
+    data class RemoveReminded(val taskId: Long) : TaskListRequest
 
-    data class Reminder(
-        val taskId: Long
-    ): TaskListRequest
-
-    data class RemoveReminded(
-        val taskId: Long
-    ): TaskListRequest
+    data class SearchProcessed(val currentState: Boolean) : TaskListRequest
 }

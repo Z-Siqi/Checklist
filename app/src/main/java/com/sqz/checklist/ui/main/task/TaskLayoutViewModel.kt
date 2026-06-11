@@ -9,22 +9,17 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sqz.checklist.MainActivity
 import com.sqz.checklist.notification.NotifyManager
-import com.sqz.checklist.presentation.task.info.TaskInfoState
-import com.sqz.checklist.presentation.task.modify.TaskModifyState
-import sqz.checklist.data.database.repository.DatabaseRepository
-import sqz.checklist.data.preferences.PreferencesInCache
-import sqz.checklist.data.preferences.PrimaryPreferences
 import com.sqz.checklist.ui.main.task.handler.ReminderHandler
-import com.sqz.checklist.ui.main.task.layout.NavConnectData
-import com.sqz.checklist.ui.main.task.layout.TopBarMenuClickType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import sqz.checklist.data.database.Task
+import sqz.checklist.data.database.repository.DatabaseRepository
 import sqz.checklist.data.database.repository.Table
+import sqz.checklist.data.preferences.PreferencesInCache
+import sqz.checklist.data.preferences.PrimaryPreferences
 import sqz.checklist.data.storage.audioMediaPath
 import sqz.checklist.data.storage.pictureMediaPath
 import sqz.checklist.data.storage.videoMediaPath
@@ -36,42 +31,7 @@ open class TaskLayoutViewModel : ViewModel() {
         MainActivity.taskDatabase.getDatabase()
     )
 
-    private val _navExtendedConnectData = MutableStateFlow(NavConnectData())
-    val navExtendedConnector: MutableStateFlow<NavConnectData> = _navExtendedConnectData
-    fun updateNavConnector(data: NavConnectData, updateSet: NavConnectData) {
-        _navExtendedConnectData.update { nav ->
-            if (updateSet.searchState) searchView(data.searchState)
-            nav.copy(
-                canScroll = if (updateSet.canScroll) data.canScroll else nav.canScroll,
-                scrollToFirst = if (updateSet.scrollToFirst) data.scrollToFirst else nav.scrollToFirst,
-                scrollToBottom = if (updateSet.scrollToBottom) data.scrollToBottom else nav.scrollToBottom,
-                canScrollForward = if (updateSet.canScrollForward) data.canScrollForward else nav.canScrollForward
-            )
-        }
-    }
-
-    fun onTopBarMenuClick(type: TopBarMenuClickType, context: Context) = when (type) {
-        TopBarMenuClickType.History -> resetUndo(context)
-        TopBarMenuClickType.Search -> searchView(!_navExtendedConnectData.value.searchState)
-        TopBarMenuClickType.BackupRestore -> resetUndo(context)
-        TopBarMenuClickType.Settings -> resetUndo(context)
-    }
-
     private var _init = MutableStateFlow(false)
-
-    // TODO: Finish refactoring this
-    private val _onSearchRequest = MutableStateFlow<Boolean?>(null)
-
-    fun onResetSearchRequest() {
-        _onSearchRequest.value = null
-    }
-
-    val onSearchRequest = _onSearchRequest.asStateFlow()
-
-    fun searchView(setter: Boolean) { //Connect top bar & nav bar search actions
-        _onSearchRequest.value = setter
-        _navExtendedConnectData.update { it.copy(searchState = setter) }
-    }
 
     /** Reminder handler **/
     var reminderHandler: ReminderHandler
@@ -137,20 +97,6 @@ open class TaskLayoutViewModel : ViewModel() {
                 Log.w("RemoveRemindedNotify", "Exception: $e")
             }
         }
-    }
-
-    private val _isTaskInfo: MutableStateFlow<TaskInfoState?> = MutableStateFlow(null)
-    val isTaskInfo: StateFlow<TaskInfoState?> = _isTaskInfo.asStateFlow()
-
-    fun requestTaskInfo(state: TaskInfoState?) {
-        _isTaskInfo.update { state }
-    }
-
-    private val _isModify: MutableStateFlow<TaskModifyState?> = MutableStateFlow(null)
-    val isModify: StateFlow<TaskModifyState?> = _isModify.asStateFlow()
-
-    fun requestModify(state: TaskModifyState?) {
-        _isModify.update { state }
     }
 
     fun requestReminder(id: Long) {
