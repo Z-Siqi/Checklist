@@ -15,6 +15,7 @@ kotlin {
         project(":framework:core:model"),
         project(":framework:feature:task"),
         project(":framework:feature:history"),
+        project(":framework:feature:reminder"),
     )
 
     listOf(

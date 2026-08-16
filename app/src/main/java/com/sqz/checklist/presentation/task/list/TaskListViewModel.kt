@@ -7,12 +7,14 @@ import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sqz.checklist.notification.NotifyManager
+import com.sqz.checklist.notification.PermissionState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import sqz.checklist.data.database.TaskReminder
 import sqz.checklist.data.database.repository.history.TaskHistoryRepository
 import sqz.checklist.data.database.repository.reminder.TaskReminderRepository
 import sqz.checklist.data.database.repository.task.TaskRepository
@@ -103,14 +105,15 @@ class TaskListViewModel(
         return safeMethod
     }
 
+    private var _undoReminder: TaskReminder? = null
+
     fun onFinished(
         task: TaskItemModel,
         lazyListState: LazyListState,
         androidContext: Context,
     ) {
         task.taskViewData.let {
-            if (it.isReminded && it.reminderTime != null) viewModelScope.launch {
-                //TODO: remove notification and allow restore notification
+            if (it.reminderTime != null) viewModelScope.launch {
                 val reminder = taskReminderRepo.getReminder(it.task.id)
                 val notifyId = reminder?.id ?: return@launch
                 _notifyManager.cancelNotification(
@@ -118,7 +121,9 @@ class TaskListViewModel(
                     context = androidContext,
                     delShowedByNotifyId = true,
                 )
-                taskReminderRepo.deleteRemindedInfo(it.task.id)
+                if (it.isReminded) {
+                    _undoReminder = taskReminderRepo.deleteRemindedInfo(it.task.id)
+                }
             }
         }
         task.onRemoveAction()
@@ -126,6 +131,10 @@ class TaskListViewModel(
             delay(500)
             this@TaskListViewModel.setUndoBreakFactor(lazyListState)
         }
+    }
+
+    fun resetUndoReminder() {
+        _undoReminder = null
     }
 
     suspend fun removeRemindedInfoByTime(
@@ -180,8 +189,32 @@ class TaskListViewModel(
 
     val undoState: StateFlow<Boolean> = _taskList.getUndoState
 
-    fun onUndoClick() {
-        _taskList.requestUndo { /*TODO: also undo notification*/ }
+    fun onUndoClick(context: Context) {
+        _taskList.requestUndo {
+            viewModelScope.launch {
+                if (!_notifyManager.hasNotificationPermission(context)) {
+                    return@launch
+                }
+                val reminder = taskReminderRepo.getReminder(it) ?: return@launch
+                if (reminder.isReminded) return@launch
+                if (!_notifyManager.isDelayedNotificationExist(reminder.id, context)) {
+                    Log.e("onUndoClick", "Skipped restore scheduled reminder!")
+                    return@launch
+                }
+                _notifyManager.createNotification(
+                    notifyId = reminder.id, targetTime = reminder.reminderTime, context = context
+                )
+            }
+        }
+        if (_undoReminder != null) viewModelScope.launch {
+            /*TODO: also undo notification*/
+            try {
+                _undoReminder?.let { taskReminderRepo.insertReminder(it) }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            _undoReminder = null
+        }
     }
 
     fun onSearchStateChange(): Boolean {

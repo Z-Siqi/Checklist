@@ -108,6 +108,8 @@ interface TaskRepository {
      */
     suspend fun modifyTask(task: Task, detail: List<TaskDetail>?): Long
 
+    suspend fun getTaskDetail(): List<TaskDetail>
+
     companion object {
         fun provider(database: DatabaseProvider): TaskRepository {
             return TaskRepositoryImpl(

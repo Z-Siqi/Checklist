@@ -3,6 +3,7 @@ package sqz.checklist.history.api.task
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import sqz.checklist.data.database.Task
+import sqz.checklist.data.database.model.ReminderViewData
 
 interface TaskHistory {
 
@@ -39,7 +40,7 @@ interface TaskHistory {
      * @throws IllegalStateException when state is [Inventory.Loading].
      * @throws NullPointerException if no task is selected or unknown [Inventory] state
      */
-    fun redoSelectedTask()
+    fun redoSelectedTask(rescheduleReminder: suspend (ReminderViewData) -> Unit)
 
     /**
      * Delete all history task from storage forever.
@@ -57,7 +58,7 @@ interface TaskHistory {
      *
      * @throws IllegalStateException when state not [Inventory.Default].
      */
-    fun redoAllHistory()
+    fun redoAllHistory(rescheduleReminder: suspend (ReminderViewData) -> Unit)
 
     sealed interface Inventory {
 

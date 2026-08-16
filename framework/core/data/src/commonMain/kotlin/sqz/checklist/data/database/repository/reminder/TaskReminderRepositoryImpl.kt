@@ -17,9 +17,13 @@ internal class TaskReminderRepositoryImpl(
         return this.reminderDao().getRemindedTaskList()
     }
 
-    override suspend fun getReminderViewList(): List<ReminderViewData> {
+    override suspend fun getReminderViewList(noRemindedOnly: Boolean): List<ReminderViewData> {
         return try {
-            this.reminderDao().getReminderViewList()
+            if (noRemindedOnly) {
+                this.reminderDao().getNoRemindedViewList()
+            } else {
+                this.reminderDao().getReminderViewList()
+            }
         } catch (_: IllegalArgumentException) {
             listOf()
         }
@@ -38,9 +42,24 @@ internal class TaskReminderRepositoryImpl(
         this.reminderDao().updateIsReminded(notifyId, booleanToInt)
     }
 
-    override suspend fun deleteRemindedInfo(taskId: Long) {
+    override suspend fun deleteRemindedInfo(taskId: Long): TaskReminder? {
+        val reminder = this.reminderDao().getReminderByTaskId(taskId)?.let {
+            if (!it.isReminded) throw IllegalArgumentException("This reminder not reminded yet!")
+            return@let it
+        }
         this.reminderDao().deleteReminder(taskId).also {
             if (it == 0) throw NullPointerException("Reminder not found!")
         }
+        return reminder
+    }
+
+    override suspend fun deleteReminder(notifyId: Int) {
+        this.reminderDao().deleteReminder(notifyId).also {
+            if (it == 0) throw NullPointerException("Reminder not found!")
+        }
+    }
+
+    override suspend fun insertReminder(reminder: TaskReminder) {
+        this.reminderDao().insertAll(reminder)
     }
 }

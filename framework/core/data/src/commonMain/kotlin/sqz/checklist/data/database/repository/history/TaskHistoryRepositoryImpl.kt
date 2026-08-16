@@ -3,6 +3,7 @@ package sqz.checklist.data.database.repository.history
 import kotlinx.coroutines.flow.Flow
 import sqz.checklist.data.database.DatabaseProvider
 import sqz.checklist.data.database.Task
+import sqz.checklist.data.database.model.ReminderViewData
 import sqz.checklist.data.database.repository.deleteTaskDetailStorageFile
 import sqz.checklist.data.storage.manager.StorageManager
 
@@ -18,6 +19,14 @@ internal class TaskHistoryRepositoryImpl(
 
     override fun isTaskHistoryListEmpty(): Flow<Boolean> {
         return this.historyDao().isTaskHistoryListEmpty()
+    }
+
+    override suspend fun getHistoryReminderViewData(taskId: Long?): List<ReminderViewData> {
+        if (taskId != null) {
+            val data = this.historyDao().getHistoryReminderViewData(taskId) ?: return listOf()
+            return listOf(data)
+        }
+        return this.historyDao().getAllHistoryReminderViewData()
     }
 
     override suspend fun restoreTaskFromHistoryList(taskId: Long) {

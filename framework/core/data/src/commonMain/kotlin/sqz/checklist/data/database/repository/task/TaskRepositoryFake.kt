@@ -84,4 +84,8 @@ class TaskRepositoryFake : TaskRepository {
         println("modifyTask - Task: $task; Detail: $detail")
         return task.id
     }
+
+    override suspend fun getTaskDetail(): List<TaskDetail> {
+        return listOf()
+    }
 }

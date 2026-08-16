@@ -90,6 +90,9 @@ internal interface TaskDao {
     @Query("SELECT * FROM taskDetail WHERE taskId = :taskId")
     suspend fun getTaskDetailList(taskId: Long): List<TaskDetail>
 
+    @Query("SELECT * FROM taskDetail")
+    suspend fun getTaskDetails(): List<TaskDetail>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTask(task: Task): Long
 

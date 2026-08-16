@@ -57,13 +57,14 @@ data class TaskReminder(
     @PrimaryKey(autoGenerate = false) val id: Int, // notifyId
     @ColumnInfo val taskId: Long,
     @ColumnInfo val reminderTime: Long,
-    @ColumnInfo val mode: ReminderModeType,
+    @ColumnInfo val mode: ReminderModeType = ReminderModeType.Worker,
     @ColumnInfo val isReminded: Boolean = false,
     @ColumnInfo val extraText: String? = null, // not implemented yet, idea: Allow adding notes to notifications
     @ColumnInfo val extraData: String? = null,
     @ColumnInfo val longAsDelay: Boolean = false, // not implemented yet, idea: Used to control whether to follow the time zone, follow if it's true
 )
 
+@Deprecated("Reminder mode is legacy Android-specific metadata and will be removed with a future database migration.")
 enum class ReminderModeType { //TODO: support KMP
     Worker, AlarmManager
 }

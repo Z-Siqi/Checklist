@@ -1,27 +1,31 @@
 package com.sqz.checklist.ui.main.task
 
-import android.view.View
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.MutableState
 import androidx.navigation.NavHostController
+import com.sqz.checklist.presentation.reminder.runtime.ReminderNotificationController
 import com.sqz.checklist.presentation.task.list.TaskListRequest
 import com.sqz.checklist.presentation.task.list.TaskListState
 import com.sqz.checklist.ui.nav.group.home.HomeNavGroupInterface
 import com.sqz.checklist.ui.nav.group.home.button.TaskExtendedButton
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import sqz.checklist.data.preferences.PrimaryPreferences
 
 internal class TaskScreenCoordinator(
-    private val view: View,
     private val homeNavController: NavHostController,
     private val homeViewModel: HomeNavGroupInterface,
-    private val taskState: TaskLayoutViewModel,
     private val refreshListRequest: MutableState<Boolean>,
+    private val preference: PrimaryPreferences,
 ) {
     fun onTaskListRequest(
         state: TaskListRequest,
         taskListState: MutableState<TaskListState>,
         isSearching: MutableState<Boolean>,
+        reminderController: ReminderNotificationController,
+        coroutineScope: CoroutineScope,
     ) = when (state) {
         is TaskListRequest.SearchProcessed -> {
             if (state.currentState) {
@@ -42,11 +46,12 @@ internal class TaskScreenCoordinator(
         }
 
         is TaskListRequest.Reminder -> {
-            taskState.reminderHandler.requestReminder(state.taskId)
-        }
-
-        is TaskListRequest.RemoveReminded -> {
-            taskState.onCloseNotification(state.taskId, view.context)
+            homeNavController.navigate(
+                TaskScreen.ReminderDialogRoute(
+                    taskId = state.taskId,
+                    allowDismiss = true,
+                )
+            )
         }
 
         is TaskListRequest.Detail -> {
@@ -54,6 +59,13 @@ internal class TaskScreenCoordinator(
                 taskId = state.taskId, type = TaskScreen.InfoType.ViewTaskDetail
             )
             homeNavController.navigate(infoRoute)
+        }
+
+        is TaskListRequest.RemoveReminded -> coroutineScope.launch {
+            reminderController.removeReminder(
+                taskId = state.taskId,
+                removeDisplayedNotification = !preference.disableRemoveNotifyInReminded(),
+            )
         }
 
         is TaskListRequest.Info -> {
@@ -90,7 +102,7 @@ internal class TaskScreenCoordinator(
             val totalItemsCount = lazyListState.layoutInfo.totalItemsCount
             lazyListState.animateScrollToItem(totalItemsCount)
             scrollBehavior.state.let { let ->
-                try { // to fix a crash when rotate screen during scroll
+                try {
                     let.heightOffset = let.heightOffsetLimit
                 } catch (_: Exception) {
                     delay(220)

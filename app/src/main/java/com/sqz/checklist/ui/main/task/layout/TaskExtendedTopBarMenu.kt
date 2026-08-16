@@ -1,6 +1,5 @@
 package com.sqz.checklist.ui.main.task.layout
 
-import android.content.Context
 import android.view.SoundEffectConstants
 import android.view.View
 import androidx.compose.foundation.layout.Arrangement
@@ -18,9 +17,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.sqz.checklist.R
-import sqz.checklist.data.preferences.PrimaryPreferences
 import com.sqz.checklist.ui.MainLayoutNav
 import com.sqz.checklist.ui.nav.RootNavRoute
+import sqz.checklist.data.preferences.PrimaryPreferences
 
 enum class TopBarMenuClickType { History, Search, BackupRestore, Settings }
 
@@ -31,22 +30,22 @@ enum class TopBarMenuClickType { History, Search, BackupRestore, Settings }
 fun TopBarExtendedMenu(
     state: MutableState<Boolean>,
     navController: NavHostController,
-    onClickType: (type: TopBarMenuClickType, context: Context) -> Unit,
+    onClickType: (type: TopBarMenuClickType) -> Unit,
     view: View,
     modifier: Modifier = Modifier,
 ) {
     val primaryPreferences = PrimaryPreferences(view.context)
     val taskHistoryClick = {
-        onClickType(TopBarMenuClickType.History, view.context)
+        onClickType(TopBarMenuClickType.History)
         navController.navigate(RootNavRoute.TaskHistory)
     }
-    val searchClick = { onClickType(TopBarMenuClickType.Search, view.context) }
+    val searchClick = { onClickType(TopBarMenuClickType.Search) }
     val backupRestoreClick = {
-        onClickType(TopBarMenuClickType.BackupRestore, view.context)
+        onClickType(TopBarMenuClickType.BackupRestore)
         navController.navigate(MainLayoutNav.BackupRestore.name)
     }
     val settingsClick = {
-        onClickType(TopBarMenuClickType.Settings, view.context)
+        onClickType(TopBarMenuClickType.Settings)
         navController.navigate(MainLayoutNav.Settings.name)
     }
     val menuList = listOf(

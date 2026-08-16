@@ -6,6 +6,7 @@ import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
 import sqz.checklist.data.database.Task
 import sqz.checklist.data.database.TaskDetail
+import sqz.checklist.data.database.model.ReminderViewData
 
 @Suppress("AndroidUnresolvedRoomSqlReference")
 @Dao
@@ -22,6 +23,27 @@ interface TaskHistoryDao {
 
     @Query("SELECT * FROM task WHERE id = :taskId")
     suspend fun getHistorySourceById(taskId: Long): Task
+
+    @Query(
+        """
+        SELECT 
+            r.*,
+            (SELECT t.description FROM task t WHERE t.id = r.taskId) AS taskDescription
+        FROM reminder r 
+        WHERE r.taskId = :taskId AND (SELECT t.isHistoryId FROM task t WHERE t.id = r.taskId) > 0
+    """
+    )
+    suspend fun getHistoryReminderViewData(taskId: Long): ReminderViewData?
+
+    @Query(
+        """
+        SELECT 
+            r.*,
+            (SELECT t.description FROM task t WHERE t.id = r.taskId) AS taskDescription
+        FROM reminder r WHERE (SELECT t.isHistoryId FROM task t WHERE t.id = r.taskId) > 0
+    """
+    )
+    suspend fun getAllHistoryReminderViewData(): List<ReminderViewData>
 
     @Query("UPDATE task SET isHistoryId = 0 WHERE id = :taskId")
     suspend fun resetIsHistoryId(taskId: Long)

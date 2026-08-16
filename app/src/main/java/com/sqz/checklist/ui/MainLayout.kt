@@ -11,6 +11,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -40,6 +41,7 @@ enum class MainLayoutNav {
 @Composable
 fun MainLayout(modifier: Modifier, context: Context, view: View) {
     val navController = rememberNavController()
+    val mainCoroutineScope = rememberCoroutineScope()
 
     val refreshListRequest = rememberSaveable { mutableStateOf(false) }
     val settingsLayoutViewModel: SettingsLayoutViewModel = viewModel()
@@ -52,6 +54,7 @@ fun MainLayout(modifier: Modifier, context: Context, view: View) {
     ) {
         homeNavGroup(route = RootNavRoute.Home::class) { homeNavController, homeVM ->
             taskScreen(
+                mainCoroutineScope = mainCoroutineScope,
                 homeViewModel = homeVM,
                 homeNavController = homeNavController,
                 rootNavController = navController,

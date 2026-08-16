@@ -71,6 +71,7 @@ interface TaskItemModel {
      * @param Info the request to get the task information.
      * @param Edit the request to edit the task.
      * @param Reminder the request to set the reminder for the task.
+     * @param RemoveReminded the request to remove reminded reminder.
      */
     sealed interface ExternalRequest {
 

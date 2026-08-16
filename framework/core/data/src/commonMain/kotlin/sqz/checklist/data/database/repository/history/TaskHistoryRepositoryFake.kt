@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
 import sqz.checklist.data.database.Task
+import sqz.checklist.data.database.model.ReminderViewData
 import kotlin.time.Clock
 
 class TaskHistoryRepositoryFake : TaskHistoryRepository {
@@ -22,6 +23,10 @@ class TaskHistoryRepositoryFake : TaskHistoryRepository {
 
     override fun isTaskHistoryListEmpty(): Flow<Boolean> {
         return getTaskHistoryList().map { it.isEmpty() }
+    }
+
+    override suspend fun getHistoryReminderViewData(taskId: Long?): List<ReminderViewData> {
+        return listOf()
     }
 
     override suspend fun restoreTaskFromHistoryList(taskId: Long) {

@@ -1,5 +1,6 @@
 package com.sqz.checklist
 
+import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -44,6 +45,23 @@ import sqz.checklist.data.storage.manager.StorageManager
 class MainActivity : ComponentActivity() {
     companion object {
         lateinit var taskDatabase: DatabaseProvider
+
+        /** Check first reminder data, then try to restore if not scheduled in system **/
+        suspend fun autoCheckRestoreReminder(applicationContext: Context) {
+            val notifyManager = NotifyManager()
+            val reminderRepo = TaskReminderRepository.provider(taskDatabase)
+            val checkFirst = reminderRepo.getReminderViewList().firstOrNull {
+                !it.reminder.isReminded
+            }
+            if (checkFirst == null) return
+            val isDelayedNotificationExist = notifyManager.isDelayedNotificationExist(
+                checkFirst.reminder.id, applicationContext
+            )
+            if (!isDelayedNotificationExist) {
+                NotificationHelper.restoreNotification(taskDatabase, applicationContext)
+                Log.w("MainActivity", "Notification restored due to lost!")
+            }
+        }
     }
 
     @Override
@@ -135,19 +153,7 @@ class MainActivity : ComponentActivity() {
         // Check delayed notification, restore if not exist
         super.lifecycle.coroutineScope.launch(Dispatchers.IO) {
             delay(1680) // wait BootReceiver
-            val notifyManager = NotifyManager()
-            val reminderRepo = TaskReminderRepository.provider(taskDatabase)
-            val checkFirst = reminderRepo.getReminderViewList().firstOrNull {
-                !it.reminder.isReminded
-            }
-            if (checkFirst == null) return@launch
-            val isDelayedNotificationExist = notifyManager.isDelayedNotificationExist(
-                checkFirst.reminder.id, applicationContext
-            )
-            if (!isDelayedNotificationExist) {
-                NotificationHelper.restoreNotification(taskDatabase, applicationContext)
-                Log.w("MainActivity", "Notification restored due to lost!")
-            }
+            autoCheckRestoreReminder(applicationContext)
         }
     }
 

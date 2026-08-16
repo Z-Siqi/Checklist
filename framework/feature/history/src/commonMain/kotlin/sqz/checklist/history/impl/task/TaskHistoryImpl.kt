@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import sqz.checklist.data.database.model.ReminderViewData
 import sqz.checklist.data.database.repository.history.TaskHistoryRepository
 import sqz.checklist.history.api.task.TaskHistory
 
@@ -85,7 +86,7 @@ internal class TaskHistoryImpl(
         }
     }
 
-    override fun redoSelectedTask() {
+    override fun redoSelectedTask(rescheduleReminder: suspend (ReminderViewData) -> Unit) {
         if (_inventory.value is TaskHistory.Inventory.Loading) {
             throw IllegalStateException("TaskHistory.Inventory is still loading!")
         }
@@ -96,7 +97,11 @@ internal class TaskHistoryImpl(
                     val taskId = current.selectedTaskId ?: throw NullPointerException(
                         "No selected task!"
                     )
+                    val getReminder = taskHistoryRepository.getHistoryReminderViewData(taskId)
                     taskHistoryRepository.restoreTaskFromHistoryList(taskId)
+                    if (getReminder.isNotEmpty()) {
+                        rescheduleReminder(getReminder.first())
+                    }
                 }
                 current.copy(selectedTaskId = null)
             }
@@ -121,12 +126,14 @@ internal class TaskHistoryImpl(
         }
     }
 
-    override fun redoAllHistory() {
+    override fun redoAllHistory(rescheduleReminder: suspend (ReminderViewData) -> Unit) {
         if (_inventory.value !is TaskHistory.Inventory.Default) {
             throw IllegalStateException("Only TaskHistory.Inventory.Default allowed this!")
         }
         scope.launch(Dispatchers.IO) {
+            val getReminder = taskHistoryRepository.getHistoryReminderViewData()
             taskHistoryRepository.restoreAllTaskFromHistory()
+            getReminder.forEach { rescheduleReminder(it) }
         }
     }
 }

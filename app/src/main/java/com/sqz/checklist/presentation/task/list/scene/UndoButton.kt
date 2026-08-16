@@ -1,5 +1,7 @@
 package com.sqz.checklist.presentation.task.list.scene
 
+import android.content.Context
+import android.view.View
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
@@ -29,7 +31,8 @@ import sqz.checklist.common.EffectFeedback
 /** This method expected to be called only within this package and its sub-packages. **/
 @Composable
 internal fun UndoButton(
-    onClick: () -> Unit,
+    view: View,
+    onClick: (Context) -> Unit,
     feedback: EffectFeedback,
     modifier: Modifier = Modifier,
 ) {
@@ -43,7 +46,10 @@ internal fun UndoButton(
             modifier = modifier
                 .align(Alignment.BottomEnd)
                 .padding(10.dp),
-            onClick = onClick.also { feedback.onClickEffect() },
+            onClick = {
+                onClick(view.context)
+                feedback.onClickEffect()
+            },
             containerColor = MaterialTheme.colorScheme.secondary
         ) {
             Column(
@@ -67,6 +73,7 @@ internal fun UndoButton(
 @Preview
 @Composable
 private fun UndoButtonPreview() {
-    val feedback = AndroidEffectFeedback(LocalView.current)
-    UndoButton({}, feedback)
+    val v =LocalView.current
+    val feedback = AndroidEffectFeedback(v)
+    UndoButton(v, {}, feedback)
 }

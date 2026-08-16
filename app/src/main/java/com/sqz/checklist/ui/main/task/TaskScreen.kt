@@ -5,6 +5,7 @@ import android.view.View
 import android.widget.Toast
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
@@ -35,6 +36,9 @@ import androidx.navigation.compose.navigation
 import androidx.navigation.toRoute
 import com.sqz.checklist.R
 import com.sqz.checklist.common.AndroidEffectFeedback
+import com.sqz.checklist.notification.NotifyManager
+import com.sqz.checklist.presentation.reminder.assign.ReminderLayout
+import com.sqz.checklist.presentation.reminder.runtime.ReminderPermissionWarningEffect
 import com.sqz.checklist.presentation.task.info.TaskInfoLayout
 import com.sqz.checklist.presentation.task.info.TaskInfoState
 import com.sqz.checklist.presentation.task.list.TaskListLayout
@@ -45,11 +49,12 @@ import com.sqz.checklist.ui.common.ContentScaffold
 import com.sqz.checklist.ui.main.task.layout.TaskLayoutTopBar
 import com.sqz.checklist.ui.main.task.layout.TopBarExtendedMenu
 import com.sqz.checklist.ui.main.task.layout.TopBarMenuClickType
-import com.sqz.checklist.ui.main.task.layout.function.ReminderHandlerListener
 import com.sqz.checklist.ui.nav.group.home.HomeNavGroup
 import com.sqz.checklist.ui.nav.group.home.HomeNavGroupInterface
 import com.sqz.checklist.ui.nav.group.home.button.TaskExtendedButton
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import sqz.checklist.data.preferences.PrimaryPreferences
 
@@ -60,10 +65,14 @@ internal sealed interface TaskScreen {
 
     @Serializable
     data class ModifyDialogRoute(
-        val taskId: Long? // null to add, otherwise edit
+        val taskId: Long?
     ) : TaskScreen
 
-    //data class ReminderDialogRoute() : TaskScreen
+    @Serializable
+    data class ReminderDialogRoute(
+        val taskId: Long,
+        val allowDismiss: Boolean = true,
+    ) : TaskScreen
 
     enum class InfoType {
         ViewTaskDetail,
@@ -76,6 +85,7 @@ internal sealed interface TaskScreen {
 }
 
 fun NavGraphBuilder.taskScreen(
+    mainCoroutineScope: CoroutineScope,
     homeViewModel: HomeNavGroupInterface,
     homeNavController: NavHostController,
     rootNavController: NavHostController,
@@ -85,24 +95,26 @@ fun NavGraphBuilder.taskScreen(
     modifier: Modifier = Modifier,
 ) {
     val coordinator = TaskScreenCoordinator(
-        view = view,
         homeNavController = homeNavController,
         homeViewModel = homeViewModel,
-        taskState = taskState,
         refreshListRequest = refreshListRequest,
+        preference = PrimaryPreferences(view.context)
     )
     navigation(
         route = HomeNavGroup.TaskNavRoute::class,
         startDestination = TaskScreen.MainRoute,
     ) {
         composable(route = TaskScreen.MainRoute::class) {
-            val coroutineScope = rememberCoroutineScope()
-
             val lifecycleOwner = LocalLifecycleOwner.current
+            val notifyManager = remember { NotifyManager() }
+            val reminderController = rememberTaskReminderNotificationController(
+                notifyManager = notifyManager,
+            )
+            val preference = remember(view.context) { PrimaryPreferences(view.context) }
             DisposableEffect(lifecycleOwner) {
                 val observer = LifecycleEventObserver { _, event ->
                     if (event == Lifecycle.Event.ON_RESUME) {
-                        taskState.updateListConfig(PrimaryPreferences(view.context))
+                        taskState.updateListConfig(preference)
                     }
                 }
                 lifecycleOwner.lifecycle.addObserver(observer)
@@ -146,6 +158,12 @@ fun NavGraphBuilder.taskScreen(
                     taskListState = taskListState,
                 )
             }
+
+            ReminderPermissionWarningEffect(
+                view = view,
+                controller = reminderController,
+                notifyManager = notifyManager,
+            )
             ContentScaffold(
                 topBar = {
                     val onMenuClick: @Composable (androidx.compose.runtime.MutableState<Boolean>) -> Unit =
@@ -153,12 +171,12 @@ fun NavGraphBuilder.taskScreen(
                             TopBarExtendedMenu(
                                 state = state,
                                 navController = rootNavController,
-                                onClickType = { type, ctx ->
+                                onClickType = { type ->
                                     if (type == TopBarMenuClickType.Search) {
                                         taskListState.value = TaskListState.IsSearchRequest
                                         return@TopBarExtendedMenu
                                     }
-                                    taskState.resetUndo(ctx)
+                                    //taskState.resetUndo(ctx)
                                 },
                                 view = view,
                             )
@@ -176,6 +194,7 @@ fun NavGraphBuilder.taskScreen(
                 Surface(
                     color = MaterialTheme.colorScheme.surface
                 ) {
+                    val coroutineScope = rememberCoroutineScope()
                     TaskListLayout(
                         listState = taskListState.value,
                         config = taskState.listConfig,
@@ -185,18 +204,15 @@ fun NavGraphBuilder.taskScreen(
                                 state = it,
                                 taskListState = taskListState,
                                 isSearching = isSearching,
+                                reminderController = reminderController,
+                                coroutineScope = coroutineScope
                             )
                         },
                         lazyListState = lazyListState,
+                        modifier = Modifier.fillMaxSize()
                     )
                 }
             }
-            ReminderHandlerListener(
-                reminderHandler = taskState.reminderHandler,
-                context = view.context,
-                view = view,
-                coroutineScope = coroutineScope
-            )
         }
 
         dialog(route = TaskScreen.ModifyDialogRoute::class) { backStackEntry ->
@@ -208,17 +224,35 @@ fun NavGraphBuilder.taskScreen(
                 return@let TaskModifyState.EditTask(it)
             }
             val taskCreatedToast = remember { mutableStateOf(false) }
+            val navigatedToReminder = remember { mutableStateOf(false) }
+            val reminderController = rememberTaskReminderNotificationController()
             TaskModifyLayout(
                 preference = PrimaryPreferences(view.context),
                 view = view,
                 modifyState = modifyState,
                 requestReminder = { taskId ->
                     taskCreatedToast.value = true
-                    taskState.requestReminder(taskId)
+                    navigatedToReminder.value = true
+                    homeNavController.navigate(
+                        TaskScreen.ReminderDialogRoute(
+                            taskId = taskId,
+                            allowDismiss = false,
+                        )
+                    ) {
+                        popUpTo(TaskScreen.ModifyDialogRoute::class) {
+                            inclusive = true
+                        }
+                    }
                 },
                 onFinished = { taskId ->
-                    taskId?.let { let -> taskState.updateNotification(let, view.context) }
-                    homeNavController.popBackStack()
+                    taskId?.let { updatedTaskId ->
+                        mainCoroutineScope.launch {
+                            reminderController.refreshDisplayedReminder(updatedTaskId)
+                        }
+                    }
+                    if (!navigatedToReminder.value) {
+                        homeNavController.popBackStack()
+                    }
                 },
                 feedback = AndroidEffectFeedback(view)
             )
@@ -228,6 +262,16 @@ fun NavGraphBuilder.taskScreen(
                 ).show()
                 taskCreatedToast.value = false
             }
+        }
+
+        dialog(route = TaskScreen.ReminderDialogRoute::class) { backStackEntry ->
+            val reminderDialog: TaskScreen.ReminderDialogRoute = backStackEntry.toRoute()
+            ReminderLayout(
+                taskId = reminderDialog.taskId,
+                allowDismiss = reminderDialog.allowDismiss,
+                context = view.context,
+                onFinished = { homeNavController.popBackStack() },
+            )
         }
 
         dialog(route = TaskScreen.InfoDialogRoute::class) { backStackEntry ->
@@ -269,16 +313,16 @@ private fun rememberLazyListState(
     var enableLongClickMenu by remember { mutableStateOf(false) }
 
     var nextState by remember { mutableStateOf<TaskExtendedButton.State?>(null) }
-    LaunchedEffect(lazyState) { // control whether enable long click menu
+    LaunchedEffect(lazyState) {
         snapshotFlow { lazyState.canScrollForward || lazyState.canScrollBackward }.collect {
-            if (!it && enableMenuSwitcher) { // list cannot scroll
+            if (!it && enableMenuSwitcher) {
                 val state = TaskExtendedButton.State.LongClickMenuDisabled
                 nextState = state
             }
             enableLongClickMenu = it
         }
     }
-    LaunchedEffect(lazyState) { // set LongClickMenuEnabled if enableLongClickMenu = true
+    LaunchedEffect(lazyState) {
         snapshotFlow { lazyState.canScrollForward }.collect {
             if (enableLongClickMenu && enableMenuSwitcher) {
                 val state = TaskExtendedButton.State.LongClickMenuEnabled(!it)
@@ -286,7 +330,7 @@ private fun rememberLazyListState(
             }
         }
     }
-    LaunchedEffect(nextState) { // lazy update state
+    LaunchedEffect(nextState) {
         nextState?.let {
             if (!enableMenuSwitcher) {
                 return@let

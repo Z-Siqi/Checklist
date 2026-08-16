@@ -12,6 +12,7 @@ import kotlinx.coroutines.withTimeout
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
 import sqz.checklist.data.database.Task
+import sqz.checklist.data.database.model.ReminderViewData
 import sqz.checklist.data.database.repository.history.TaskHistoryRepository
 import sqz.checklist.history.api.task.TaskHistory
 import sqz.checklist.history.impl.task.TaskHistoryImpl
@@ -37,10 +38,16 @@ class HistoryTaskUnitTest {
         var deletedTaskId: Long? = null
         var deleteOldHistoryArg: Int? = null
         var restoreAllCalled = false
+        var getHistoryReminderViewDataArg: Long? = null
 
         override fun getTaskHistoryList(): Flow<List<Task>> = taskHistoryFlow
 
         override fun isTaskHistoryListEmpty(): Flow<Boolean> = emptyFlow
+
+        override suspend fun getHistoryReminderViewData(taskId: Long?): List<ReminderViewData> {
+            getHistoryReminderViewDataArg = taskId
+            return emptyList()
+        }
 
         override suspend fun restoreTaskFromHistoryList(taskId: Long) {
             restoredTaskId = taskId
@@ -175,12 +182,13 @@ class HistoryTaskUnitTest {
         advanceUntilIdle()
         history.selectTask(12)
 
-        history.redoSelectedTask()
+        history.redoSelectedTask {}
         advanceUntilIdle()
 
         val inventory = assertIs<TaskHistory.Inventory.Default>(history.getHistoryInventory.value)
         assertNull(inventory.selectedTaskId)
         assertEquals(12L, repository.restoredTaskId)
+        assertEquals(12L, repository.getHistoryReminderViewDataArg)
     }
 
     @Test
@@ -220,7 +228,7 @@ class HistoryTaskUnitTest {
         )
         advanceUntilIdle()
 
-        history.redoAllHistory()
+        history.redoAllHistory {}
         withTimeout(2_000) {
             while (!repository.restoreAllCalled) {
                 delay(10)
@@ -228,6 +236,7 @@ class HistoryTaskUnitTest {
         }
 
         assertTrue(repository.restoreAllCalled)
+        assertNull(repository.getHistoryReminderViewDataArg)
     }
 
     @Test
@@ -239,7 +248,7 @@ class HistoryTaskUnitTest {
         )
 
         assertFailsWith<IllegalStateException> {
-            history.redoAllHistory()
+            history.redoAllHistory {}
         }
     }
 }

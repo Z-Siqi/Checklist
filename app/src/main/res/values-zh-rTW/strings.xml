@@ -114,14 +114,14 @@
     <string name="remind_at_preview">%1$s 小時 %2$s 分鐘之後</string>
     <string name="remind_at">將在 %1$s 之後提醒</string>
     <string name="nothing_need_do">你現在無事可做! \n點擊 \'添加\' 為你的生活添加壓力 lol</string>
-    <string name="setting_remind_warning">不推薦設置時間太久的提醒, 而且你不應該放你計劃如此之久的鴿子。 還有就是這可能遇上潛在的問題（幹，要是真有問題還得我修） \n\n點擊確認以繼續摸魚</string>
+    <string name="setting_remind_warning">不推薦設置時間太久的提醒, 而且你不應該放你計劃如此之久的鴿子。 還有就是這可能遇上潛在的問題（其實是真有問題還得我修） \n\n點擊確認以繼續摸魚</string>
     <string name="cannot_set_past">提醒讓過去的你避開麻煩是不可能的! lol</string>
     <string name="please_grant_permission">請授予許可!</string>
-    <string name="request_SCHEDULE_EXACT_ALARM_content">若要準時顯示通知（提醒），請授予 鬧鐘和提醒 權限。</string>
+    <string name="request_SCHEDULE_EXACT_ALARM_content">若要準時顯示通知（提醒），請授予【鬧鐘和提醒】權限。</string>
     <string name="unable_sent_cause_no_permission">由於沒有權限，無法發送通知!</string>
     <string name="no_SCHEDULE_EXACT_ALARM_permission_explain"><![CDATA[由於沒有 鬧鐘和提醒 權限，提醒可能會延遲到達]]></string>
     <string name="permission_lost_toast"><![CDATA[由於您取消了鬧鐘和提醒或通知權限，因此請不要妄想正常顯示提醒!]]></string>
-    <string name="no_reminder_set_err">通知遺失，這不應該發生，請向開發者報告！</string>
+    <string name="no_reminder_set_err">通知遺失，這不應該發生，請向開發者報告！\n\n嘗試強制停止應用程序，然後再重新啟動，或許可以解決問題。</string>
 
     <!-- Backup & Restore -->
     <string name="backup_restore"><![CDATA[備份 & 恢復]]></string>

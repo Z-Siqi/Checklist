@@ -22,14 +22,16 @@ interface TaskReminderRepository {
     suspend fun getRemindedTaskList(): List<TaskViewData>
 
     /**
-     * Get [ReminderViewData] list for showing the notification.
+     * Get [ReminderViewData] list for showing the notification. Exclude [Task.isHistoryId] not `0`.
      *
+     * @param [noRemindedOnly] only [TaskReminder.isReminded]` = false` will in the list if
+     *   [noRemindedOnly] is `true`; otherwise the list will include all.
      * @return [ReminderViewData] list
      *
      * @see [TaskReminder]
      * @see [Task.description]
      */
-    suspend fun getReminderViewList(): List<ReminderViewData>
+    suspend fun getReminderViewList(noRemindedOnly: Boolean = false): List<ReminderViewData>
 
     /**
      * Get [ReminderViewData] by notifyId which is the [TaskReminder.id] (primary key).
@@ -57,12 +59,29 @@ interface TaskReminderRepository {
      * Delete [TaskReminder] by task ID. Expected to remove the reminder data and the list for
      *   showing the reminded tasks should no longer visible the task.
      *
-     * Note: This method will not affect the primary task which is from [Task].
+     * Note: This method will not affect the primary task which is from [Task], delayed notification
+     *   is also will not be affect.
+     *
+     * @return the removed reminder.
      *
      * @throws IllegalArgumentException if [TaskReminder.isReminded] not `true`.
      * @throws NullPointerException if [TaskReminder] not found.
      */
-    suspend fun deleteRemindedInfo(taskId: Long)
+    suspend fun deleteRemindedInfo(taskId: Long): TaskReminder?
+
+    /**
+     * Delete [TaskReminder] by [TaskReminder.id].
+     *
+     * @throws NullPointerException if [TaskReminder.id] not existed.
+     */
+    suspend fun deleteReminder(notifyId: Int)
+
+    /**
+     * Add a new [TaskReminder] to database, or replace when [TaskReminder.id] already existed.
+     *
+     * @param reminder the instance of [TaskReminder].
+     */
+    suspend fun insertReminder(reminder: TaskReminder)
 
     //TODO
 

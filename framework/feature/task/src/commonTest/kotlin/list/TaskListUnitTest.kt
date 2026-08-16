@@ -72,6 +72,10 @@ class TaskListUnitTest {
         }
 
         override suspend fun modifyTask(task: Task, detail: List<TaskDetail>?): Long = 0
+
+        override suspend fun getTaskDetail(): List<TaskDetail> {
+            return listOf()
+        }
     }
 
     @Test

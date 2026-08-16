@@ -94,10 +94,13 @@ fun BoxScope.TaskListSceneUI(
         }
         // undo button
         UndoButton(
+            view = view,
             onClick = viewModel::onUndoClick,
             feedback = feedback,
         )
     } else LaunchedEffect(Unit) {
+        viewModel.resetUndoReminder()
+
         // run this once undo state false, then loop 1 min a time
         viewModel.removeRemindedInfoByTime(androidContext = view.context)
     }

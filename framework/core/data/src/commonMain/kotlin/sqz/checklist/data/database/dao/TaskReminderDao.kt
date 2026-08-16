@@ -13,7 +13,7 @@ import sqz.checklist.data.database.model.TaskViewData
 
 @Suppress("AndroidUnresolvedRoomSqlReference")
 @Dao
-interface TaskReminderDao {
+internal interface TaskReminderDao {
     /**
      * @return all [ReminderViewData] list
      */
@@ -97,10 +97,21 @@ interface TaskReminderDao {
         SELECT 
             r.*,
             (SELECT t.description FROM task t WHERE t.id = r.taskId) AS taskDescription
-        FROM reminder r
+        FROM reminder r WHERE (SELECT t.isHistoryId FROM task t WHERE t.id = r.taskId) = 0
     """
     )
     suspend fun getReminderViewList(): List<ReminderViewData>
+
+    @Query(
+        """
+        SELECT 
+            r.*,
+            (SELECT t.description FROM task t WHERE t.id = r.taskId) AS taskDescription
+        FROM reminder r 
+        WHERE r.isReminded = 0 AND (SELECT t.isHistoryId FROM task t WHERE t.id = r.taskId) = 0
+    """
+    )
+    suspend fun getNoRemindedViewList(): List<ReminderViewData>
 
     @Query(
         """
@@ -120,4 +131,7 @@ interface TaskReminderDao {
 
     @Query("DELETE FROM reminder WHERE taskId = :taskId")
     suspend fun deleteReminder(taskId: Long): Int
+
+    @Query("DELETE FROM reminder WHERE id = :notifyId")
+    suspend fun deleteReminder(notifyId: Int): Int
 }

@@ -10,6 +10,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Log
 import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.work.WorkManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -92,7 +93,7 @@ class NotifyManager {
                 context, Manifest.permission.POST_NOTIFICATIONS
             ) == PackageManager.PERMISSION_GRANTED
         } else {
-            true
+            NotificationManagerCompat.from(context).areNotificationsEnabled()
         }
 
         var alarmPermission = false
@@ -115,6 +116,9 @@ class NotifyManager {
         return checkPermissions(context).let { it == PermissionState.Both || it == PermissionState.Alarm }
     }
 
+    /**
+     * Check the basic permission for send notification.
+     */
     fun hasNotificationPermission(context: Context): Boolean {
         return checkPermissions(context).let { it == PermissionState.Both || it == PermissionState.Notification }
     }
@@ -131,6 +135,7 @@ class NotifyManager {
 
     /**
      * @param targetTime The absolute target time (Epoch milliseconds) to trigger the notification.
+     * @throws IllegalStateException if not permission
      */
     fun createNotification(
         notifyId: Int,
@@ -140,7 +145,7 @@ class NotifyManager {
         val hasNotification = hasNotificationPermission(context)
         val hasAlarm = hasAlarmPermission(context)
 
-        if (!hasNotification) throw Exception("Notification permission not granted!")
+        if (!hasNotification) throw IllegalStateException("Notification permission not granted!")
         if (!hasAlarm) Log.w(
             "ChecklistNotification", "Alarm permission not granted! Notification may arrive late!"
         )
@@ -170,6 +175,7 @@ class NotifyManager {
                 timeUnit = TimeUnit.MILLISECONDS
             )
         }
+        Log.d("NotifyManager", "Notification is created")
     }
 
     fun cancelNotification(
@@ -177,8 +183,7 @@ class NotifyManager {
         context: Context,
         delShowedByNotifyId: Boolean = true
     ) {
-        try {
-            // Cancel Alarm
+        try { // Cancel Alarm
             val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
             val intent = Intent(context, NotificationReceiver::class.java).apply {
                 putExtra("NotificationId", notifyId)
@@ -191,17 +196,19 @@ class NotifyManager {
             if (pendingIntent != null) {
                 alarmManager.cancel(pendingIntent)
             }
-
-            // Cancel Worker
+        } catch (e: Exception) {
+            Log.e("ChecklistNotification", "Alarm Exception: ${e.message}")
+        }
+        try { // Cancel Worker
             val workManager = WorkManager.getInstance(context)
             workManager.cancelAllWorkByTag(notifyId.toString())
-
         } catch (e: Exception) {
-            Log.e("ChecklistNotification", "Exception: ${e.message}")
+            Log.e("ChecklistNotification", "Worker Exception: ${e.message}")
         }
         if (delShowedByNotifyId) { // Delete notification if showed
             this.removeShowedNotification(notifyId, context)
         }
+        Log.d("NotifyManager", "A notification is canceled: $notifyId")
     }
 
     fun removeShowedNotification(notifyId: Int, context: Context) {

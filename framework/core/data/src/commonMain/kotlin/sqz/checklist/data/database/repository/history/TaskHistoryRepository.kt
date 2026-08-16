@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import sqz.checklist.data.database.DatabaseProvider
 import sqz.checklist.data.database.Task
 import sqz.checklist.data.database.TaskDetail
+import sqz.checklist.data.database.model.ReminderViewData
 import sqz.checklist.data.storage.manager.StorageManager
 
 interface TaskHistoryRepository {
@@ -21,6 +22,17 @@ interface TaskHistoryRepository {
      * @return `true` if [Task] list is empty
      */
     fun isTaskHistoryListEmpty(): Flow<Boolean>
+
+    /**
+     * Get ReminderViewData list for reschedule reminders during redo.
+     *
+     * @param taskId if `null` will get all from history list,
+     *   otherwise get the specific data form [taskId].
+     *
+     * @return `List<ReminderViewData>`, the list will only include one item when [taskId] is valid.
+     *   The list can be empty if [taskId] is invalid or history tasks are not contain the reminder.
+     */
+    suspend fun getHistoryReminderViewData(taskId: Long? = null): List<ReminderViewData>
 
     /**
      * Update [Task.isHistoryId] to 0 for remove history state.

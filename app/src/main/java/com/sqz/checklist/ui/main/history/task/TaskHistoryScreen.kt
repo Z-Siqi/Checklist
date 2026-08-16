@@ -108,6 +108,7 @@ fun <T : Any> NavGraphBuilder.taskHistoryScreen(
                         },
                         config = MutableStateFlow(TaskHistory.Config()),
                         feedback = AndroidEffectFeedback(view),
+                        context = view.context,
                         modifier = Modifier.fillMaxSize(),
                     )
                 }

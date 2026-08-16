@@ -13,7 +13,6 @@ import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.internal.SynchronizedObject
 import kotlinx.coroutines.internal.synchronized
 import sqz.checklist.data.database.dao.TaskDao
-import sqz.checklist.data.database.dao.TaskDaoOld
 import sqz.checklist.data.database.dao.TaskHistoryDao
 import sqz.checklist.data.database.dao.TaskReminderDao
 import sqz.checklist.data.database.impl.migration.MigrationTill4
@@ -40,15 +39,13 @@ suspend fun mergeDatabaseCheckpoint(database: RoomDatabase) {
 )
 @ConstructedBy(DatabaseConstructor::class)
 @TypeConverters(LocalDateConverter::class)
-abstract class TaskDatabase : RoomDatabase() { //TODO: Finish dao
+abstract class TaskDatabase : RoomDatabase() {
 
     internal abstract fun taskDao(): TaskDao
 
     internal abstract fun taskHistoryDao(): TaskHistoryDao
 
-
-    abstract fun taskDaoOld(): TaskDaoOld
-    abstract fun taskReminderDao(): TaskReminderDao
+    internal abstract fun taskReminderDao(): TaskReminderDao
 }
 
 @Suppress("EXPECT_ACTUAL_CLASSIFIERS_ARE_IN_BETA_WARNING")

@@ -33,10 +33,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import okio.Path.Companion.toPath
 import sqz.checklist.data.database.DatabaseProvider
-import sqz.checklist.data.database.TaskDatabase
 import sqz.checklist.data.database.TaskDetailType
 import sqz.checklist.data.database.getDatabaseBuilder
 import sqz.checklist.data.database.mergeDatabaseCheckpoint
+import sqz.checklist.data.database.repository.reminder.TaskReminderRepository
+import sqz.checklist.data.database.repository.task.TaskRepository
 import sqz.checklist.data.database.taskDatabaseName
 import sqz.checklist.data.preferences.PreferencesInCache
 import sqz.checklist.data.storage.AppDirType
@@ -89,7 +90,7 @@ class AppDataIO private constructor(application: Application) : AndroidViewModel
             .filter { it.isFile }
             .toList()
         var dataList: List<Uri> = listOf()
-        for (data in taskDatabase.getDatabase().taskDaoOld().getTaskDetail()) {
+        for (data in TaskRepository.provider(taskDatabase).getTaskDetail()) {
             when (data.type) {
                 TaskDetailType.Text -> {}
                 TaskDetailType.URL -> {}
@@ -223,7 +224,7 @@ class AppDataIO private constructor(application: Application) : AndroidViewModel
                         }
                     }
                     setLoading(20) // cancel all notification
-                    cancelAllNotification(taskDatabase.getDatabase(), context)
+                    cancelAllNotification(context)
                     setLoading(25) // merge database checkpoint ("PRAGMA wal_checkpoint(FULL)")
                     mergeDatabaseCheckpoint(taskDatabase.getDatabase())
                     setLoading(30) // close database
@@ -474,11 +475,14 @@ fun ImportTaskDatabase(
     }
 }
 
-private suspend fun cancelAllNotification(dbInstance: TaskDatabase, context: Context) {
+private suspend fun cancelAllNotification(context: Context) {
     Log.d("CancelReminder", "trying to cancel all reminder")
     try {
+        val list = TaskReminderRepository.provider(taskDatabase).getReminderViewList(
+            noRemindedOnly = true
+        )
         val notificationManager = MutableStateFlow(NotifyManager())
-        for (data in dbInstance.taskReminderDao().getAll()) {
+        for (data in list) {
             notificationManager.value.cancelNotification(
                 notifyId = data.reminder.id, 
                 context = context

@@ -14,7 +14,7 @@ class PreferencesInCache(context: Context) : PreferencesAccess(context) {
         return readPreferencesState(preferences, null)
     }
 
-    fun checkBackgroundManageApp(setter: Boolean? = false): Boolean {
+    fun checkBackgroundManageApp(setter: Boolean? = null): Boolean {
         val preferences = "check_bg_manage_app"
         if (setter != null) writePreferencesState(preferences, setter)
         return readPreferencesState(preferences, false)

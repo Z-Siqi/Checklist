@@ -1,5 +1,6 @@
 package com.sqz.checklist.presentation.history.task
 
+import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,6 +42,7 @@ import kotlinx.coroutines.flow.first
 import sqz.checklist.common.EffectFeedback
 import sqz.checklist.data.database.repository.history.TaskHistoryRepository
 import sqz.checklist.data.database.repository.history.TaskHistoryRepositoryFake
+import sqz.checklist.data.database.repository.reminder.TaskReminderRepository
 import sqz.checklist.history.api.task.TaskHistory
 
 @Composable
@@ -49,6 +51,7 @@ fun TaskHistoryLayout(
     onRequest: (TaskHistoryRequest) -> Unit,
     config: StateFlow<TaskHistory.Config>, //TODO: impl this feature
     feedback: EffectFeedback,
+    context: Context,
     modifier: Modifier = Modifier,
     viewModel: TaskHistoryViewModel = viewModelFactory(config),
 ) {
@@ -80,20 +83,20 @@ fun TaskHistoryLayout(
     when (secondConfirmationState) {
         TaskHistoryViewModel.SecondConfirmationState.DeleteAll -> DoAllWarnDialogUI(
             warnType = WarnType.DeleteAll,
-            onDismissRequest = { viewModel.onSecondConfirmation(null) },
+            onDismissRequest = { viewModel.onSecondConfirmation(null, context) },
             onConfirmRequest = {
                 val delAll = TaskHistoryViewModel.SecondConfirmationState.DeleteAll
-                viewModel.onSecondConfirmation(delAll)
+                viewModel.onSecondConfirmation(delAll, context)
             },
             feedback = feedback,
         )
 
         TaskHistoryViewModel.SecondConfirmationState.RedoAll -> DoAllWarnDialogUI(
             warnType = WarnType.DeleteAll,
-            onDismissRequest = { viewModel.onSecondConfirmation(null) },
+            onDismissRequest = { viewModel.onSecondConfirmation(null, context) },
             onConfirmRequest = {
                 val redoAll = TaskHistoryViewModel.SecondConfirmationState.RedoAll
-                viewModel.onSecondConfirmation(redoAll)
+                viewModel.onSecondConfirmation(redoAll, context)
             },
             feedback = feedback,
         )
@@ -124,7 +127,8 @@ fun TaskHistoryLayout(
         // Process external state
         viewModel.onExternalState(
             state = externalState,
-            onFailed = { /*TODO: process accidentally failed case*/ }
+            onFailed = { /*TODO: process accidentally failed case*/ },
+            context = context
         )
         onRequest(TaskHistoryRequest.StateProcessed)
     }
@@ -189,6 +193,7 @@ private fun TaskHistoryLayoutPreview() {
         onRequest = {},
         config = config,
         feedback = AndroidEffectFeedback(androidx.compose.ui.platform.LocalView.current),
+        context = androidx.compose.ui.platform.LocalContext.current,
         viewModel = viewModel { TaskHistoryViewModel(config, fkTaskHistory) }
     )
 }

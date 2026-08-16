@@ -266,4 +266,8 @@ internal class TaskRepositoryImpl(
             return task.id
         }
     }
+
+    override suspend fun getTaskDetail(): List<TaskDetail> { //TODO: may need to change in future
+        return this.taskDao().getTaskDetails()
+    }
 }
