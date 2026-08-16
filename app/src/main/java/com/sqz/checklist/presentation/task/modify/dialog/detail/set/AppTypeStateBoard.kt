@@ -75,7 +75,7 @@ import com.sqz.checklist.ui.common.unit.toDp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import sqz.checklist.common.EffectFeedback
-import sqz.checklist.data.database.model.Platform
+import sqz.checklist.model.Platform
 import sqz.checklist.task.api.modify.TaskModify
 
 /** This method expected to be called only within this package and its sub-packages. **/

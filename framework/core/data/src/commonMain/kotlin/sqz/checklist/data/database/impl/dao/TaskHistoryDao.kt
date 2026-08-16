@@ -1,4 +1,4 @@
-package sqz.checklist.data.database.dao
+package sqz.checklist.data.database.impl.dao
 
 import androidx.room.Dao
 import androidx.room.Delete
@@ -10,7 +10,7 @@ import sqz.checklist.data.database.model.ReminderViewData
 
 @Suppress("AndroidUnresolvedRoomSqlReference")
 @Dao
-interface TaskHistoryDao {
+internal interface TaskHistoryDao {
 
     @Query("SELECT * FROM task WHERE isHistoryId >= 1 ORDER BY isHistoryId ASC")
     fun getTaskHistoryList(): Flow<List<Task>>

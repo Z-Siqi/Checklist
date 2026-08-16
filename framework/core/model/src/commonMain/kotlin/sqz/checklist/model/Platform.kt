@@ -1,4 +1,4 @@
-package sqz.checklist.data.database.model
+package sqz.checklist.model
 
 enum class Platform {
     Android, IOS, Desktop;

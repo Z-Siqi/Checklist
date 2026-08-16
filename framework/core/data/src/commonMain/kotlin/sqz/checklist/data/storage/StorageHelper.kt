@@ -3,7 +3,7 @@ package sqz.checklist.data.storage
 import okio.Path
 import okio.Path.Companion.toPath
 import sqz.checklist.data.database.TaskDetailType
-import sqz.checklist.data.database.model.Platform
+import sqz.checklist.model.Platform
 import sqz.checklist.data.platform
 
 object StorageHelper {

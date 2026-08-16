@@ -122,11 +122,14 @@ class TaskListUnitTest {
         val taskList = TaskListImpl(
             MutableStateFlow(TaskList.Config()), TaskHistoryRepositoryFake(), repository
         )
+        advanceUntilIdle()
         taskList.onSearchRequest("test")
+        advanceUntilIdle()
         taskList.getTaskListInventory.test {
             assertTrue(awaitItem() is TaskList.Inventory.Search)
         }
         taskList.onSearchRequest(null)
+        advanceUntilIdle()
         taskList.getTaskListInventory.test {
             assertTrue(awaitItem() is TaskList.Inventory.Default)
         }

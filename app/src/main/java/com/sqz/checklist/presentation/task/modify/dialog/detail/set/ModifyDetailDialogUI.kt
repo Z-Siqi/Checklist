@@ -78,7 +78,7 @@ import com.sqz.checklist.ui.common.unit.pxToDp
 import com.sqz.checklist.ui.common.unit.pxToDpInt
 import sqz.checklist.common.EffectFeedback
 import sqz.checklist.data.database.TaskDetailType
-import sqz.checklist.data.database.model.Platform
+import sqz.checklist.model.Platform
 import sqz.checklist.data.database.repository.task.TaskRepositoryFake
 import sqz.checklist.data.storage.manager.StorageManagerFake
 import sqz.checklist.task.api.modify.TaskModify

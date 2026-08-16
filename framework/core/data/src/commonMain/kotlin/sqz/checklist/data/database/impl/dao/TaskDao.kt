@@ -1,4 +1,4 @@
-package sqz.checklist.data.database.dao
+package sqz.checklist.data.database.impl.dao
 
 import androidx.room.Dao
 import androidx.room.Delete

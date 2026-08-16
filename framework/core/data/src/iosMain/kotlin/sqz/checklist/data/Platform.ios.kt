@@ -1,5 +1,5 @@
 package sqz.checklist.data
 
-import sqz.checklist.data.database.model.Platform
+import sqz.checklist.model.Platform
 
 actual fun platform() = Platform.IOS.toString()

@@ -1,4 +1,4 @@
-package sqz.checklist.data.database.dao
+package sqz.checklist.data.database.impl.dao
 
 import androidx.room.Dao
 import androidx.room.Delete
@@ -41,7 +41,7 @@ internal interface TaskReminderDao {
     suspend fun getAll(notifyId: Int): ReminderViewData?
 
     /**
-     * @return [sqz.checklist.data.database.TaskReminder] by task id
+     * @return [TaskReminder] by task id
      */
     @Query("SELECT * FROM reminder WHERE taskId = :taskId")
     suspend fun getByTaskId(taskId: Long): TaskReminder?

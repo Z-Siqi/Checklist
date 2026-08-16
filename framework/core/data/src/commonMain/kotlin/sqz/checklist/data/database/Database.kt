@@ -12,9 +12,9 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.internal.SynchronizedObject
 import kotlinx.coroutines.internal.synchronized
-import sqz.checklist.data.database.dao.TaskDao
-import sqz.checklist.data.database.dao.TaskHistoryDao
-import sqz.checklist.data.database.dao.TaskReminderDao
+import sqz.checklist.data.database.impl.dao.TaskDao
+import sqz.checklist.data.database.impl.dao.TaskHistoryDao
+import sqz.checklist.data.database.impl.dao.TaskReminderDao
 import sqz.checklist.data.database.impl.migration.MigrationTill4
 
 /** Checklist database name **/

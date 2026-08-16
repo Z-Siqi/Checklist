@@ -6,7 +6,7 @@ import sqz.checklist.data.database.DatabaseProvider
 import sqz.checklist.data.database.Task
 import sqz.checklist.data.database.TaskDetail
 import sqz.checklist.data.database.TaskDetailType
-import sqz.checklist.data.database.dao.TaskDao
+import sqz.checklist.data.database.impl.dao.TaskDao
 import sqz.checklist.data.database.model.TaskViewData
 import sqz.checklist.data.database.pathStringConverter
 import sqz.checklist.data.database.repository.deleteTaskDetailStorageFile
