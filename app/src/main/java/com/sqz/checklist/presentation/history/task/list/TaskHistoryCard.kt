@@ -30,7 +30,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sqz.checklist.R
-import com.sqz.checklist.ui.main.task.CardHeight
+import com.sqz.checklist.ui.common.unit.CardHeight
 import kotlinx.datetime.LocalDate
 import sqz.checklist.common.KmpLocalDatePatternFormatter
 import sqz.checklist.common.TimestampHelper

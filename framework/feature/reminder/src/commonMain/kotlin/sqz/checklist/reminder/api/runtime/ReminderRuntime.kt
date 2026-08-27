@@ -15,7 +15,7 @@ interface ReminderRuntime {
     /**
      * Deletes reminder data for a task and returns the removed data.
      */
-    suspend fun removeReminder(taskId: Long): TaskReminder?
+    suspend fun removeReminder(taskId: Long, removeDisplayedNotification: Boolean): TaskReminder?
 
     /**
      * Checks whether any not-yet-triggered reminder still exists.

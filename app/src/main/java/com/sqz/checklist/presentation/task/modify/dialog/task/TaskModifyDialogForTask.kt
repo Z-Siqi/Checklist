@@ -96,6 +96,7 @@ internal fun TaskModifyDialogForTask(
     onCancel: () -> Unit,
     onConfirm: () -> Unit,
     taskUIState: TaskModify.Task.UIState,
+    reminderButtonEnabled: Boolean,
     isDetailSet: Boolean,
     isModified: Boolean,
     feedback: EffectFeedback,
@@ -126,6 +127,7 @@ internal fun TaskModifyDialogForTask(
             taskDescription = taskUIState.description,
             isSmallScreenSize = isSmallScreenSize,
             isDetailSet = isDetailSet,
+            reminderButtonEnabled = reminderButtonEnabled,
         )
     }
 }
@@ -279,6 +281,7 @@ private fun ThisDialogButtons(
     onCancel: () -> Unit,
     onConfirm: () -> Unit,
     onDetailRequest: () -> Unit,
+    reminderButtonEnabled: Boolean,
     taskDescription: String,
     isSmallScreenSize: Boolean,
     isDetailSet: Boolean,
@@ -327,6 +330,7 @@ private fun ThisDialogButtons(
                 FilledIconToggleButton(
                     checked = taskModifyType.withReminder,
                     onCheckedChange = { onTypeChange(taskModifyType.onReminderClick()) },
+                    enabled = reminderButtonEnabled,
                 ) {
                     Icon(
                         painter = painterResource(reminderIconId),
@@ -352,7 +356,8 @@ private fun ThisDialogButtons(
                 Switch(
                     checked = taskModifyType.withReminder,
                     onCheckedChange = { onTypeChange(taskModifyType.onReminderClick()) },
-                    modifier = Modifier.padding(start = 4.dp)
+                    modifier = Modifier.padding(start = 4.dp),
+                    enabled = reminderButtonEnabled,
                 )
             }
         }
@@ -454,6 +459,7 @@ private fun Preview() {
         taskUIState = vmFake.taskModify.collectAsState().value.taskState!!,
         onDetailRequest = {}, onTextChange = {}, onTypeChange = {},
         onDismissRequest = {}, onCancel = {}, onConfirm = {}, isDetailSet = false,
-        isModified = false, feedback = AndroidEffectFeedback(v)
+        isModified = false, reminderButtonEnabled = true,
+        feedback = AndroidEffectFeedback(v)
     )
 }

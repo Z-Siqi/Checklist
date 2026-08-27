@@ -11,14 +11,10 @@ import sqz.checklist.reminder.api.runtime.ReminderRuntime
 
 class ReminderNotificationController(
     private val context: Context,
-    private val notifyManager: NotifyManager,
     private val runtime: ReminderRuntime,
 ) {
     suspend fun removeReminder(taskId: Long, removeDisplayedNotification: Boolean) {
-        val reminder = runtime.removeReminder(taskId) ?: return
-        if (removeDisplayedNotification) {
-            notifyManager.removeShowedNotification(reminder.id, context)
-        }
+        runtime.removeReminder(taskId, removeDisplayedNotification)
     }
 
     suspend fun refreshDisplayedReminder(taskId: Long) {

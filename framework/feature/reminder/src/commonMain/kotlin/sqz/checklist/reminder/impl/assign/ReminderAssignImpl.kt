@@ -20,7 +20,7 @@ internal class ReminderAssignImpl(
     override suspend fun setReminder(taskId: Long, remindAtMillis: Long) {
         reminderRepository.getReminder(taskId)?.let { existing ->
             scheduler.cancel(existing.id)
-            reminderRepository.deleteRemindedInfo(existing.taskId)
+            reminderRepository.deleteReminder(existing.id)
         }
 
         val notificationId = createNotificationId()

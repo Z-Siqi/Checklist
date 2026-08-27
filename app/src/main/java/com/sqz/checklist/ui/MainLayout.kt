@@ -28,7 +28,6 @@ import com.sqz.checklist.ui.main.history.task.taskHistoryScreen
 import com.sqz.checklist.ui.main.settings.SettingsLayoutViewModel
 import com.sqz.checklist.ui.main.settings.SettingsTopBar
 import com.sqz.checklist.ui.main.settings.layout.SettingsLayout
-import com.sqz.checklist.ui.main.task.TaskLayoutViewModel
 import com.sqz.checklist.ui.main.task.taskScreen
 import com.sqz.checklist.ui.nav.RootNavRoute
 import com.sqz.checklist.ui.nav.group.home.homeNavGroup
@@ -45,7 +44,6 @@ fun MainLayout(modifier: Modifier, context: Context, view: View) {
 
     val refreshListRequest = rememberSaveable { mutableStateOf(false) }
     val settingsLayoutViewModel: SettingsLayoutViewModel = viewModel()
-    val taskState: TaskLayoutViewModel = viewModel()
 
     NavHost(
         navController = navController,
@@ -58,7 +56,6 @@ fun MainLayout(modifier: Modifier, context: Context, view: View) {
                 homeViewModel = homeVM,
                 homeNavController = homeNavController,
                 rootNavController = navController,
-                taskState = taskState,
                 view = view,
                 refreshListRequest = refreshListRequest,
             )

@@ -47,7 +47,7 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sqz.checklist.ui.common.TextTooltipBox
-import com.sqz.checklist.ui.main.task.CardHeight
+import com.sqz.checklist.ui.common.unit.CardHeight
 import kotlin.math.min
 
 /** This method expected to be called only within this package and its sub-packages. **/

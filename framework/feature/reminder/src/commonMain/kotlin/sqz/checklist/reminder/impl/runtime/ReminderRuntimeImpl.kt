@@ -16,8 +16,12 @@ internal class ReminderRuntimeImpl(
         return taskReminderRepository.getReminderView(notifyId = reminder.id)
     }
 
-    override suspend fun removeReminder(taskId: Long): TaskReminder? {
+    override suspend fun removeReminder(
+        taskId: Long,
+        removeDisplayedNotification: Boolean
+    ): TaskReminder? {
         val reminder = taskReminderRepository.getReminder(taskId) ?: return null
+        scheduler.cancel(reminder.id, removeDisplayedNotification)
         taskReminderRepository.deleteReminder(reminder.id)
         return reminder
     }

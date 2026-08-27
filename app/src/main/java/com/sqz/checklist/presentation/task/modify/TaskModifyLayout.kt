@@ -24,6 +24,7 @@ import sqz.checklist.data.preferences.PrimaryPreferences
 import sqz.checklist.data.storage.manager.StorageManager
 import sqz.checklist.data.storage.manager.StorageManagerFake
 import sqz.checklist.task.api.modify.TaskModify
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * Composable function for a dialog to add or edit a task.
@@ -91,7 +92,7 @@ fun TaskModifyLayout(
         val loadingPercentage by viewModel.loadingPercentage.collectAsState()
         val delayed = rememberSaveable { mutableStateOf(false) }
         LaunchedEffect(delayed) {
-            delay(100) // only show dialog if process need to take long time
+            delay(100.milliseconds) // only show dialog if process need to take long time
             delayed.value = true
         }
         if (delayed.value) ProcessingDialog(loadingPercentage = loadingPercentage)

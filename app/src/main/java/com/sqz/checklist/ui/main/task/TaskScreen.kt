@@ -39,6 +39,7 @@ import com.sqz.checklist.common.AndroidEffectFeedback
 import com.sqz.checklist.notification.NotifyManager
 import com.sqz.checklist.presentation.reminder.assign.ReminderLayout
 import com.sqz.checklist.presentation.reminder.runtime.ReminderPermissionWarningEffect
+import com.sqz.checklist.presentation.reminder.runtime.rememberTaskReminderNotificationController
 import com.sqz.checklist.presentation.task.info.TaskInfoLayout
 import com.sqz.checklist.presentation.task.info.TaskInfoState
 import com.sqz.checklist.presentation.task.list.TaskListLayout
@@ -46,17 +47,18 @@ import com.sqz.checklist.presentation.task.list.TaskListState
 import com.sqz.checklist.presentation.task.modify.TaskModifyLayout
 import com.sqz.checklist.presentation.task.modify.TaskModifyState
 import com.sqz.checklist.ui.common.ContentScaffold
-import com.sqz.checklist.ui.main.task.layout.TaskLayoutTopBar
-import com.sqz.checklist.ui.main.task.layout.TopBarExtendedMenu
-import com.sqz.checklist.ui.main.task.layout.TopBarMenuClickType
 import com.sqz.checklist.ui.nav.group.home.HomeNavGroup
 import com.sqz.checklist.ui.nav.group.home.HomeNavGroupInterface
 import com.sqz.checklist.ui.nav.group.home.button.TaskExtendedButton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import sqz.checklist.data.preferences.PrimaryPreferences
+import sqz.checklist.task.api.list.TaskList
+import kotlin.time.Duration.Companion.milliseconds
 
 internal sealed interface TaskScreen {
 
@@ -74,6 +76,8 @@ internal sealed interface TaskScreen {
         val allowDismiss: Boolean = true,
     ) : TaskScreen
 
+    @androidx.annotation.Keep
+    @Serializable
     enum class InfoType {
         ViewTaskDetail,
         DefaultTask,
@@ -89,7 +93,6 @@ fun NavGraphBuilder.taskScreen(
     homeViewModel: HomeNavGroupInterface,
     homeNavController: NavHostController,
     rootNavController: NavHostController,
-    taskState: TaskLayoutViewModel,
     view: View,
     refreshListRequest: androidx.compose.runtime.MutableState<Boolean>,
     modifier: Modifier = Modifier,
@@ -111,10 +114,22 @@ fun NavGraphBuilder.taskScreen(
                 notifyManager = notifyManager,
             )
             val preference = remember(view.context) { PrimaryPreferences(view.context) }
+            val rememberListCfg = remember { MutableStateFlow(TaskList.Config()) }
+            fun updateListConfig(prefs: PrimaryPreferences) {
+                fun Int.prefsLimit(): Int? = this.let {
+                    if (it >= 21) null else it
+                }
+                val config = TaskList.Config(
+                    enableUndo = !prefs.disableUndoButton(),
+                    autoDelIsHistoryTaskNumber = prefs.allowedNumberOfHistory().prefsLimit(),
+                    recentlyRemindedKeepTime = prefs.recentlyRemindedKeepTime(),
+                )
+                rememberListCfg.update { config }
+            }
             DisposableEffect(lifecycleOwner) {
                 val observer = LifecycleEventObserver { _, event ->
                     if (event == Lifecycle.Event.ON_RESUME) {
-                        taskState.updateListConfig(preference)
+                        updateListConfig(preference)
                     }
                 }
                 lifecycleOwner.lifecycle.addObserver(observer)
@@ -142,7 +157,7 @@ fun NavGraphBuilder.taskScreen(
             if (refreshListRequest.value) {
                 LaunchedEffect(Unit) {
                     while (taskListState.value !is TaskListState.None) {
-                        delay(100)
+                        delay(100.milliseconds)
                         Log.d("TaskLayout", "refreshListRequest delayed")
                     }
                     taskListState.value = TaskListState.IsRefreshListRequest
@@ -176,7 +191,6 @@ fun NavGraphBuilder.taskScreen(
                                         taskListState.value = TaskListState.IsSearchRequest
                                         return@TopBarExtendedMenu
                                     }
-                                    //taskState.resetUndo(ctx)
                                 },
                                 view = view,
                             )
@@ -197,7 +211,7 @@ fun NavGraphBuilder.taskScreen(
                     val coroutineScope = rememberCoroutineScope()
                     TaskListLayout(
                         listState = taskListState.value,
-                        config = taskState.listConfig,
+                        config = rememberListCfg,
                         view = view,
                         externalRequest = {
                             coordinator.onTaskListRequest(

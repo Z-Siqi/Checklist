@@ -1,4 +1,4 @@
-package com.sqz.checklist.ui.main.task.layout
+package com.sqz.checklist.ui.main.task
 
 import android.annotation.SuppressLint
 import android.os.Build
@@ -60,15 +60,14 @@ import com.sqz.checklist.R
 import com.sqz.checklist.ui.common.TextTooltipBox
 import com.sqz.checklist.ui.common.unit.isLandscape
 import com.sqz.checklist.ui.common.unit.pxToDpInt
-import com.sqz.checklist.ui.main.task.CardHeight
 import com.sqz.checklist.ui.theme.Theme
 import com.sqz.checklist.ui.theme.smallInSmallestEdgeSize
 import kotlinx.coroutines.delay
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
-import java.util.Locale
 import androidx.compose.ui.platform.LocalLocale
+import com.sqz.checklist.ui.common.unit.CardHeight
 
 /** TaskLayout Top App Bar **/
 @SuppressLint("ComposableNaming")

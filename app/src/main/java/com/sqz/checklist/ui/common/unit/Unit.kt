@@ -13,3 +13,8 @@ val isApi31AndAbove = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
 /** Android 13 and above return true **/
 val isApi33AndAbove = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+
+/**
+ * Default task card height in (dp)
+ */
+const val CardHeight = 100

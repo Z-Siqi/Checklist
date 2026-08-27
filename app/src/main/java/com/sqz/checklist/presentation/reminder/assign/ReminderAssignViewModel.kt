@@ -12,7 +12,6 @@ import sqz.checklist.data.database.model.ReminderViewData
 import sqz.checklist.data.database.repository.reminder.TaskReminderRepository
 import sqz.checklist.reminder.api.assign.ReminderAssign
 import sqz.checklist.reminder.api.reminderAssignProvider
-import kotlin.time.Clock
 
 class ReminderAssignViewModel(
     taskReminderRepository: TaskReminderRepository,
@@ -34,14 +33,6 @@ class ReminderAssignViewModel(
 
     val currentReminder: StateFlow<ReminderViewData?> = _currentReminder.asStateFlow()
 
-    init {
-        viewModelScope.launch {
-            _taskId.collect {
-                it?.also { _currentReminder.value = reminder.getCurrentReminder(it) }
-            }
-        }
-    }
-
     private val _noFullPermission = MutableStateFlow(false)
 
     val noFullPermission: StateFlow<Boolean> = _noFullPermission.asStateFlow()
@@ -55,9 +46,8 @@ class ReminderAssignViewModel(
     }
 
     private suspend fun scheduledInSystemCheck(info: ReminderViewData) {
-        val isTimePast = info.reminder.reminderTime <= Clock.System.now().toEpochMilliseconds()
         val isExistedInSystem = scheduler.isExisted(info.reminder.id)
-        if (isTimePast && !isExistedInSystem) { // not found in system
+        if (!isExistedInSystem) {
             _currentAction.value = ReminderAssign.Action.Error
         }
     }
@@ -66,6 +56,7 @@ class ReminderAssignViewModel(
         if (_currentAction.value != null) {
             this.resetAction()
         }
+        _noFullPermission.value = false
         _taskId.value = taskId
         viewModelScope.launch {
             // No permission situation
@@ -86,6 +77,7 @@ class ReminderAssignViewModel(
                 }
                 return@let it
             }
+            _currentReminder.value = getInfo
             if (getInfo.reminder.isReminded) {
                 _currentAction.value = ReminderAssign.Action.Set // reminded, set a new one
                 return@launch
@@ -109,5 +101,6 @@ class ReminderAssignViewModel(
         _currentAction.value = null
         _taskId.value = null
         _currentReminder.value = null
+        _noFullPermission.value = false
     }
 }

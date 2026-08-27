@@ -4,6 +4,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import com.sqz.checklist.notification.NotifyManager
 import com.sqz.checklist.presentation.task.modify.TaskModifyViewModel
 import sqz.checklist.common.EffectFeedback
 import sqz.checklist.task.api.modify.TaskModify
@@ -18,6 +20,7 @@ fun TaskModifyForTaskUI(
     val task = viewModel.taskDialogHandler() ?: return
     val taskModify by viewModel.taskModify.collectAsState()
     val isModified by viewModel.isModified.collectAsState()
+    val hasPermission = NotifyManager().hasNotificationPermission(LocalContext.current)
     TaskModifyDialogForTask(
         taskUIState = taskModify.taskState!!,
         onDetailRequest = viewModel::switchDialog,
@@ -32,6 +35,7 @@ fun TaskModifyForTaskUI(
         onConfirm = onConfirm,
         isDetailSet = !taskModify.detailState.isNullOrEmpty(),
         isModified = isModified,
+        reminderButtonEnabled = hasPermission,
         feedback = feedback,
         modifier = modifier
     )

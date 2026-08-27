@@ -1,4 +1,4 @@
-package com.sqz.checklist.ui.main.task.layout
+package com.sqz.checklist.ui.main.task
 
 import android.view.SoundEffectConstants
 import android.view.View

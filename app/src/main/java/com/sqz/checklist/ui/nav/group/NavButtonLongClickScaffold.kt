@@ -4,6 +4,7 @@ import androidx.collection.intListOf
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.DropdownMenuPopup
@@ -23,6 +24,7 @@ import com.sqz.checklist.ui.common.TextTooltipBox
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * **This method expected to be called only within this package and its sub-packages.**
@@ -96,7 +98,7 @@ internal fun NavButtonLongClickScaffold(
                     is PressInteraction.Press -> {
                         longClicked = false
                         val job = launch {
-                            delay(viewConfiguration.longPressTimeoutMillis)
+                            delay(viewConfiguration.longPressTimeoutMillis.milliseconds)
                             longClicked = true
                         }
                         jobs[interaction] = job
@@ -112,34 +114,33 @@ internal fun NavButtonLongClickScaffold(
                 }
             }
         }
-        DropdownMenuPopup(
-            expanded = longClicked,
-            onDismissRequest = { longClicked = false },
-            modifier = Modifier.pointerInput(Unit) {
-                detectTapGestures { longClicked = false }
-            },
-            popupPositionProvider = MenuDefaults.rememberDropdownMenuPopupPositionProvider(
-                dropdownMenuAnchorPosition = MenuAnchorPosition.Custom(
-                    xCandidates = { anchorBounds, windowSize, menuSize ->
-                        val centeredX =
-                            anchorBounds.left + (anchorBounds.width - menuSize.width) / 2
-                        intListOf(
-                            centeredX.coerceIn(0, windowSize.width - menuSize.width)
-                        )
-                    },
-                    yCandidates = { anchorBounds, _, menuSize ->
-                        intListOf(
-                            anchorBounds.top - menuSize.height,
-                            anchorBounds.bottom
-                        )
-                    }
+        Box {
+            navButton(interactionSource, longClicked)
+            DropdownMenuPopup(
+                expanded = longClicked,
+                onDismissRequest = { longClicked = false },
+                modifier = Modifier.pointerInput(Unit) {
+                    detectTapGestures { longClicked = false }
+                },
+                popupPositionProvider = MenuDefaults.rememberDropdownMenuPopupPositionProvider(
+                    dropdownMenuAnchorPosition = MenuAnchorPosition.Custom(
+                        xCandidates = { anchorBounds, windowSize, menuSize ->
+                            val centeredX =
+                                anchorBounds.left + (anchorBounds.width - menuSize.width) / 2
+                            val maximumX = (windowSize.width - menuSize.width).coerceAtLeast(0)
+                            intListOf(centeredX.coerceIn(0, maximumX))
+                        },
+                        yCandidates = { anchorBounds, _, menuSize ->
+                            val aboveAnchorY = anchorBounds.bottom - menuSize.height
+                            intListOf(aboveAnchorY)
+                        }
+                    ),
                 ),
-            ),
-        ) {
-            menu().let { LaunchedEffect(it) { longClicked = it } }
-            Spacer(modifier = Modifier.padding(vertical = 42.dp))
+            ) {
+                menu().let { LaunchedEffect(it) { longClicked = it } }
+                Spacer(modifier = Modifier.padding(vertical = 42.dp))
+            }
         }
-        navButton(interactionSource, longClicked)
     }
     if (tooltip != null) {
         TextTooltipBox(
