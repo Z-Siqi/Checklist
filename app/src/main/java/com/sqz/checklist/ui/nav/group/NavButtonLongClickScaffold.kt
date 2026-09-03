@@ -6,7 +6,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.MenuAnchorPosition
 import androidx.compose.material3.MenuDefaults
@@ -124,21 +124,25 @@ internal fun NavButtonLongClickScaffold(
                 },
                 popupPositionProvider = MenuDefaults.rememberDropdownMenuPopupPositionProvider(
                     dropdownMenuAnchorPosition = MenuAnchorPosition.Custom(
-                        xCandidates = { anchorBounds, windowSize, menuSize ->
+                        xCandidates = {
                             val centeredX =
-                                anchorBounds.left + (anchorBounds.width - menuSize.width) / 2
-                            val maximumX = (windowSize.width - menuSize.width).coerceAtLeast(0)
+                                this.anchorBounds.left + (this.anchorBounds.width - this.menuSize.width) / 2
+                            val maximumX =
+                                (this.windowSize.width - this.menuSize.width).coerceAtLeast(0)
                             intListOf(centeredX.coerceIn(0, maximumX))
                         },
-                        yCandidates = { anchorBounds, _, menuSize ->
-                            val aboveAnchorY = anchorBounds.bottom - menuSize.height
-                            intListOf(aboveAnchorY)
+                        yCandidates = {
+                            val aboveAnchorY =
+                                this.anchorBounds.top + (this.anchorBounds.height - this.menuSize.height)
+                            val maximumY =
+                                (this.windowSize.height - this.menuSize.height).coerceAtLeast(0)
+                            intListOf(aboveAnchorY.coerceIn(0, maximumY))
                         }
                     ),
                 ),
             ) {
                 menu().let { LaunchedEffect(it) { longClicked = it } }
-                Spacer(modifier = Modifier.padding(vertical = 42.dp))
+                Spacer(modifier = Modifier.size(1.dp))
             }
         }
     }

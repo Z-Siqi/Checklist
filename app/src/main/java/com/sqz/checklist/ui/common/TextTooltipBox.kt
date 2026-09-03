@@ -6,6 +6,7 @@ import android.os.Vibrator
 import android.view.SoundEffectConstants
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TooltipAnchorPosition
@@ -20,6 +21,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TextTooltipBox(
     textRid: Int,
@@ -32,15 +34,34 @@ fun TextTooltipBox(
     modifier = modifier,
     extraPadding = extraPadding,
     enable = enable,
+    positioning = TooltipAnchorPosition.Above,
     content = content
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TextTooltipBox(
     text: String,
     modifier: Modifier = Modifier,
     extraPadding: PaddingValues = PaddingValues(0.dp),
-    positioning: TooltipAnchorPosition = TooltipAnchorPosition.Above,
+    enable: Boolean = true,
+    content: @Composable (() -> Unit),
+) = TextTooltipBox(
+    text = text,
+    modifier = modifier,
+    extraPadding = extraPadding,
+    positioning = TooltipAnchorPosition.Above,
+    enable = enable,
+    content = content,
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TextTooltipBox(
+    text: String,
+    modifier: Modifier = Modifier,
+    extraPadding: PaddingValues = PaddingValues(0.dp),
+    positioning: TooltipAnchorPosition,
     enable: Boolean = true,
     content: @Composable (() -> Unit),
 ) {

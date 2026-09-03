@@ -48,6 +48,7 @@ import com.sqz.checklist.ui.nav.group.home.HomeNavGroupExtendedButton
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 import sqz.checklist.common.EffectFeedback
+import kotlin.time.Duration.Companion.milliseconds
 
 interface TaskExtendedButton {
 
@@ -106,7 +107,7 @@ fun HomeNavGroup?.taskExtendedButton(
         var delayedButtonText by remember { mutableStateOf(buttonText) }
         LaunchedEffect(buttonText) {
             if (delayedButtonText != buttonText) {
-                delay(100)
+                delay(100.milliseconds)
                 delayedButtonText = buttonText
             }
         }
@@ -130,7 +131,6 @@ fun HomeNavGroup?.taskExtendedButton(
             onSearchClick = {
                 onClickRequest(TaskExtendedButton.ClickRequest.Search)
                 showMenuLayout = false
-                feedback.onClickEffect()
             },
             isScrollUpIcon = menuState.isScrollUpButton,
             onScrollClick = {
@@ -142,7 +142,6 @@ fun HomeNavGroup?.taskExtendedButton(
                 }
                 onClickRequest(scroll)
                 showMenuLayout = false
-                feedback.onClickEffect()
             }
         )
         var returnSuspend by remember { mutableStateOf(true) }
@@ -164,7 +163,6 @@ fun HomeNavGroup?.taskExtendedButton(
         } else {
             onClickRequest(TaskExtendedButton.ClickRequest.Add)
         }
-        feedback.onClickEffect()
     }
 }
 

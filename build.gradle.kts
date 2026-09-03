@@ -9,3 +9,9 @@ plugins {
     alias(libs.plugins.jetbrains.kotlin.jvm) apply false
     alias(libs.plugins.androidx.room) apply false
 }
+
+subprojects {
+    tasks.matching { it.name.startsWith("lint") || it.name.contains("Lint") }.configureEach {
+        mustRunAfter(tasks.matching { it.name.startsWith("ksp") })
+    }
+}

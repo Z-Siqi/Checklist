@@ -159,7 +159,7 @@ private fun TaskDescription(
                 overflow = TextOverflow.Ellipsis,
                 onTextLayout = { overflowState = it.hasVisualOverflow },
                 maxLines = 2,
-                fontWeight = FontWeight.Normal,
+                fontWeight = FontWeight.Normal, //FontWeight.Medium
             )
         }
     }
