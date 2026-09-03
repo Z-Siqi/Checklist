@@ -119,6 +119,7 @@ fun NavGraphBuilder.taskScreen(
                 fun Int.prefsLimit(): Int? = this.let {
                     if (it >= 21) null else it
                 }
+
                 val config = TaskList.Config(
                     enableUndo = !prefs.disableUndoButton(),
                     autoDelIsHistoryTaskNumber = prefs.allowedNumberOfHistory().prefsLimit(),
@@ -237,45 +238,36 @@ fun NavGraphBuilder.taskScreen(
                 }
                 return@let TaskModifyState.EditTask(it)
             }
-            val taskCreatedToast = remember { mutableStateOf(false) }
-            val navigatedToReminder = remember { mutableStateOf(false) }
+            var navigatedToReminder by remember { mutableStateOf<Long?>(null) }
             val reminderController = rememberTaskReminderNotificationController()
             TaskModifyLayout(
                 preference = PrimaryPreferences(view.context),
                 view = view,
                 modifyState = modifyState,
-                requestReminder = { taskId ->
-                    taskCreatedToast.value = true
-                    navigatedToReminder.value = true
-                    homeNavController.navigate(
-                        TaskScreen.ReminderDialogRoute(
-                            taskId = taskId,
-                            allowDismiss = false,
-                        )
-                    ) {
-                        popUpTo(TaskScreen.ModifyDialogRoute::class) {
-                            inclusive = true
-                        }
-                    }
-                },
+                requestReminder = { taskId -> navigatedToReminder = taskId },
                 onFinished = { taskId ->
                     taskId?.let { updatedTaskId ->
                         mainCoroutineScope.launch {
                             reminderController.refreshDisplayedReminder(updatedTaskId)
                         }
                     }
-                    if (!navigatedToReminder.value) {
+                    if (navigatedToReminder != null) {
+                        Toast.makeText(
+                            view.context, R.string.task_is_created, Toast.LENGTH_LONG
+                        ).show()
+                        homeNavController.navigate(
+                            TaskScreen.ReminderDialogRoute(
+                                taskId = navigatedToReminder!!, allowDismiss = false
+                            )
+                        ) {
+                            popUpTo(TaskScreen.ModifyDialogRoute::class) { inclusive = true }
+                        }
+                    } else {
                         homeNavController.popBackStack()
                     }
                 },
                 feedback = AndroidEffectFeedback(view)
             )
-            if (taskCreatedToast.value) LaunchedEffect(Unit) {
-                Toast.makeText(
-                    view.context, R.string.task_is_created, Toast.LENGTH_LONG
-                ).show()
-                taskCreatedToast.value = false
-            }
         }
 
         dialog(route = TaskScreen.ReminderDialogRoute::class) { backStackEntry ->

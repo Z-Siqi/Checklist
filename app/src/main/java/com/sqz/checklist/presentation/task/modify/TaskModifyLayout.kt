@@ -68,15 +68,14 @@ fun TaskModifyLayout(
 ) {
     val taskModify by viewModel.taskModify.collectAsState()
     val isProcessing = rememberSaveable { mutableStateOf(false) }
-    val finishedId = rememberSaveable { mutableStateOf<Long?>(null) }
+    val isConfirm = rememberSaveable { mutableStateOf(false) }
 
     // The listener is to process task modify start and finished actions
     LaunchedEffect(taskModify.state, modifyState) {
         if (taskModify.state == TaskModify.State.None) {
-            if (isProcessing.value) {
-                onFinished(finishedId.value)
+            if (isProcessing.value && !isConfirm.value) {
+                onFinished(null)
                 isProcessing.value = false
-                finishedId.value = null
             } else {
                 when (modifyState) {
                     is TaskModifyState.AddTask -> viewModel.newTask(view)
@@ -103,7 +102,8 @@ fun TaskModifyLayout(
         if (viewModel.showTaskDialog.collectAsState().value) {
             TaskModifyForTaskUI(
                 onConfirm = {
-                    viewModel.confirmModify(requestReminder) { finishedId.value = it }
+                    isConfirm.value = true
+                    viewModel.confirmModify(requestReminder) { onFinished(it) }
                 },
                 viewModel = viewModel,
                 feedback = feedback,

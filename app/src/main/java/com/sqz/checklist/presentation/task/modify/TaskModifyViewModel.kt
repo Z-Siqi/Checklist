@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okio.Path.Companion.toPath
 import sqz.checklist.data.database.TaskDetailType
 import sqz.checklist.data.database.repository.task.TaskRepository
@@ -95,11 +96,14 @@ class TaskModifyViewModel(
         requestReminder: (taskId: Long) -> Unit,
         onFinished: (taskId: Long) -> Unit
     ) {
+        val taskStateType = _taskModify.getModifyState.value.taskState?.type
+        val withReminder = taskStateType is TaskModify.Task.ModifyType.NewTask && taskStateType.withReminder
         _showTaskDialog.value = true
-        viewModelScope.launch(Dispatchers.IO) {
-            val taskStateType = _taskModify.getModifyState.value.taskState!!.type
-            val taskId = _taskModify.confirmModify()
-            if (taskStateType is TaskModify.Task.ModifyType.NewTask && taskStateType.withReminder) {
+        viewModelScope.launch {
+            val taskId = withContext(Dispatchers.IO) {
+                _taskModify.confirmModify()
+            }
+            if (withReminder) {
                 requestReminder(taskId)
             }
             onFinished(taskId)
