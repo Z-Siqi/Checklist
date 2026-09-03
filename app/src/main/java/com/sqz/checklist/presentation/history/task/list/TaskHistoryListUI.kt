@@ -40,7 +40,7 @@ fun TaskHistoryListUI(
                 createDate = task.createDate,
                 onLongClick = { onLongPress(task.id).also { feedback.onTapEffect() } },
                 onClick = {
-                    viewModel.singleSelectTask(task.id).also { feedback.onClickEffect() }
+                    viewModel.singleSelectTask(task.id)
                 },
                 isSelected = task.id == defaultInventory.selectedTaskId,
                 modifier = Modifier.animateItem()

@@ -135,9 +135,9 @@ fun ModifyDetailDialogUI(
         Spacer(modifier = Modifier.height(if (isSmallScreenSize) 10.dp else 24.dp))
         ThisDialogFuncButton(
             isSmallScreenSize = isSmallScreenSize,
-            onDismiss = { onDismiss().also { feedback.onClickEffect() } },
-            onConfirm = { onConfirm().also { feedback.onClickEffect() } },
-            onListConfirm = { onListConfirm().also { feedback.onClickEffect() } },
+            onDismiss = { onDismiss() },
+            onConfirm = { onConfirm() },
+            onListConfirm = { onListConfirm() },
             detailUIState = detailUIState,
             isListConfirm = isListConfirm,
         )
@@ -260,7 +260,6 @@ private fun DetailTypeMenu(
             OutlinedButton(
                 onClick = {
                     menuExpanded = !menuExpanded
-                    feedback.onClickEffect()
                 },
                 modifier = Modifier
                     .animateContentSize(
@@ -313,7 +312,6 @@ private fun DetailTypeMenu(
                                 onSelectChange(it)
                                 focusManager.clearFocus()
                                 menuExpanded = false
-                                feedback.onClickEffect()
                             },
                             text = { Text(text = stringResource(textRid)) },
                         )
@@ -323,7 +321,7 @@ private fun DetailTypeMenu(
         }
     }
     TextTooltipBox(textRid = R.string.delete) {
-        FilledTonalIconButton(onClick = { onRemove().also { feedback.onClickEffect() } }) {
+        FilledTonalIconButton(onClick = { onRemove() }) {
             Icon(
                 painter = painterResource(R.drawable.delete),
                 contentDescription = stringResource(R.string.delete)

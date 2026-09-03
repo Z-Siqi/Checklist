@@ -107,7 +107,7 @@ internal fun TaskModifyDialogForTask(
     ThisDialog(onDismissRequest, isModified, isSmallScreenSize, focus, modifier) {
         ThisDialogTitle(
             taskModifyType = taskUIState.type,
-            onTypeChange = { onTypeChange(it).also { feedback.onClickEffect() } },
+            onTypeChange = { onTypeChange(it) },
             isSmallScreenSize = isSmallScreenSize
         )
         Spacer(modifier = Modifier.height(if (isSmallScreenSize) 8.dp else 20.dp))
@@ -120,10 +120,10 @@ internal fun TaskModifyDialogForTask(
         Spacer(modifier = Modifier.height(if (isSmallScreenSize) 10.dp else 24.dp))
         ThisDialogButtons(
             taskModifyType = taskUIState.type,
-            onTypeChange = { onTypeChange(it).also { feedback.onClickEffect() } },
-            onCancel = { onCancel().also { feedback.onClickEffect() } },
-            onConfirm = { onConfirm().also { feedback.onClickEffect() } },
-            onDetailRequest = { onDetailRequest().also { feedback.onClickEffect() } },
+            onTypeChange = { onTypeChange(it) },
+            onCancel = { onCancel() },
+            onConfirm = { onConfirm() },
+            onDetailRequest = { onDetailRequest() },
             taskDescription = taskUIState.description,
             isSmallScreenSize = isSmallScreenSize,
             isDetailSet = isDetailSet,

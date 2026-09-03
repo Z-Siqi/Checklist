@@ -144,7 +144,6 @@ internal fun AudioTypeBoard(
         }
         OutlinedButton(
             onClick = {
-                feedback.onClickEffect()
                 launcher.launch("audio/*")
             },
             modifier = Modifier.fillMaxWidth(),

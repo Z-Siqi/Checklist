@@ -138,7 +138,6 @@ internal fun AppTypeStateBoard(
                 InstalledAppList(
                     onSelected = {
                         onStateChange(appState.copy(launchToken = it.encodeToByteArray()))
-                        feedback.onClickEffect()
                     },
                     selectedPackage = savedPackage,
                     localAppList = filteredAppList,
@@ -181,7 +180,6 @@ private fun SearchBar(
     if (searchQuery.value == null) {
         FilledTonalButton(onClick = {
             searchQuery.value = ""
-            feedback.onClickEffect()
         }) {
             Icon(
                 imageVector = Icons.Default.Search,
@@ -219,7 +217,6 @@ private fun SearchBar(
                     } else {
                         searchQuery.value = null
                     }
-                    feedback.onClickEffect()
                 }) {
                     Icon(
                         imageVector = Icons.Default.Clear,

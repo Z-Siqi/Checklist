@@ -1,7 +1,6 @@
 package com.sqz.checklist.ui
 
 import android.content.Context
-import android.view.SoundEffectConstants
 import android.view.View
 import android.widget.Toast
 import androidx.compose.material.icons.Icons
@@ -81,7 +80,6 @@ fun MainLayout(modifier: Modifier, context: Context, view: View) {
                                 Toast.LENGTH_SHORT,
                             ).show()
                         }
-                        view.playSoundEffect(SoundEffectConstants.CLICK)
                     })
                 }
             ) {
@@ -117,7 +115,6 @@ fun MainLayout(modifier: Modifier, context: Context, view: View) {
                                 } else {
                                     settingsLayoutViewModel.requestSearch()
                                 }
-                                view.playSoundEffect(SoundEffectConstants.CLICK)
                             }
                         ) {
                             val icon = if (settingsLayoutViewModel.getSearchState()) {

@@ -3,7 +3,6 @@ package com.sqz.checklist.ui.main.settings.layout
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
-import android.view.SoundEffectConstants
 import android.view.View
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.BorderStroke
@@ -104,7 +103,6 @@ open class SettingsList {
         Switch(
             checked = checked, onCheckedChange = {
                 onCheckedChange(it)
-                view.playSoundEffect(SoundEffectConstants.CLICK)
             }
         )
     }
@@ -119,7 +117,6 @@ open class SettingsList {
         fullWidth: Boolean = false,
     ) = Card(
         onClick = {
-            view.playSoundEffect(SoundEffectConstants.CLICK)
             onClick()
         },
         modifier = Modifier
@@ -172,7 +169,6 @@ open class SettingsList {
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
             onClick = {
                 expanded.value = !expanded.value
-                view.playSoundEffect(SoundEffectConstants.CLICK)
             }
         ) {
             Column(

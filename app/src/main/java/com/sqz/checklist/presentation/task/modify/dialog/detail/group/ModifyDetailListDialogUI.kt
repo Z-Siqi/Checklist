@@ -84,10 +84,9 @@ fun ModifyDetailListDialogUI(
         Spacer(modifier = Modifier.height(if (isSmallScreenSize) 8.dp else 15.dp))
         FuncButtons(
             allowAddToList = allowAddToList,
-            onAddClick = { onAddNewDetail().also { feedback.onClickEffect() } },
+            onAddClick = { onAddNewDetail() },
             onDragClick = {
                 dragMode = it
-                feedback.onClickEffect()
             },
             dragState = dragMode,
         )
@@ -95,8 +94,8 @@ fun ModifyDetailListDialogUI(
             Spacer(modifier = Modifier.height(if (isSmallScreenSize) 8.dp else 15.dp))
         }
         ThisDialogFuncButton(
-            onDismiss = { onDismiss().also { feedback.onClickEffect() } },
-            onConfirm = { onConfirm().also { feedback.onClickEffect() } },
+            onDismiss = { onDismiss() },
+            onConfirm = { onConfirm() },
             detailState = detailState,
         )
     }

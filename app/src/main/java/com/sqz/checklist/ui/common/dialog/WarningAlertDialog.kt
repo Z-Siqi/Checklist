@@ -1,6 +1,4 @@
 package com.sqz.checklist.ui.common.dialog
-
-import android.view.SoundEffectConstants
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -25,7 +23,6 @@ fun WarningAlertDialog(
     PrimaryDialog(
         onDismissRequest = {
             onDismissRequest()
-            view.playSoundEffect(SoundEffectConstants.CLICK)
         },
         actionButton = {
             TextButton(onClick = onConfirmButtonClick) {
@@ -35,7 +32,6 @@ fun WarningAlertDialog(
         dismissButton = {
             TextButton(onClick = {
                 onDismissButtonClick()
-                view.playSoundEffect(SoundEffectConstants.CLICK)
             }) {
                 Text(text = stringResource(R.string.dismiss))
             }

@@ -43,7 +43,6 @@ internal fun PinnedTaskCard(
         text = taskViewData.task.description,
         onOverflowedClick = {
             task.onInfoRequest(TaskList.ListType.Pinned)
-            feedback.onClickEffect()
         },
         onLongClick = {
             task.onInfoRequest(TaskList.ListType.Pinned)
@@ -79,7 +78,6 @@ private fun PinButton(
         modifier = Modifier.rotate(40f),
         onClick = {
             onClick()
-            feedback.onClickEffect()
         }
     ) {
         Icon(

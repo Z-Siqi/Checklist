@@ -82,7 +82,6 @@ private fun DefaultButtonsRow(
         if (isDetailExist) TextTooltipBox(textRid = R.string.detail) {
             IconButton(modifier = Modifier.requiredSize(32.dp), onClick = {
                 onDetailClick()
-                feedback.onClickEffect()
             }) {
                 Icon(
                     modifier = Modifier.rotate(-5f),
@@ -98,7 +97,6 @@ private fun DefaultButtonsRow(
         TextTooltipBox(text = timerText) {
             IconButton(modifier = Modifier.requiredSize(32.dp), onClick = {
                 onReminderClick()
-                feedback.onClickEffect()
             }) {
                 val timerIcon =
                     if (isReminderSet) R.drawable.timer_on else R.drawable.timer
@@ -112,7 +110,6 @@ private fun DefaultButtonsRow(
         TextTooltipBox(textRid = R.string.edit) {
             IconButton(modifier = Modifier.requiredSize(32.dp), onClick = {
                 onEditClick()
-                feedback.onClickEffect()
             }) {
                 Icon(
                     painter = painterResource(id = R.drawable.edit),

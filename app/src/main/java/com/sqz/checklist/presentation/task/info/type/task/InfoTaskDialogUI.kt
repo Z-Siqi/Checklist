@@ -276,7 +276,7 @@ private fun InfoTaskDialog(
             topContent = { contentButton?.invoke() ?: Spacer(modifier = Modifier.size(1.dp)) },
             bottomContent = {
                 TextButton(
-                    onClick = { onDismissRequest().also { feedback.onClickEffect() } }
+                    onClick = { onDismissRequest() }
                 ) {
                     Text(
                         text = stringResource(R.string.cancel),

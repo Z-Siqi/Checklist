@@ -2,7 +2,6 @@ package com.sqz.checklist.ui.main.settings.layout
 
 import android.content.Intent
 import android.provider.Settings
-import android.view.SoundEffectConstants
 import android.view.View
 import android.widget.Toast
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -134,7 +133,6 @@ class NotificationSettingItems(private val view: View) : SettingsList() {
                 dropdownMenuList = {
                     list.forEach {
                         DropdownMenuItem(text = { Text(it.name) }, onClick = {
-                            view.playSoundEffect(SoundEffectConstants.CLICK)
                             if (it.value != -1L) {
                                 setting = preferences.recentlyRemindedKeepTime(it.value)
                             } else custom = true

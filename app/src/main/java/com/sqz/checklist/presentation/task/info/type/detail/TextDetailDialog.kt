@@ -72,7 +72,7 @@ internal fun TextDetailDialog(
         }
         Spacer(modifier = Modifier.height(if (isSmallScreenSize) 10.dp else 20.dp))
         ThisDialogButton {
-            onDismissRequest().also { feedback.onClickEffect() }
+            onDismissRequest()
         }
     }
 }

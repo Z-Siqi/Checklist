@@ -6,7 +6,6 @@ import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
-import android.view.SoundEffectConstants
 import android.view.View
 import androidx.annotation.RequiresApi
 import com.sqz.checklist.common.device.isEmulator
@@ -14,12 +13,8 @@ import sqz.checklist.common.EffectFeedback
 
 class AndroidEffectFeedback(private val view: View) : EffectFeedback {
 
-    private fun makeClickSound() {
-        view.playSoundEffect(SoundEffectConstants.CLICK)
-    }
-
     private fun makeVibrate(
-        vibe: VibrationEffect, noVibrator: () -> Unit = { this.makeClickSound() }
+        vibe: VibrationEffect, noVibrator: () -> Unit = {}
     ) {
         val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val vibratorManager =
@@ -37,7 +32,7 @@ class AndroidEffectFeedback(private val view: View) : EffectFeedback {
     }
 
     private fun makeVibrate(
-        createPredefined: Int, noVibrator: () -> Unit = { this.makeClickSound() }
+        createPredefined: Int, noVibrator: () -> Unit = {}
     ) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             noVibrator()
@@ -52,15 +47,12 @@ class AndroidEffectFeedback(private val view: View) : EffectFeedback {
     }
 
     override fun onClickEffect() {
-        this.makeClickSound()
+        // Compose click targets provide their own platform click sound.
     }
 
     @SuppressLint("InlinedApi")
     override fun onHeavyClickEffect() {
-        this.makeVibrate(createPredefined = VibrationEffect.EFFECT_HEAVY_CLICK) {
-            this.makeClickSound()
-            this.makeClickSound()
-        }
+        this.makeVibrate(createPredefined = VibrationEffect.EFFECT_HEAVY_CLICK)
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)

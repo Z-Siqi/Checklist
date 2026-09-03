@@ -1,6 +1,4 @@
 package com.sqz.checklist.ui.common.dialog
-
-import android.view.SoundEffectConstants
 import android.view.View
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -215,7 +213,6 @@ private fun TextActionButton(
     modifier = modifier,
     onClick = {
         onClick()
-        view.playSoundEffect(SoundEffectConstants.CLICK)
     },
     colors = colors
 ) {

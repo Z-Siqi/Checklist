@@ -27,8 +27,8 @@ fun DoAllWarnDialogUI(
     }
     DoAllWarnDialogScaffold(
         description = description,
-        onDismissRequest = { onDismissRequest().also { feedback.onClickEffect() } },
-        onConfirmRequest = { onConfirmRequest().also { feedback.onClickEffect() } },
+        onDismissRequest = { onDismissRequest() },
+        onConfirmRequest = { onConfirmRequest() },
     )
 }
 

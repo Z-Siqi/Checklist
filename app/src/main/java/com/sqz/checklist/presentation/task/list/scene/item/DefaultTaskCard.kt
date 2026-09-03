@@ -36,7 +36,6 @@ internal fun DefaultTaskCard(
         text = taskViewData.task.description,
         onOverflowedClick = {
             task.onInfoRequest(TaskList.ListType.Primary)
-            feedback.onClickEffect()
         },
         onLongClick = {
             task.onInfoRequest(TaskList.ListType.Primary)
@@ -74,7 +73,6 @@ private fun PinButton(
         modifier = Modifier.rotate(40f),
         onClick = {
             onClick()
-            feedback.onClickEffect()
         }
     ) {
         val iconId = if (isPinned) R.drawable.pinned else R.drawable.pin

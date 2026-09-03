@@ -1,7 +1,6 @@
 package com.sqz.checklist.ui.common
 
 import android.content.Intent
-import android.view.SoundEffectConstants
 import android.view.View
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -60,7 +59,6 @@ fun UrlText(
         modifier = modifier
             .clip(RoundedCornerShape(4.dp))
             .clickable {
-                view.playSoundEffect(SoundEffectConstants.CLICK)
                 val intent = Intent(Intent.ACTION_VIEW, formatURL.toUri()).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }

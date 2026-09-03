@@ -7,7 +7,6 @@ import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.util.Log
-import android.view.SoundEffectConstants
 import android.view.View
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -123,7 +122,6 @@ fun TimeSelectDialog(
             Row(modifier = modifier.fillMaxWidth()) {
                 if (!timePickLimit) IconButton(onClick = {
                     isTimeInput = !isTimeInput
-                    view.playSoundEffect(SoundEffectConstants.CLICK)
                 }) {
                     fun icon(): Pair<Int, String> = if (isTimeInput)
                         Pair(R.drawable.schedule, context.getString(R.string.pick))
@@ -204,7 +202,6 @@ fun TimeSelectDialog(
                                 VibrationEffect.createOneShot(8L, 70)
                             )
                         }
-                        view.playSoundEffect(SoundEffectConstants.CLICK)
                     },
                     colors = if (isDatePick) ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -239,12 +236,10 @@ fun TimeSelectDialog(
         DatePickDialog(
             onDismissRequest = {
                 datePickDialog = false
-                view.playSoundEffect(SoundEffectConstants.CLICK)
             },
             onConfirm = {
                 isDatePick = true
                 datePickDialog = false
-                view.playSoundEffect(SoundEffectConstants.CLICK)
             },
             selectedDate = { rememberDays = it },
             view = view
@@ -320,7 +315,6 @@ private fun DatePickDialog(
         }
         var old by remember { mutableStateOf(datePickerState.selectedDateMillis) }
         if (old != datePickerState.selectedDateMillis) LaunchedEffect(true) {
-            view.playSoundEffect(SoundEffectConstants.CLICK)
             old = datePickerState.selectedDateMillis
         }
         if (dialog) {

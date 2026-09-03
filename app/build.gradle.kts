@@ -54,10 +54,14 @@ dependencies {
 
     api(project(":framework:umbrella"))
 
+    @Suppress("AvoidDuplicateDependencies")
+    implementation(platform(libs.androidx.compose.bom))
+    @Suppress("AvoidDuplicateDependencies")
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
-    implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)

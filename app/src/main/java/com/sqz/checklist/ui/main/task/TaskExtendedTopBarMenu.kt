@@ -1,6 +1,4 @@
 package com.sqz.checklist.ui.main.task
-
-import android.view.SoundEffectConstants
 import android.view.View
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -86,7 +84,6 @@ private fun MenuLayout(
                 DropdownMenuItem(
                     onClick = {
                         it.onClick()
-                        view.playSoundEffect(SoundEffectConstants.CLICK)
                         onDismissRequest()
                     },
                     text = { Text(text = it.name) }

@@ -98,11 +98,9 @@ internal fun DetailListItem(
                 },
                 onRemove = {
                     onRemove(itemContentData.index)
-                    feedback.onClickEffect()
                 },
                 onModify = {
                     onListItemSelect(itemContentData.index)
-                    feedback.onClickEffect()
                 },
                 clearFocusState = clearFocusState,
                 detailItem = itemContentData.item,

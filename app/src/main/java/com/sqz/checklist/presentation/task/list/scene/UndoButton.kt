@@ -48,7 +48,6 @@ internal fun UndoButton(
                 .padding(10.dp),
             onClick = {
                 onClick(view.context)
-                feedback.onClickEffect()
             },
             containerColor = MaterialTheme.colorScheme.secondary
         ) {

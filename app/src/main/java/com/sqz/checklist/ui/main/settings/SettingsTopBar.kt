@@ -1,6 +1,4 @@
 package com.sqz.checklist.ui.main.settings
-
-import android.view.SoundEffectConstants
 import android.view.View
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -46,7 +44,6 @@ fun SettingsTopBar(
             ) {
                 IconButton(onClick = {
                     onBack()
-                    view.playSoundEffect(SoundEffectConstants.CLICK)
                 }) {
                     Icon(
                         painter = painterResource(R.drawable.back),

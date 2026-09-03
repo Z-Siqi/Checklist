@@ -101,7 +101,6 @@ internal fun AppDetailDialog(
                         Toast.LENGTH_SHORT
                     ).show()
                 }
-                feedback.onClickEffect()
             },
             isAppExist = appInfo != null,
             requestClearFocus = requestClearFocus,
@@ -123,7 +122,7 @@ internal fun AppDetailDialog(
         }
         Spacer(modifier = Modifier.height(if (isSmallScreenSize) 10.dp else 20.dp))
         ThisDialogButton {
-            onDismissRequest().also { feedback.onClickEffect() }
+            onDismissRequest()
         }
     }
 }

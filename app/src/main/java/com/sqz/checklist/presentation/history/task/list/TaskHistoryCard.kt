@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.CardDefaults
@@ -319,12 +320,19 @@ private fun DateMetaChip(
                 )
                 Spacer(modifier = Modifier.width(3.dp))
             }
+            val textStyle = MaterialTheme.typography.labelSmall
             Text(
                 text = text,
-                style = MaterialTheme.typography.labelSmall,
+                style = textStyle,
                 fontWeight = if (highlight) FontWeight.SemiBold else FontWeight.Normal,
                 color = chipContentColor,
-                maxLines = 1
+                maxLines = 1,
+                autoSize = TextAutoSize.StepBased(
+                    minFontSize = 7.sp,
+                    maxFontSize = textStyle.fontSize,
+                    stepSize = 0.5.sp
+                ),
+                overflow = TextOverflow.Ellipsis
             )
         }
     }

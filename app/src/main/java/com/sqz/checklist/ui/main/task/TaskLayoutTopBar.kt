@@ -3,7 +3,6 @@ package com.sqz.checklist.ui.main.task
 import android.annotation.SuppressLint
 import android.os.Build
 import android.util.Log
-import android.view.SoundEffectConstants
 import android.view.View
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandHorizontally
@@ -180,7 +179,6 @@ fun TaskLayoutTopBar(
         ) {
             IconButton(onClick = {
                 menu.value = true
-                view.playSoundEffect(SoundEffectConstants.CLICK)
             }) {
                 Icon(
                     imageVector = Icons.Filled.MoreVert,

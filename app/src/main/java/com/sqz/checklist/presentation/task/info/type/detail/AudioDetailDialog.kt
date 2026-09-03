@@ -111,9 +111,8 @@ internal fun AudioDetailDialog(
         ThisDialogButtons(
             onOpenExternalClick = {
                 onOpenExternal.value = true
-                feedback.onClickEffect()
             },
-            onCancelClick = { onDismissRequest().also { feedback.onClickEffect() } }
+            onCancelClick = { onDismissRequest() }
         )
     }
 

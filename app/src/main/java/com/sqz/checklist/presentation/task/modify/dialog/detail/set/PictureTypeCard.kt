@@ -111,7 +111,6 @@ internal fun PictureTypeCard(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         val onSelectClick = {
-            feedback.onClickEffect()
             launcher.launch("image/*")
         }
         if (pictureState.path.isBlank()) {

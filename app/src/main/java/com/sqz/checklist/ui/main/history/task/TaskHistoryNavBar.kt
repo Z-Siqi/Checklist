@@ -1,7 +1,6 @@
 package com.sqz.checklist.ui.main.history.task
 
 import android.os.Build
-import android.view.SoundEffectConstants
 import android.view.View
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Row
@@ -83,7 +82,6 @@ private fun NavBar(
             selected = selected,
             onClick = {
                 deleteClick()
-                view.playSoundEffect(SoundEffectConstants.CLICK)
             }
         )
         val redoText = stringResource(R.string.redo)
@@ -94,7 +92,6 @@ private fun NavBar(
             selected = selected,
             onClick = {
                 redoClick()
-                view.playSoundEffect(SoundEffectConstants.CLICK)
             }
         )
         Spacer(modifier = modifier.weight(0.5f))
@@ -135,7 +132,6 @@ private fun NavRailBar(
                 selected = selected,
                 onClick = {
                     deleteClick()
-                    view.playSoundEffect(SoundEffectConstants.CLICK)
                 }
             )
             Spacer(modifier = modifier.weight(0.5f))
@@ -147,7 +143,6 @@ private fun NavRailBar(
                 selected = selected,
                 onClick = {
                     redoClick()
-                    view.playSoundEffect(SoundEffectConstants.CLICK)
                 }
             )
             Spacer(modifier = modifier.weight(0.5f))

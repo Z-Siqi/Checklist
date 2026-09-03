@@ -6,7 +6,6 @@ import android.media.AudioManager
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
-import android.view.SoundEffectConstants
 import android.view.View
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
@@ -128,7 +127,6 @@ fun BackupAndRestoreLayout(
                     selected = index.index == mode,
                     onClick = {
                         mode = cache.backupOption(index.index)
-                        view.playSoundEffect(SoundEffectConstants.CLICK)
                     },
                     shape = SegmentedButtonDefaults.itemShape(
                         index = index.index, count = list.size
@@ -201,7 +199,6 @@ fun BackupAndRestoreLayout(
                 .padding(start = 20.dp, end = 20.dp, top = 8.dp),
             colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh),
             onClick = {
-                view.playSoundEffect(SoundEffectConstants.CLICK)
                 selectUri = true
             }
         ) {
@@ -369,9 +366,7 @@ private fun clickFeedback(view: View, audioManager: AudioManager) {
         if (audioManager.ringerMode == AudioManager.RINGER_MODE_VIBRATE) {
             val vibrate = view.context?.let { getSystemService(it, Vibrator::class.java) }
             vibrate?.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK))
-        } else view.playSoundEffect(SoundEffectConstants.CLICK)
-    } else {
-        view.playSoundEffect(SoundEffectConstants.CLICK)
+        }
     }
 }
 

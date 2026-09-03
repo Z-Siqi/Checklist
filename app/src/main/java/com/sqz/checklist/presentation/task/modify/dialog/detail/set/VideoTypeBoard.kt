@@ -121,7 +121,6 @@ internal fun VideoTypeBoard(
         }
         OutlinedButton(
             onClick = {
-                feedback.onClickEffect()
                 launcher.launch("video/*")
             },
             modifier = Modifier.fillMaxWidth(),

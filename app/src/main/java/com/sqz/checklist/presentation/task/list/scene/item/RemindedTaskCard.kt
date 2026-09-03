@@ -42,7 +42,6 @@ internal fun RemindedTaskCard(
         text = taskViewData.task.description,
         onOverflowedClick = {
             task.onInfoRequest(TaskList.ListType.Reminded)
-            feedback.onClickEffect()
         },
         onLongClick = {
             task.onInfoRequest(TaskList.ListType.Reminded)
@@ -82,7 +81,6 @@ private fun CloseButton(
     IconButton(
         onClick = {
             onClick()
-            feedback.onClickEffect()
         }
     ) {
         Icon(

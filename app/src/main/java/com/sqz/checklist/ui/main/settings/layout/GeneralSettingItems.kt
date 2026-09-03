@@ -4,7 +4,6 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
-import android.view.SoundEffectConstants
 import android.view.View
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
@@ -136,7 +135,6 @@ class GeneralSettingItems(private val view: View) : SettingsList() {
                 dropdownMenuList = {
                     list.forEach {
                         DropdownMenuItem(text = { Text(it.name) }, onClick = {
-                            view.playSoundEffect(SoundEffectConstants.CLICK)
                             if (it.value != -1) {
                                 setting = preferences.pictureCompressionRate(it.value)
                             } else custom = true
@@ -197,7 +195,6 @@ class GeneralSettingItems(private val view: View) : SettingsList() {
                 dropdownMenuList = {
                     list.forEach {
                         DropdownMenuItem(text = { Text(it.name) }, onClick = {
-                            view.playSoundEffect(SoundEffectConstants.CLICK)
                             if (it.value != -1) {
                                 setting = preferences.videoCompressionRate(it.value)
                             } else custom = true
@@ -267,7 +264,6 @@ class GeneralSettingItems(private val view: View) : SettingsList() {
                 }
                 Spacer(Modifier.weight(1f))
                 IconButton({
-                    view.playSoundEffect(SoundEffectConstants.CLICK)
                     val packageName = "com.sqz.checklist"
                     try {
                         val uriStr = "market://details?id=$packageName"
@@ -290,7 +286,6 @@ class GeneralSettingItems(private val view: View) : SettingsList() {
                     )
                 }
                 IconButton({
-                    view.playSoundEffect(SoundEffectConstants.CLICK)
                     val intent = Intent(Intent.ACTION_VIEW, "$url/Checklist".toUri()).apply {
                         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     }

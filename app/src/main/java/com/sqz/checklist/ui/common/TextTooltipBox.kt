@@ -3,7 +3,6 @@ package com.sqz.checklist.ui.common
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
-import android.view.SoundEffectConstants
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -73,7 +72,7 @@ fun TextTooltipBox(
             view.context, Vibrator::class.java
         )?.vibrate(
             VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK)
-        ) else view.playSoundEffect(SoundEffectConstants.CLICK)
+        )
     }
     TooltipBox(
         positionProvider = TooltipDefaults.rememberTooltipPositionProvider(positioning),

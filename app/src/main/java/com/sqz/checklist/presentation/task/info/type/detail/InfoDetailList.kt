@@ -72,13 +72,12 @@ internal fun InfoDetailList(
                     modifier = Modifier.padding(vertical = (2.5).dp)
                 ) {
                     onSelected(index)
-                    feedback.onClickEffect()
                 }
             }
         }
         Spacer(modifier = Modifier.height(if (isSmallScreenSize) 8.dp else 15.dp))
         CancelButton {
-            onDismissRequest().also { feedback.onClickEffect() }
+            onDismissRequest()
         }
     }
 }
