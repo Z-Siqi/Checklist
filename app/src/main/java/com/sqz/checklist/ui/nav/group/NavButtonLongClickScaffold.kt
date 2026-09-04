@@ -133,7 +133,7 @@ internal fun NavButtonLongClickScaffold(
                         },
                         yCandidates = {
                             val aboveAnchorY =
-                                this.anchorBounds.top + (this.anchorBounds.height - this.menuSize.height)
+                                this.anchorBounds.top + (this.anchorBounds.height - this.menuSize.height) * 2
                             val maximumY =
                                 (this.windowSize.height - this.menuSize.height).coerceAtLeast(0)
                             intListOf(aboveAnchorY.coerceIn(0, maximumY))

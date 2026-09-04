@@ -1,5 +1,7 @@
 package com.sqz.checklist.ui.nav.group.home
 
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -160,6 +162,8 @@ fun <T : Any> NavGraphBuilder.homeNavGroup(
         ) {
             NavHost(
                 navController = homeNavController,
+                predictivePopEnterTransition = { fadeIn() },
+                predictivePopExitTransition = { fadeOut() },
                 startDestination = HomeNavGroup.TaskNavRoute,
                 builder = { builder(homeNavController, viewModel) }
             )

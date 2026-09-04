@@ -3,6 +3,8 @@ package com.sqz.checklist.ui
 import android.content.Context
 import android.view.View
 import android.widget.Toast
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
@@ -48,6 +50,8 @@ fun MainLayout(modifier: Modifier, context: Context, view: View) {
         navController = navController,
         startDestination = RootNavRoute.Home,
         modifier = modifier,
+        predictivePopEnterTransition = { fadeIn() },
+        predictivePopExitTransition = { fadeOut() },
     ) {
         homeNavGroup(route = RootNavRoute.Home::class) { homeNavController, homeVM ->
             taskScreen(

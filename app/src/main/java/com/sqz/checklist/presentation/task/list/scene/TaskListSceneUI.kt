@@ -1,6 +1,6 @@
 package com.sqz.checklist.presentation.task.list.scene
 
-import androidx.activity.compose.BackHandler
+import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -21,9 +21,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
@@ -39,6 +43,8 @@ import com.sqz.checklist.ui.common.unit.navBarsBottomDp
 import kotlinx.coroutines.delay
 import sqz.checklist.common.EffectFeedback
 import sqz.checklist.task.api.list.TaskList
+import kotlin.coroutines.cancellation.CancellationException
+import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun BoxScope.TaskListSceneUI(
@@ -85,7 +91,7 @@ fun BoxScope.TaskListSceneUI(
                 LaunchedEffect(Unit) {
                     var maxLoop = 50
                     while (maxLoop > 1) {
-                        delay(168)
+                        delay(168.milliseconds)
                         viewModel.setUndoBreakFactor(lazyListState)
                         maxLoop--
                     }
@@ -228,9 +234,20 @@ private fun SearchList(
     val searchQuery = listData.searchQuery
     val searchList by listData.inSearchList.collectAsState(initial = listOf())
 
-    BackHandler {
-        viewModel.setSearchState(false)
-        onSearchCancel()
+    var foldHideProgress by remember { mutableFloatStateOf(0f) }
+
+    PredictiveBackHandler { progressFlow ->
+        try {
+            progressFlow.collect { backEvent ->
+                // Use backEvent.progress (0.0 to 1.0) to update your UI/animations
+                foldHideProgress = backEvent.progress
+            }
+            // Gesture completed successfully (progress reaches 1.0)
+            viewModel.setSearchState(false)
+            onSearchCancel()
+        } catch (_: CancellationException) {
+            // Gesture was canceled by the user reversing the swipe
+        }
     }
 
     LazyColumn(state = scrollState) {
@@ -240,7 +257,9 @@ private fun SearchList(
                 val textHeightDp = with(density) { ((24.sp).toPx() * 1.5f).toDp() }
                 paddingHeight + textHeightDp
             }
-            Spacer(modifier = Modifier.height(searchBarHeight))
+            Spacer(
+                modifier = Modifier.height(searchBarHeight - (searchBarHeight * foldHideProgress))
+            )
         }
         items(
             items = searchList,
@@ -259,8 +278,23 @@ private fun SearchList(
         }
     }
 
-    TaskSearchBar(
-        searchQuery = searchQuery,
-        onSearchQueryChange = viewModel::onSearchQueryChange,
-    )
+    SlideUpDisappear(progress = foldHideProgress) {
+        TaskSearchBar(
+            searchQuery = searchQuery,
+            onSearchQueryChange = viewModel::onSearchQueryChange,
+        )
+    }
+}
+
+@Composable
+private fun SlideUpDisappear(
+    progress: Float, modifier: Modifier = Modifier, content: @Composable () -> Unit
+) {
+    Box(
+        modifier = modifier.graphicsLayer {
+            val p = progress.coerceIn(0f, 1f)
+            translationY = -size.height * p
+            alpha = 1f - p
+        }
+    ) { content() }
 }

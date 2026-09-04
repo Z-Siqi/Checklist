@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import kotlinx.datetime.TimeZone
@@ -26,6 +27,7 @@ import sqz.checklist.task.impl.list.item.UndoProcesser
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TaskListUnitTest {
@@ -120,19 +122,18 @@ class TaskListUnitTest {
     fun taskListImpl_onSearchRequest_with_null_should_return_to_Default() = runTest {
         val repository = FakeTaskRepository()
         val taskList = TaskListImpl(
-            MutableStateFlow(TaskList.Config()), TaskHistoryRepositoryFake(), repository
+            MutableStateFlow(TaskList.Config()),
+            TaskHistoryRepositoryFake(),
+            repository,
+            backgroundScope,
         )
-        advanceUntilIdle()
         taskList.onSearchRequest("test")
-        advanceUntilIdle()
-        taskList.getTaskListInventory.test {
-            assertTrue(awaitItem() is TaskList.Inventory.Search)
-        }
+        runCurrent()
+        assertTrue(taskList.getTaskListInventory.value is TaskList.Inventory.Search)
+
         taskList.onSearchRequest(null)
-        advanceUntilIdle()
-        taskList.getTaskListInventory.test {
-            assertTrue(awaitItem() is TaskList.Inventory.Default)
-        }
+        runCurrent()
+        assertTrue(taskList.getTaskListInventory.value is TaskList.Inventory.Default)
     }
 
     @Test
@@ -184,7 +185,7 @@ class TaskListUnitTest {
         val undoProcesser = UndoProcesser(scope, MutableStateFlow(true))
         undoProcesser.requestUndoState(30)
         while (!undoProcesser.undoState.value) {
-            delay(10000)
+            delay(10000.milliseconds)
             if (undoProcesser.undoState.value) break
         }
         assertTrue(undoProcesser.undoState.value)

@@ -348,7 +348,7 @@ private fun TaskDescription(
         fontSize = 19.sp,
         lineHeight = 23.sp,
         overflow = TextOverflow.Ellipsis,
-        maxLines = 2,
+        maxLines = 1,
         fontWeight = FontWeight.Medium,
         color = MaterialTheme.colorScheme.onSurface
     )
