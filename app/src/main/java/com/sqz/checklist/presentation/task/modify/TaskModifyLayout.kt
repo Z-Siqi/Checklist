@@ -12,6 +12,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sqz.checklist.MainActivity
+import com.sqz.checklist.assembly.settings.SettingsAssembly
 import com.sqz.checklist.common.AndroidEffectFeedback
 import com.sqz.checklist.presentation.task.modify.dialog.detail.TaskModifyForDetailUI
 import com.sqz.checklist.presentation.task.modify.dialog.task.TaskModifyForTaskUI
@@ -20,7 +21,6 @@ import kotlinx.coroutines.delay
 import sqz.checklist.common.EffectFeedback
 import sqz.checklist.data.database.repository.task.TaskRepository
 import sqz.checklist.data.database.repository.task.TaskRepositoryFake
-import sqz.checklist.data.preferences.PrimaryPreferences
 import sqz.checklist.data.storage.manager.StorageManager
 import sqz.checklist.data.storage.manager.StorageManagerFake
 import sqz.checklist.task.api.modify.TaskModify
@@ -57,7 +57,6 @@ import kotlin.time.Duration.Companion.milliseconds
  */
 @Composable
 fun TaskModifyLayout(
-    preference: PrimaryPreferences,
     view: View,
     modifyState: TaskModifyState,
     onFinished: (taskId: Long?) -> Unit,
@@ -66,6 +65,7 @@ fun TaskModifyLayout(
     modifier: Modifier = Modifier,
     viewModel: TaskModifyViewModel = viewModelFactory()
 ) {
+    val mediaSettings by SettingsAssembly.get(view.context).settings.state.collectAsState()
     val taskModify by viewModel.taskModify.collectAsState()
     val isProcessing = rememberSaveable { mutableStateOf(false) }
     val isConfirm = rememberSaveable { mutableStateOf(false) }
@@ -111,7 +111,7 @@ fun TaskModifyLayout(
             )
         } else {
             TaskModifyForDetailUI(
-                preference = preference,
+                mediaSettings = mediaSettings.media,
                 viewModel = viewModel,
                 feedback = feedback,
                 modifier = modifier,
@@ -132,7 +132,6 @@ private fun viewModelFactory(): TaskModifyViewModel {
 private fun Preview() {
     val vmFake = viewModel { TaskModifyViewModel(TaskRepositoryFake(), StorageManagerFake()) }
     TaskModifyLayout(
-        preference = PrimaryPreferences(LocalView.current.context),
         view = LocalView.current,
         modifyState = TaskModifyState.AddTask,
         onFinished = {},

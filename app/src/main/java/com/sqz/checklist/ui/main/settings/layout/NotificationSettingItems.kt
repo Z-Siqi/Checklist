@@ -15,20 +15,31 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.sqz.checklist.R
-import sqz.checklist.data.preferences.PrimaryPreferences
+import kotlinx.coroutines.launch
+import sqz.checklist.settings.api.manage.Settings as AppSettingsApi
+import sqz.checklist.model.settings.AppSettings
 import com.sqz.checklist.ui.common.dialog.EditableContentDialog
 import com.sqz.checklist.ui.common.unit.timeDisplay
 import java.util.Locale
 
-class NotificationSettingItems(private val view: View) : SettingsList() {
+class NotificationSettingItems(
+    private val view: View,
+    private val settings: AppSettingsApi,
+    private val appSettings: AppSettings,
+) : SettingsList() {
 
     @Composable
-    private fun disableRemoveNotifyInReminded(preferences: PrimaryPreferences): SettingsItem {
-        var setting by remember { mutableStateOf(preferences.disableRemoveNotifyInReminded()) }
+    private fun disableRemoveNotifyInReminded(): SettingsItem {
+        val scope = rememberCoroutineScope()
+        val currentValue = !appSettings.reminder.removeNotificationWhenReminded
+        var setting by remember(currentValue) {
+            mutableStateOf(currentValue)
+        }
         return SettingsItem(
             SettingsType.Notification,
             stringResource(R.string.disable_remove_notify_in_reminded)
@@ -36,15 +47,22 @@ class NotificationSettingItems(private val view: View) : SettingsList() {
             super.SwitchView(
                 text = text,
                 checked = setting,
-                onCheckedChange = { setting = preferences.disableRemoveNotifyInReminded(it) },
+                onCheckedChange = {
+                    setting = it
+                    scope.launch { settings.setRemoveNotificationWhenReminded(!it) }
+                },
                 view = view
             )
         }
     }
 
     @Composable
-    private fun disableNoScheduleExactAlarmNotice(preferences: PrimaryPreferences): SettingsItem {
-        var setting by remember { mutableStateOf(preferences.disableNoScheduleExactAlarmNotice()) }
+    private fun disableNoScheduleExactAlarmNotice(): SettingsItem {
+        val scope = rememberCoroutineScope()
+        val currentValue = !appSettings.reminder.showExactAlarmWarning
+        var setting by remember(currentValue) {
+            mutableStateOf(currentValue)
+        }
         return SettingsItem(
             SettingsType.Notification,
             stringResource(R.string.disable_no_schedule_exact_alarm_notice)
@@ -52,16 +70,23 @@ class NotificationSettingItems(private val view: View) : SettingsList() {
             super.SwitchView(
                 text = text,
                 checked = setting,
-                onCheckedChange = { setting = preferences.disableNoScheduleExactAlarmNotice(it) },
+                onCheckedChange = {
+                    setting = it
+                    scope.launch { settings.setShowExactAlarmWarning(!it) }
+                },
                 view = view
             )
         }
     }
 
     @Composable
-    private fun recentlyRemindedKeepTime(preferences: PrimaryPreferences): SettingsItem {
+    private fun recentlyRemindedKeepTime(): SettingsItem {
+        val scope = rememberCoroutineScope()
         data class TimeItem(val name: String, val value: Long)
-        var setting by remember { mutableLongStateOf(preferences.recentlyRemindedKeepTime()) }
+        val currentValue = appSettings.reminder.recentlyRemindedKeepTimeMillis
+        var setting by remember(currentValue) {
+            mutableLongStateOf(currentValue)
+        }
         var custom by remember { mutableStateOf(false) }
         val list = listOf(
             TimeItem(timeDisplay(10800L), 10800000L),
@@ -89,14 +114,13 @@ class NotificationSettingItems(private val view: View) : SettingsList() {
             var selectedIndex by remember { mutableIntStateOf(0) }
             EditableContentDialog(
                 onDismissRequest = { custom = false }, confirm = {
-                    setting = preferences.recentlyRemindedKeepTime(
-                        state.text.toString().toLong() * when (selectedIndex) {
+                    setting = state.text.toString().toLong() * when (selectedIndex) {
                             0 -> 60 * 1000 // Minute
                             1 -> 60 * 60 * 1000 // Hour
                             2 -> 24 * 60 * 60 * 1000 // Day
                             else -> throw ArrayStoreException("Item not found!")
                         }
-                    )
+                    scope.launch { settings.setRecentlyRemindedKeepTimeMillis(setting) }
                     custom = false
                 }, title = stringResource(R.string.custom),
                 confirmText = stringResource(R.string.confirm),
@@ -134,7 +158,8 @@ class NotificationSettingItems(private val view: View) : SettingsList() {
                     list.forEach {
                         DropdownMenuItem(text = { Text(it.name) }, onClick = {
                             if (it.value != -1L) {
-                                setting = preferences.recentlyRemindedKeepTime(it.value)
+                                setting = it.value
+                                scope.launch { settings.setRecentlyRemindedKeepTimeMillis(it.value) }
                             } else custom = true
                             expanded.value = false
                         })
@@ -146,8 +171,12 @@ class NotificationSettingItems(private val view: View) : SettingsList() {
     }
 
     @Composable
-    private fun removeNoticeInAutoDelReminded(preferences: PrimaryPreferences): SettingsItem {
-        var setting by remember { mutableStateOf(preferences.removeNoticeInAutoDelReminded()) }
+    private fun removeNoticeInAutoDelReminded(): SettingsItem {
+        val scope = rememberCoroutineScope()
+        val currentValue = appSettings.reminder.removeNotificationWhenHistoryDeleted
+        var setting by remember(currentValue) {
+            mutableStateOf(currentValue)
+        }
         return SettingsItem(
             SettingsType.Notification,
             stringResource(R.string.remove_notice_in_auto_del_reminded)
@@ -155,7 +184,10 @@ class NotificationSettingItems(private val view: View) : SettingsList() {
             SwitchView(
                 text = text,
                 checked = setting,
-                onCheckedChange = { setting = preferences.removeNoticeInAutoDelReminded(it) },
+                onCheckedChange = {
+                    setting = it
+                    scope.launch { settings.setRemoveNotificationWhenHistoryDeleted(it) }
+                },
                 view = view
             )
         }
@@ -185,12 +217,11 @@ class NotificationSettingItems(private val view: View) : SettingsList() {
 
     @Composable
     fun list(): List<SettingsItem> {
-        val primaryPreferences = PrimaryPreferences(view.context)
         return listOf(
-            this.disableRemoveNotifyInReminded(primaryPreferences),
-            this.disableNoScheduleExactAlarmNotice(primaryPreferences),
-            this.recentlyRemindedKeepTime(primaryPreferences),
-            this.removeNoticeInAutoDelReminded(primaryPreferences),
+            this.disableRemoveNotifyInReminded(),
+            this.disableNoScheduleExactAlarmNotice(),
+            this.recentlyRemindedKeepTime(),
+            this.removeNoticeInAutoDelReminded(),
             this.systemNotificationSetting()
         )
     }

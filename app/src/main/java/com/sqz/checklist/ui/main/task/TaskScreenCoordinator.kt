@@ -12,13 +12,14 @@ import com.sqz.checklist.ui.nav.group.home.button.TaskExtendedButton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import sqz.checklist.data.preferences.PrimaryPreferences
+import kotlinx.coroutines.flow.StateFlow
+import sqz.checklist.model.settings.AppSettings
 
 internal class TaskScreenCoordinator(
     private val homeNavController: NavHostController,
     private val homeViewModel: HomeNavGroupInterface,
     private val refreshListRequest: MutableState<Boolean>,
-    private val preference: PrimaryPreferences,
+    private val settings: StateFlow<AppSettings>,
 ) {
     fun onTaskListRequest(
         state: TaskListRequest,
@@ -64,7 +65,8 @@ internal class TaskScreenCoordinator(
         is TaskListRequest.RemoveReminded -> coroutineScope.launch {
             reminderController.removeReminder(
                 taskId = state.taskId,
-                removeDisplayedNotification = !preference.disableRemoveNotifyInReminded(),
+                removeDisplayedNotification =
+                    settings.value.reminder.removeNotificationWhenReminded,
             )
         }
 

@@ -2,6 +2,9 @@ package sqz.checklist.data.preferences
 
 import android.content.Context
 
+@Deprecated(
+    message = "Use a responsibility-specific state store. This class remains for compatibility.",
+)
 class PreferencesInCache(context: Context) : PreferencesAccess(context) {
     private val preferencesFileName = "cache_preferences"
     override fun preferencesFileName(): String = this.preferencesFileName

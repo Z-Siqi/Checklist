@@ -25,6 +25,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,18 +34,28 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.sqz.checklist.R
-import sqz.checklist.data.preferences.PrimaryPreferences
 import com.sqz.checklist.ui.common.dialog.EditableContentDialog
 import com.sqz.checklist.ui.theme.ThemePreference
 import com.sqz.checklist.ui.common.unit.pxToDpInt
 import androidx.core.net.toUri
 import com.sqz.checklist.ui.theme.Theme
+import kotlinx.coroutines.launch
+import sqz.checklist.model.settings.AppTheme
+import sqz.checklist.model.settings.AppSettings
+import sqz.checklist.settings.api.manage.Settings as AppSettingsApi
 
-class GeneralSettingItems(private val view: View) : SettingsList() {
+class GeneralSettingItems(
+    private val view: View,
+    private val settings: AppSettingsApi,
+    private val appSettings: AppSettings,
+) : SettingsList() {
 
     @Composable
-    private fun appTheme(preferences: PrimaryPreferences): SettingsItem {
-        var selectedIndex by remember { mutableIntStateOf(preferences.appTheme()) }
+    private fun appTheme(): SettingsItem {
+        val currentTheme = appSettings.appearance.theme
+        var selectedIndex by remember(currentTheme) {
+            mutableIntStateOf(if (currentTheme == AppTheme.Colorful) 1 else 0)
+        }
         val themeList = listOf(
             stringResource(R.string.pastel_theme), stringResource(R.string.colorful_theme)
         )
@@ -58,9 +69,11 @@ class GeneralSettingItems(private val view: View) : SettingsList() {
                 },
                 initSetter = selectedIndex,
                 modifier = modifier
-            ).let {
-                ThemePreference.updatePreference(preferences.appTheme(it))
-            }.also { Theme.SetSystemBarsColorByPreference() }
+            ).let(ThemePreference::updatePreference)
+                .also { Theme.SetSystemBarsColorByPreference() }
+        }
+        LaunchedEffect(selectedIndex) {
+            settings.setTheme(if (selectedIndex == 1) AppTheme.Colorful else AppTheme.Pastel)
         }
         return SettingsItem(SettingsType.General, stringResource(R.string.theme)) {
             Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -89,8 +102,12 @@ class GeneralSettingItems(private val view: View) : SettingsList() {
     )
 
     @Composable
-    private fun pictureCompressionRate(preferences: PrimaryPreferences): SettingsItem {
-        var setting by remember { mutableIntStateOf(preferences.pictureCompressionRate()) }
+    private fun pictureCompressionRate(): SettingsItem {
+        val currentValue = appSettings.media.pictureCompressionPercent
+        var setting by remember(currentValue) {
+            mutableIntStateOf(currentValue)
+        }
+        val scope = rememberCoroutineScope()
         val list = pictureAndVideoMenuList
         var custom by remember { mutableStateOf(false) }
         if (custom) {
@@ -106,9 +123,8 @@ class GeneralSettingItems(private val view: View) : SettingsList() {
             EditableContentDialog(
                 onDismissRequest = { custom = false },
                 confirm = {
-                    setting = preferences.pictureCompressionRate(
-                        state.text.toString().toInt()
-                    )
+                    setting = state.text.toString().toInt()
+                    scope.launch { settings.setPictureCompressionPercent(setting) }
                     custom = false
                 },
                 title = stringResource(R.string.custom),
@@ -136,7 +152,8 @@ class GeneralSettingItems(private val view: View) : SettingsList() {
                     list.forEach {
                         DropdownMenuItem(text = { Text(it.name) }, onClick = {
                             if (it.value != -1) {
-                                setting = preferences.pictureCompressionRate(it.value)
+                                setting = it.value
+                                scope.launch { settings.setPictureCompressionPercent(it.value) }
                             } else custom = true
                             expanded.value = false
                         })
@@ -149,8 +166,12 @@ class GeneralSettingItems(private val view: View) : SettingsList() {
     }
 
     @Composable
-    private fun videoCompressionRate(preferences: PrimaryPreferences): SettingsItem {
-        var setting by remember { mutableIntStateOf(preferences.videoCompressionRate()) }
+    private fun videoCompressionRate(): SettingsItem {
+        val currentValue = appSettings.media.videoCompressionPercent
+        var setting by remember(currentValue) {
+            mutableIntStateOf(currentValue)
+        }
+        val scope = rememberCoroutineScope()
         val list = pictureAndVideoMenuList
         var custom by remember { mutableStateOf(false) }
         if (custom) {
@@ -166,9 +187,8 @@ class GeneralSettingItems(private val view: View) : SettingsList() {
             EditableContentDialog(
                 onDismissRequest = { custom = false },
                 confirm = {
-                    setting = preferences.videoCompressionRate(
-                        state.text.toString().toInt()
-                    )
+                    setting = state.text.toString().toInt()
+                    scope.launch { settings.setVideoCompressionPercent(setting) }
                     custom = false
                 },
                 title = stringResource(R.string.custom),
@@ -196,7 +216,8 @@ class GeneralSettingItems(private val view: View) : SettingsList() {
                     list.forEach {
                         DropdownMenuItem(text = { Text(it.name) }, onClick = {
                             if (it.value != -1) {
-                                setting = preferences.videoCompressionRate(it.value)
+                                setting = it.value
+                                scope.launch { settings.setVideoCompressionPercent(it.value) }
                             } else custom = true
                             expanded.value = false
                         })
@@ -325,11 +346,10 @@ class GeneralSettingItems(private val view: View) : SettingsList() {
 
     @Composable
     fun list(): List<SettingsItem> {
-        val primaryPreferences = PrimaryPreferences(view.context)
         return listOf(
-            this.appTheme(primaryPreferences),
-            this.pictureCompressionRate(primaryPreferences),
-            this.videoCompressionRate(primaryPreferences),
+            this.appTheme(),
+            this.pictureCompressionRate(),
+            this.videoCompressionRate(),
             this.language(),
             this.about(), this.donate()
         )

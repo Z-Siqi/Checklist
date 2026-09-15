@@ -15,20 +15,29 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.sqz.checklist.R
-import sqz.checklist.data.preferences.PrimaryPreferences
+import kotlinx.coroutines.launch
+import sqz.checklist.settings.api.manage.Settings
+import sqz.checklist.model.settings.AppSettings
 
-class HistorySettingItems(private val view: View) : SettingsList() {
+class HistorySettingItems(
+    private val view: View,
+    private val settings: Settings,
+    private val appSettings: AppSettings,
+) : SettingsList() {
 
     @Composable
-    private fun allowedNumberOfHistory(preferences: PrimaryPreferences): SettingsItem {
-        var sliderPosition by remember {
-            mutableFloatStateOf(preferences.allowedNumberOfHistory().toFloat())
+    private fun allowedNumberOfHistory(): SettingsItem {
+        val scope = rememberCoroutineScope()
+        val currentValue = appSettings.history.allowedNumberOfHistory
+        var sliderPosition by remember(currentValue) {
+            mutableFloatStateOf(currentValue.toFloat())
         }
         var old by remember { mutableFloatStateOf(sliderPosition) }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && old != sliderPosition) {
@@ -53,9 +62,11 @@ class HistorySettingItems(private val view: View) : SettingsList() {
                 )
                 Slider(
                     value = sliderPosition, onValueChange = {
-                        sliderPosition = preferences.allowedNumberOfHistory(
-                            it.toInt()
-                        ).toFloat()
+                        sliderPosition = it.toInt().toFloat()
+                    }, onValueChangeFinished = {
+                        scope.launch {
+                            settings.setAllowedNumberOfHistory(sliderPosition.toInt())
+                        }
                     }, colors = SliderDefaults.colors(
                         thumbColor = MaterialTheme.colorScheme.secondary,
                         activeTrackColor = MaterialTheme.colorScheme.secondary,
@@ -70,30 +81,42 @@ class HistorySettingItems(private val view: View) : SettingsList() {
     }
 
     @Composable
-    private fun clearHistoryWhenLeaved(preferences: PrimaryPreferences): SettingsItem {
-        var setting by remember { mutableStateOf(preferences.clearHistoryWhenLeaved()) }
+    private fun clearHistoryWhenLeaved(): SettingsItem {
+        val scope = rememberCoroutineScope()
+        val currentValue = appSettings.history.clearHistoryWhenLeaving
+        var setting by remember(currentValue) {
+            mutableStateOf(currentValue)
+        }
         return SettingsItem(
             SettingsType.History, stringResource(R.string.clear_history_when_leaved)
         ) { text ->
             super.SwitchView(
                 text = text,
                 checked = setting,
-                onCheckedChange = { setting = preferences.clearHistoryWhenLeaved(it) },
+                onCheckedChange = {
+                    setting = it
+                    scope.launch { settings.setClearHistoryWhenLeaving(it) }
+                },
                 view = view
             )
         }
     }
 
     @Composable
-    private fun disableUndoButton(preferences: PrimaryPreferences): SettingsItem {
-        var setting by remember { mutableStateOf(preferences.disableUndoButton()) }
+    private fun disableUndoButton(): SettingsItem {
+        val scope = rememberCoroutineScope()
+        val currentValue = !appSettings.history.undoEnabled
+        var setting by remember(currentValue) { mutableStateOf(currentValue) }
         return SettingsItem(
             SettingsType.History, stringResource(R.string.disable_undo_button)
         ) { text ->
             super.SwitchView(
                 text = text,
                 checked = setting,
-                onCheckedChange = { setting = preferences.disableUndoButton(it) },
+                onCheckedChange = {
+                    setting = it
+                    scope.launch { settings.setUndoEnabled(!it) }
+                },
                 view = view
             )
         }
@@ -101,11 +124,10 @@ class HistorySettingItems(private val view: View) : SettingsList() {
 
     @Composable
     fun list(): List<SettingsItem> {
-        val primaryPreferences = PrimaryPreferences(view.context)
         return listOf(
-            this.allowedNumberOfHistory(primaryPreferences),
-            this.clearHistoryWhenLeaved(primaryPreferences),
-            this.disableUndoButton(primaryPreferences)
+            this.allowedNumberOfHistory(),
+            this.clearHistoryWhenLeaved(),
+            this.disableUndoButton()
         )
     }
 }

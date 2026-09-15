@@ -14,6 +14,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sqz.checklist.MainActivity
 import com.sqz.checklist.R
+import com.sqz.checklist.assembly.settings.SettingsAssembly
 import com.sqz.checklist.common.AndroidNotificationScheduler
 import com.sqz.checklist.notification.NotifyManager
 import com.sqz.checklist.presentation.reminder.assign.scene.cancel.ReminderCancelUI
@@ -24,7 +25,6 @@ import com.sqz.checklist.ui.common.dialog.ProcessingDialog
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import sqz.checklist.data.database.repository.reminder.TaskReminderRepository
-import sqz.checklist.data.preferences.PrimaryPreferences
 import sqz.checklist.reminder.api.assign.ReminderAssign
 
 @Composable
@@ -35,7 +35,9 @@ fun ReminderLayout(
     viewModel: ReminderAssignViewModel = viewModelFactory(context),
     onFinished: () -> Unit,
 ) {
-    val preferences = PrimaryPreferences(context)
+    val settings by remember(context) {
+        SettingsAssembly.get(context).settings.state
+    }.collectAsState()
     val view = androidx.compose.ui.platform.LocalView.current
     val coroutineScope = rememberCoroutineScope()
     val notifyManager = remember { NotifyManager() }
@@ -110,7 +112,7 @@ fun ReminderLayout(
     if (reminderAction == ReminderAssign.Action.Set && !noFullPermissionShowed.value) {
         val noFullPermission by viewModel.noFullPermission.collectAsState()
         LaunchedEffect(Unit) {
-            if (!noFullPermission || preferences.disableNoScheduleExactAlarmNotice()) {
+            if (!noFullPermission || !settings.reminder.showExactAlarmWarning) {
                 return@LaunchedEffect
             }
             Toast.makeText(

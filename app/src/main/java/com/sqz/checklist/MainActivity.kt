@@ -20,6 +20,7 @@ import androidx.lifecycle.coroutineScope
 import com.sqz.checklist.cache.ONE_DAY_LONG
 import com.sqz.checklist.cache.deleteAllFileWhichInProcessFilesPath
 import com.sqz.checklist.cache.dropEmptyInProcessFilesPath
+import com.sqz.checklist.assembly.settings.SettingsAssembly
 import com.sqz.checklist.notification.NotificationHelper
 import com.sqz.checklist.notification.NotifyManager
 import com.sqz.checklist.ui.MainLayout
@@ -37,10 +38,10 @@ import sqz.checklist.data.database.DatabaseProvider
 import sqz.checklist.data.database.getDatabaseBuilder
 import sqz.checklist.data.database.repository.history.TaskHistoryRepository
 import sqz.checklist.data.database.repository.reminder.TaskReminderRepository
-import sqz.checklist.data.preferences.PrimaryPreferences
 import sqz.checklist.data.storage.AppDirType
 import sqz.checklist.data.storage.initInternalDirPath
 import sqz.checklist.data.storage.manager.StorageManager
+import kotlin.time.Duration.Companion.milliseconds
 
 class MainActivity : ComponentActivity() {
     companion object {
@@ -141,7 +142,9 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun clearHistoryWhenLeaved() {
-        if (PrimaryPreferences(applicationContext).clearHistoryWhenLeaved()) super.lifecycle.coroutineScope.launch {
+        if (SettingsAssembly.get(applicationContext).settings.state.value
+                .history.clearHistoryWhenLeaving
+        ) super.lifecycle.coroutineScope.launch {
             TaskHistoryRepository.provider(taskDatabase).deleteOldHistoryTask(0)
             Log.d("clearHistoryWhenLeaved", "Clear all history")
         }
@@ -152,7 +155,7 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         // Check delayed notification, restore if not exist
         super.lifecycle.coroutineScope.launch(Dispatchers.IO) {
-            delay(1680) // wait BootReceiver
+            delay(1680.milliseconds) // wait BootReceiver
             autoCheckRestoreReminder(applicationContext)
         }
     }

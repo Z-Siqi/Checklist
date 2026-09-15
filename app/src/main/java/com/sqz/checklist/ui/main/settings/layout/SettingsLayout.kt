@@ -32,6 +32,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -55,6 +56,7 @@ import com.sqz.checklist.R
 import com.sqz.checklist.ui.main.settings.SettingsLayoutViewModel
 import com.sqz.checklist.ui.common.unit.navBarsBottomDp
 import com.sqz.checklist.ui.common.unit.screenIsWidthAndAPI34Above
+import sqz.checklist.settings.api.manage.Settings
 
 /**
  * App Settings layout
@@ -63,8 +65,10 @@ import com.sqz.checklist.ui.common.unit.screenIsWidthAndAPI34Above
 fun SettingsLayout(
     viewModel: SettingsLayoutViewModel,
     view: View,
+    settings: Settings,
     modifier: Modifier = Modifier
 ) {
+    val settingsState by settings.state.collectAsState()
     var inSearchText by remember { mutableStateOf<String?>(null) }
     val left = WindowInsets.displayCutout.asPaddingValues()
         .calculateLeftPadding(LocalLayoutDirection.current)
@@ -72,7 +76,7 @@ fun SettingsLayout(
         start = left, end = if (left / 3 > 15.dp) 15.dp else left / 3
     ) else modifier
     val content = @Composable {
-        val settings = SettingsList()
+        val settingsList = remember(settingsState) { SettingsList() }
         var currentHeight by remember { mutableIntStateOf(0) }
         val searchBarSpace = if (currentHeight > 55) (currentHeight + 10).dp else 55.dp
         Box(safePaddingForFullscreen) {
@@ -83,19 +87,25 @@ fun SettingsLayout(
                     }
                     CategoryCard(
                         subtitleText = stringResource(R.string.task_history),
-                        settingsItem = settings.settingsList(view, SettingsType.History),
+                        settingsItem = settingsList.settingsList(
+                            view, settings, settingsState, SettingsType.History,
+                        ),
                     )
                     CategoryCard(
                         subtitleText = stringResource(R.string.notification),
-                        settingsItem = settings.settingsList(view, SettingsType.Notification),
+                        settingsItem = settingsList.settingsList(
+                            view, settings, settingsState, SettingsType.Notification,
+                        ),
                     )
                     CategoryCard(
                         subtitleText = stringResource(R.string.general_settings),
-                        settingsItem = settings.settingsList(view, SettingsType.General),
+                        settingsItem = settingsList.settingsList(
+                            view, settings, settingsState, SettingsType.General,
+                        ),
                     )
                 }
             } else {
-                val list = settings.settingsList(view).filter {
+                val list = settingsList.settingsList(view, settings, settingsState).filter {
                     val text = it.text.replace("\n", "").replace(Regex("[A-Z]")) { matchResult ->
                         matchResult.value.lowercase()
                     }
@@ -205,5 +215,10 @@ enum class SettingsType { Notification, History, General }
 @Composable
 private fun Preview() {
     val viewModel: SettingsLayoutViewModel = viewModel()
-    SettingsLayout(viewModel, LocalView.current)
+    val context = LocalView.current.context
+    SettingsLayout(
+        viewModel = viewModel,
+        view = LocalView.current,
+        settings = com.sqz.checklist.assembly.settings.SettingsAssembly.get(context).settings,
+    )
 }

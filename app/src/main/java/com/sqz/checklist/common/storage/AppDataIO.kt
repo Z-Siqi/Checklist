@@ -52,7 +52,6 @@ import java.util.Locale
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
-import kotlin.system.exitProcess
 
 class AppDataIO private constructor(application: Application) : AndroidViewModel(application) {
     companion object {
@@ -123,7 +122,6 @@ class AppDataIO private constructor(application: Application) : AndroidViewModel
             mergeDatabaseCheckpoint(taskDatabase.getDatabase())
             val dbPath = context.getDatabasePath(taskDatabaseName).absolutePath
             val mediaDir = File(context.filesDir, "media/")
-            val prefsDir = File(context.dataDir, "shared_prefs/")
             val zipFile = File(context.cacheDir, "backup.zip")
             ZipOutputStream(FileOutputStream(zipFile)).use { zipOut ->
                 setLoading(50) // backup database
@@ -133,15 +131,8 @@ class AppDataIO private constructor(application: Application) : AndroidViewModel
                     zipOut.closeEntry()
                 }
                 if (cache.backupSettings()) {
-                    setLoading(68) // backup primary_preferences
-                    File(prefsDir, "primary_preferences.xml").let {
-                        if (!it.exists()) return@let
-                        it.inputStream().use { input ->
-                            zipOut.putNextEntry(ZipEntry("primary_preferences.xml"))
-                            input.copyTo(zipOut)
-                            zipOut.closeEntry()
-                        }
-                    }
+                    setLoading(68) // backup application settings
+                    zipOut.writeSettingsBackup(context)
                 }
                 setLoading(70) // backup media files
                 if (mediaDir.exists()) {
@@ -239,15 +230,25 @@ class AppDataIO private constructor(application: Application) : AndroidViewModel
                     ZipInputStream(FileInputStream(zipFile)).use { zipIn ->
                         var entry: ZipEntry?
                         while (zipIn.nextEntry.also { entry = it } != null) {
-                            val outputFile = when (val entryName = entry!!.name) {
+                            val entryName = entry!!.name
+                            val settingsEntry = if (cache.restoreSettings()) {
+                                zipIn.restoreSettingsEntry(context, entryName)
+                            } else if (
+                                entryName == SETTINGS_BACKUP_ENTRY ||
+                                entryName == LEGACY_SETTINGS_BACKUP_ENTRY
+                            ) false else null
+                            if (settingsEntry != null) {
+                                if (settingsEntry) {
+                                    setLoading(58)
+                                    foundSetting = true
+                                }
+                                zipIn.closeEntry()
+                                continue
+                            }
+                            val outputFile = when (entryName) {
                                 "$taskDatabaseName.db" -> {
                                     setLoading(55)
                                     File(dbPath)
-                                }
-                                "primary_preferences.xml" if cache.restoreSettings() -> {
-                                    setLoading(58)
-                                    foundSetting = true
-                                    File(context.dataDir, "shared_prefs/primary_preferences.xml")
                                 }
                                 else -> {
                                     File(mediaDir, entryName.removePrefix("media/"))
@@ -281,8 +282,6 @@ class AppDataIO private constructor(application: Application) : AndroidViewModel
                     removeInvalidFile(context)
                     if (foundSetting && cache.restoreSettings()) {
                         cache.restoreSettings(false)
-                        delay(500)
-                        exitProcess(0)
                     }
                     setLoading(100) // finished
                     setIOdbState(IOdbState.Finished)
@@ -344,7 +343,10 @@ class AppDataIO private constructor(application: Application) : AndroidViewModel
                             hasDatabase = true
                         }
                         // check preference
-                        if (entryName == "primary_preferences.xml") {
+                        if (
+                            entryName == SETTINGS_BACKUP_ENTRY ||
+                            entryName == LEGACY_SETTINGS_BACKUP_ENTRY
+                        ) {
                             hasPreference = true
                         }
                         // check directory

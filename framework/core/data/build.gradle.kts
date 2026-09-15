@@ -53,6 +53,8 @@ kotlin {
                 implementation(libs.androidx.sqlite.bundled)
                 implementation(libs.okio)
                 implementation(libs.kotlinx.datetime)
+                implementation(libs.androidx.datastore.core)
+                implementation(libs.androidx.datastore.preferences.core)
                 // Add KMP dependencies here
 
                 api(project(":framework:core:model"))

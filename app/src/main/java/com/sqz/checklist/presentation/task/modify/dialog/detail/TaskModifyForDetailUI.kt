@@ -9,12 +9,12 @@ import com.sqz.checklist.presentation.task.modify.TaskModifyViewModel
 import com.sqz.checklist.presentation.task.modify.dialog.detail.group.ModifyDetailListDialogUI
 import com.sqz.checklist.presentation.task.modify.dialog.detail.set.ModifyDetailDialogUI
 import sqz.checklist.common.EffectFeedback
-import sqz.checklist.data.preferences.PrimaryPreferences
+import sqz.checklist.model.settings.MediaSettings
 import sqz.checklist.task.api.modify.TaskModify
 
 @Composable
 fun TaskModifyForDetailUI(
-    preference: PrimaryPreferences,
+    mediaSettings: MediaSettings,
     viewModel: TaskModifyViewModel,
     feedback: EffectFeedback,
     modifier: Modifier = Modifier,
@@ -31,7 +31,7 @@ fun TaskModifyForDetailUI(
             onSelectChange = viewModel::onDetailItemTypeChange,
             onDismiss = viewModel::onDetailItemDismiss,
             onRemove = viewModel::onDetailItemRemove,
-            onConfirm = { viewModel.onDetailItemConfirm(preference) },
+            onConfirm = { viewModel.onDetailItemConfirm(mediaSettings) },
             onListConfirm = viewModel::detailItemToList,
             modifyType = taskModify.taskState!!.type,
             isListConfirm = viewModel.getIsDetailModified().collectAsState().value,

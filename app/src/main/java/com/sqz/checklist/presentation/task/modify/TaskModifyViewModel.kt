@@ -17,7 +17,7 @@ import kotlinx.coroutines.withContext
 import okio.Path.Companion.toPath
 import sqz.checklist.data.database.TaskDetailType
 import sqz.checklist.data.database.repository.task.TaskRepository
-import sqz.checklist.data.preferences.PrimaryPreferences
+import sqz.checklist.model.settings.MediaSettings
 import sqz.checklist.data.storage.StorageHelper.isDataPath
 import sqz.checklist.data.storage.manager.StorageManager
 import sqz.checklist.task.api.modify.TaskModify
@@ -175,7 +175,7 @@ class TaskModifyViewModel(
     private val _compressedFile = MutableStateFlow(listOf<String>())
 
     private fun pictureCompressor(
-        preference: PrimaryPreferences, typeState: TaskModify.Detail.TypeState.Picture
+        settings: MediaSettings, typeState: TaskModify.Detail.TypeState.Picture
     ) {
         viewModelScope.launch(Dispatchers.IO) {
             if (typeState.path.isDataPath()) {
@@ -185,7 +185,7 @@ class TaskModifyViewModel(
             _taskModify.updateLoading(true)
             if (!_compressedFile.value.any { it == typeState.path }) compressImageInPlace(
                 path = typeState.path.toPath(),
-                compression = preference.pictureCompressionRate(),
+                compression = settings.pictureCompressionPercent,
             ).also {
                 if (!it) Log.w("TaskModifyViewModel", "Picture compress failed!")
                 _compressedFile.update { update -> update + typeState.path }
@@ -196,7 +196,7 @@ class TaskModifyViewModel(
     }
 
     private fun videoCompressor(
-        preference: PrimaryPreferences, typeState: TaskModify.Detail.TypeState.Video
+        settings: MediaSettings, typeState: TaskModify.Detail.TypeState.Video
     ) {
         viewModelScope.launch(Dispatchers.IO) {
             if (typeState.path.isDataPath()) {
@@ -207,7 +207,7 @@ class TaskModifyViewModel(
             this@TaskModifyViewModel.updateLoadingPercentage(0.0)
             if (!_compressedFile.value.any { it == typeState.path }) compressVideoInPlace(
                 sourcePath = typeState.path.toPath(),
-                compressionRate = preference.videoCompressionRate(),
+                compressionRate = settings.videoCompressionPercent,
                 onProgress = {
                     val format = (it * 100).roundToInt() / 100.0
                     this@TaskModifyViewModel.updateLoadingPercentage(format)
@@ -222,17 +222,17 @@ class TaskModifyViewModel(
         }
     }
 
-    fun onDetailItemConfirm(preference: PrimaryPreferences) {
+    fun onDetailItemConfirm(settings: MediaSettings) {
         _taskModify.detailHandler().getSelectedItem.value?.let {
             when (it.typeState) {
                 is TaskModify.Detail.TypeState.Picture -> {
                     val picture = it.typeState as TaskModify.Detail.TypeState.Picture
-                    this.pictureCompressor(preference, picture)
+                    this.pictureCompressor(settings, picture)
                 }
 
                 is TaskModify.Detail.TypeState.Video -> {
                     val video = it.typeState as TaskModify.Detail.TypeState.Video
-                    this.videoCompressor(preference, video)
+                    this.videoCompressor(settings, video)
                 }
 
                 else -> {

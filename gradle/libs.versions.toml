@@ -17,6 +17,7 @@ foundationAndroid = "1.12.0"
 okio = "3.18.1"
 runtimeAndroid = "1.12.0"
 turbine = "1.2.1"
+dataStore = "1.2.1"
 workRuntimeKtx = "2.11.2"
 junit = "4.13.2"
 junitVersion = "1.3.0"
@@ -78,6 +79,8 @@ okio = { module = "com.squareup.okio:okio", version.ref = "okio" }
 okio-fakefilesystem = { module = "com.squareup.okio:okio-fakefilesystem", version.ref = "okio" }
 okio-jvm = { module = "com.squareup.okio:okio-jvm", version.ref = "okio" }
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
+androidx-datastore-core = { module = "androidx.datastore:datastore-core", version.ref = "dataStore" }
+androidx-datastore-preferences-core = { module = "androidx.datastore:datastore-preferences-core", version.ref = "dataStore" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }

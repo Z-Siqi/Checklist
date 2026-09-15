@@ -2,6 +2,9 @@ package sqz.checklist.data.preferences
 
 import android.content.Context
 
+@Deprecated(
+    message = "Use SettingsRepository backed by Preferences DataStore.",
+)
 open class PreferencesAccess(private val context: Context) {
     private val preferencesFileName = "preferences"
     open fun preferencesFileName(): String = this.preferencesFileName

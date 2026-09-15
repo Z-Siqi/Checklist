@@ -13,7 +13,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -25,9 +24,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
@@ -35,6 +31,7 @@ import androidx.navigation.compose.dialog
 import androidx.navigation.compose.navigation
 import androidx.navigation.toRoute
 import com.sqz.checklist.R
+import com.sqz.checklist.assembly.settings.SettingsAssembly
 import com.sqz.checklist.common.AndroidEffectFeedback
 import com.sqz.checklist.notification.NotifyManager
 import com.sqz.checklist.presentation.reminder.assign.ReminderLayout
@@ -53,10 +50,11 @@ import com.sqz.checklist.ui.nav.group.home.button.TaskExtendedButton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
-import sqz.checklist.data.preferences.PrimaryPreferences
 import sqz.checklist.task.api.list.TaskList
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -101,42 +99,40 @@ fun NavGraphBuilder.taskScreen(
         homeNavController = homeNavController,
         homeViewModel = homeViewModel,
         refreshListRequest = refreshListRequest,
-        preference = PrimaryPreferences(view.context)
+        settings = SettingsAssembly.get(view.context).settings.state,
     )
     navigation(
         route = HomeNavGroup.TaskNavRoute::class,
         startDestination = TaskScreen.MainRoute,
     ) {
         composable(route = TaskScreen.MainRoute::class) {
-            val lifecycleOwner = LocalLifecycleOwner.current
             val notifyManager = remember { NotifyManager() }
             val reminderController = rememberTaskReminderNotificationController(
                 notifyManager = notifyManager,
             )
-            val preference = remember(view.context) { PrimaryPreferences(view.context) }
-            val rememberListCfg = remember { MutableStateFlow(TaskList.Config()) }
-            fun updateListConfig(prefs: PrimaryPreferences) {
-                fun Int.prefsLimit(): Int? = this.let {
-                    if (it >= 21) null else it
-                }
+            val appSettings by remember(view.context) {
+                SettingsAssembly.get(view.context).settings.state
+            }.collectAsState()
 
-                val config = TaskList.Config(
-                    enableUndo = !prefs.disableUndoButton(),
-                    autoDelIsHistoryTaskNumber = prefs.allowedNumberOfHistory().prefsLimit(),
-                    recentlyRemindedKeepTime = prefs.recentlyRemindedKeepTime(),
+            val listConfig = remember {
+                fun Int.prefsLimit(): Int? = this.let { let ->
+                    if (let >= 21) null else let
+                }
+                SettingsAssembly.get(view.context).settings.state.map {
+                    return@map TaskList.Config(
+                        enableUndo = it.history.undoEnabled,
+                        autoDelIsHistoryTaskNumber = it.history.allowedNumberOfHistory.prefsLimit(),
+                        recentlyRemindedKeepTime = it.reminder.recentlyRemindedKeepTimeMillis,
+                    )
+                }.stateIn(
+                    scope = mainCoroutineScope,
+                    started = kotlinx.coroutines.flow.SharingStarted.Eagerly,
+                    initialValue = TaskList.Config(
+                        enableUndo = appSettings.history.undoEnabled,
+                        autoDelIsHistoryTaskNumber = appSettings.history.allowedNumberOfHistory.prefsLimit(),
+                        recentlyRemindedKeepTime = appSettings.reminder.recentlyRemindedKeepTimeMillis,
+                    )
                 )
-                rememberListCfg.update { config }
-            }
-            DisposableEffect(lifecycleOwner) {
-                val observer = LifecycleEventObserver { _, event ->
-                    if (event == Lifecycle.Event.ON_RESUME) {
-                        updateListConfig(preference)
-                    }
-                }
-                lifecycleOwner.lifecycle.addObserver(observer)
-                onDispose {
-                    lifecycleOwner.lifecycle.removeObserver(observer)
-                }
             }
 
             val topBarState = rememberTopAppBarState()
@@ -212,7 +208,7 @@ fun NavGraphBuilder.taskScreen(
                     val coroutineScope = rememberCoroutineScope()
                     TaskListLayout(
                         listState = taskListState.value,
-                        config = rememberListCfg,
+                        config = listConfig,
                         view = view,
                         externalRequest = {
                             coordinator.onTaskListRequest(
@@ -241,7 +237,6 @@ fun NavGraphBuilder.taskScreen(
             var navigatedToReminder by remember { mutableStateOf<Long?>(null) }
             val reminderController = rememberTaskReminderNotificationController()
             TaskModifyLayout(
-                preference = PrimaryPreferences(view.context),
                 view = view,
                 modifyState = modifyState,
                 requestReminder = { taskId -> navigatedToReminder = taskId },

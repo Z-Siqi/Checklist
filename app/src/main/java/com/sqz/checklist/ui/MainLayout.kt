@@ -12,6 +12,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
@@ -21,6 +22,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.sqz.checklist.R
+import com.sqz.checklist.assembly.settings.SettingsAssembly
 import com.sqz.checklist.ui.common.ContentScaffold
 import com.sqz.checklist.ui.common.TextTooltipBox
 import com.sqz.checklist.ui.main.backup.BackupAndRestoreLayout
@@ -38,6 +40,13 @@ enum class MainLayoutNav {
     BackupRestore,
 }
 
+/**
+ * Hosts the application's root navigation and assembles the process-wide settings feature.
+ *
+ * @param modifier Modifier applied to the root navigation host.
+ * @param context Application context used by platform integrations and settings assembly.
+ * @param view Activity decor view used by Android-specific presentation components.
+ */
 @Composable
 fun MainLayout(modifier: Modifier, context: Context, view: View) {
     val navController = rememberNavController()
@@ -45,6 +54,7 @@ fun MainLayout(modifier: Modifier, context: Context, view: View) {
 
     val refreshListRequest = rememberSaveable { mutableStateOf(false) }
     val settingsLayoutViewModel: SettingsLayoutViewModel = viewModel()
+    val settings = remember(context) { SettingsAssembly.get(context).settings }
 
     NavHost(
         navController = navController,
@@ -134,6 +144,7 @@ fun MainLayout(modifier: Modifier, context: Context, view: View) {
                 SettingsLayout(
                     viewModel = settingsLayoutViewModel,
                     view = view,
+                    settings = settings,
                 )
             }
         }

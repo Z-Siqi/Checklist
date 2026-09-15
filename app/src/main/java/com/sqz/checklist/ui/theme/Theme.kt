@@ -18,7 +18,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
-import sqz.checklist.data.preferences.PrimaryPreferences
+import com.sqz.checklist.assembly.settings.SettingsAssembly
+import sqz.checklist.model.settings.AppTheme
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -220,11 +221,11 @@ fun ChecklistTheme(
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    if (!ThemePreference.init()) {
-        val context = LocalContext.current
-        val primaryPreferences = PrimaryPreferences(context)
-        ThemePreference.init(primaryPreferences.appTheme())
-    }
+    val context = LocalContext.current
+    val appSettings = SettingsAssembly.get(context).settings.state.collectAsState().value
+    val themeValue = if (appSettings.appearance.theme == AppTheme.Colorful) 1 else 0
+    if (!ThemePreference.init()) ThemePreference.init(themeValue)
+    else ThemePreference.updatePreference(themeValue)
     val colorScheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current

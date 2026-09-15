@@ -55,6 +55,8 @@ import com.sqz.checklist.ui.common.verticalColumnScrollbar
 import com.sqz.checklist.ui.common.unit.pxToDpInt
 import com.sqz.checklist.ui.common.unit.isLandscape
 import androidx.compose.ui.platform.LocalConfiguration
+import sqz.checklist.settings.api.manage.Settings
+import sqz.checklist.model.settings.AppSettings
 
 open class SettingsList {
 
@@ -244,14 +246,23 @@ open class SettingsList {
 
     @Composable
     fun settingsList(
-        view: View, type: SettingsType? = null
+        view: View,
+        settings: Settings,
+        appSettings: AppSettings,
+        type: SettingsType? = null,
     ): List<SettingsItem> {
         val list = HistorySettingItems(
-            view = view
+            view = view,
+            settings = settings,
+            appSettings = appSettings,
         ).list() + NotificationSettingItems(
-            view = view
+            view = view,
+            settings = settings,
+            appSettings = appSettings,
         ).list() + GeneralSettingItems(
-            view = view
+            view = view,
+            settings = settings,
+            appSettings = appSettings,
         ).list()
         return if (type == null) list else list.filter {
             it.type == type

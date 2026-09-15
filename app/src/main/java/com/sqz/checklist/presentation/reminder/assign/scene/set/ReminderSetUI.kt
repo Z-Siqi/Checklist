@@ -8,10 +8,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import com.sqz.checklist.R
+import com.sqz.checklist.assembly.settings.SettingsAssembly
 import com.sqz.checklist.notification.NotifyManager
 import com.sqz.checklist.ui.common.dialog.TimeSelectDialog
 import sqz.checklist.data.preferences.PreferencesInCache
-import sqz.checklist.data.preferences.PrimaryPreferences
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 
 @Composable
 fun ReminderSetUI(
@@ -22,7 +24,9 @@ fun ReminderSetUI(
     onConfirm: (remindAtMillis: Long) -> Unit,
 ) {
     val cachePreferences = PreferencesInCache(view.context)
-    val primaryPreferences = remember(view.context) { PrimaryPreferences(view.context) }
+    val settings by remember(view.context) {
+        SettingsAssembly.get(view.context).settings.state
+    }.collectAsState()
     LaunchedEffect(Unit) {
         if (!cachePreferences.checkBackgroundManageApp()) {
             if (!checkInstalledApp(view.context)) {
@@ -36,7 +40,7 @@ fun ReminderSetUI(
         onConfirmClick = { delayMillis ->
             val remindAtMillis = System.currentTimeMillis() + delayMillis
             if (!notifyManager.hasAlarmPermission(view.context) &&
-                !primaryPreferences.disableNoScheduleExactAlarmNotice()
+                settings.reminder.showExactAlarmWarning
             ) {
                 Toast.makeText(
                     view.context,
