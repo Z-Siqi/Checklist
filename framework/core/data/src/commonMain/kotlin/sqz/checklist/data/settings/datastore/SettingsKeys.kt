@@ -19,17 +19,36 @@ import androidx.datastore.preferences.core.stringPreferencesKey
  * older app must not erase settings created by a newer app.
  */
 internal object SettingsKeys {
-    val appTheme = stringPreferencesKey("appearance.app_theme")
-    val allowedNumberOfHistory = intPreferencesKey("history.allowed_number")
-    val clearHistoryWhenLeaving = booleanPreferencesKey("history.clear_when_leaving")
-    val undoEnabled = booleanPreferencesKey("history.undo_enabled")
-    val pictureCompressionPercent = intPreferencesKey("media.picture_compression_percent")
-    val videoCompressionPercent = intPreferencesKey("media.video_compression_percent")
-    val removeNotificationWhenReminded = booleanPreferencesKey("reminder.remove_when_reminded")
-    val showExactAlarmWarning = booleanPreferencesKey("reminder.show_exact_alarm_warning")
-    val recentlyRemindedKeepTimeMillis = longPreferencesKey("reminder.keep_time_millis")
-    val removeNotificationWhenHistoryDeleted =
-        booleanPreferencesKey("reminder.remove_when_history_deleted")
+    val appTheme = stringPreferencesKey(
+        name = "appearance.app_theme"
+    )
+    val allowedNumberOfHistory = intPreferencesKey(
+        name = "history.allowed_number"
+    )
+    val clearHistoryWhenLeaving = booleanPreferencesKey(
+        name = "history.clear_when_leaving"
+    )
+    val undoEnabled = booleanPreferencesKey(
+        name = "history.undo_enabled"
+    )
+    val pictureCompressionPercent = intPreferencesKey(
+        name = "media.picture_compression_percent"
+    )
+    val videoCompressionPercent = intPreferencesKey(
+        name = "media.video_compression_percent"
+    )
+    val removeNotificationWhenReminded = booleanPreferencesKey(
+        name = "reminder.remove_when_reminded"
+    )
+    val showExactAlarmWarning = booleanPreferencesKey(
+        name = "reminder.show_exact_alarm_warning"
+    )
+    val recentlyRemindedKeepTimeMillis = longPreferencesKey(
+        name = "reminder.keep_time_millis"
+    )
+    val removeNotificationWhenHistoryDeleted = booleanPreferencesKey(
+        name = "reminder.remove_when_history_deleted"
+    )
 
     /** All keys that [write] must emit for a complete settings snapshot. */
     val active: Set<Preferences.Key<*>> = setOf(

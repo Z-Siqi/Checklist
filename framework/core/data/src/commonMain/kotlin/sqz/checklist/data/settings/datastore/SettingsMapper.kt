@@ -17,7 +17,7 @@ import sqz.checklist.model.settings.ReminderSettings
  *    `sqz.checklist.model.settings`.
  * 2. Declare a stable, namespaced key in [SettingsKeys] and add it to [SettingsKeys.active].
  * 3. Read the key in this method. Missing or invalid values must fall back to the corresponding
- *    property on [defaults], never to a duplicated literal default.
+ *    property on `defaults`, never to a duplicated literal default.
  * 4. Write the property in [write].
  * 5. Give the non-default round-trip fixture in `SettingsMapperTest` a non-default value. The
  *    active-key assertion then detects a missing key registration or write mapping.
@@ -35,36 +35,52 @@ import sqz.checklist.model.settings.ReminderSettings
  */
 internal fun Preferences.toAppSettings(): AppSettings {
     val defaults = AppSettings()
+
+    val appearanceSettings = AppearanceSettings(
+        theme = this[SettingsKeys.appTheme]
+            ?.let { value -> AppTheme.entries.firstOrNull { it.name == value } }
+            ?: defaults.appearance.theme,
+    )
+    val historySettings = HistorySettings(
+        allowedNumberOfHistory = this[SettingsKeys.allowedNumberOfHistory]
+            ?.takeIf { it in 0..21 }
+            ?: defaults.history.allowedNumberOfHistory,
+
+        clearHistoryWhenLeaving = this[SettingsKeys.clearHistoryWhenLeaving]
+            ?: defaults.history.clearHistoryWhenLeaving,
+
+        undoEnabled = this[SettingsKeys.undoEnabled]
+            ?: defaults.history.undoEnabled,
+    )
+    val mediaSettings = MediaSettings(
+        pictureCompressionPercent = this[SettingsKeys.pictureCompressionPercent]
+            ?.takeIf { it in 0..100 }
+            ?: defaults.media.pictureCompressionPercent,
+
+        videoCompressionPercent = this[SettingsKeys.videoCompressionPercent]
+            ?.takeIf { it in 0..100 }
+            ?: defaults.media.videoCompressionPercent,
+    )
+    val reminderSettings = ReminderSettings(
+        removeNotificationWhenReminded = this[SettingsKeys.removeNotificationWhenReminded]
+            ?: defaults.reminder.removeNotificationWhenReminded,
+
+        showExactAlarmWarning = this[SettingsKeys.showExactAlarmWarning]
+            ?: defaults.reminder.showExactAlarmWarning,
+
+        recentlyRemindedKeepTimeMillis = this[SettingsKeys.recentlyRemindedKeepTimeMillis]
+            ?.takeIf { it >= 0L }
+            ?: defaults.reminder.recentlyRemindedKeepTimeMillis,
+
+        removeNotificationWhenHistoryDeleted = this[SettingsKeys.removeNotificationWhenHistoryDeleted]
+            ?: defaults.reminder.removeNotificationWhenHistoryDeleted,
+    )
+
     return AppSettings(
-        appearance = AppearanceSettings(
-            theme = this[SettingsKeys.appTheme]
-                ?.let { value -> AppTheme.entries.firstOrNull { it.name == value } }
-                ?: defaults.appearance.theme,
-        ),
-        history = HistorySettings(
-            allowedNumberOfHistory = this[SettingsKeys.allowedNumberOfHistory]
-                ?.takeIf { it in 0..21 } ?: defaults.history.allowedNumberOfHistory,
-            clearHistoryWhenLeaving = this[SettingsKeys.clearHistoryWhenLeaving]
-                ?: defaults.history.clearHistoryWhenLeaving,
-            undoEnabled = this[SettingsKeys.undoEnabled] ?: defaults.history.undoEnabled,
-        ),
-        media = MediaSettings(
-            pictureCompressionPercent = this[SettingsKeys.pictureCompressionPercent]
-                ?.takeIf { it in 0..100 } ?: defaults.media.pictureCompressionPercent,
-            videoCompressionPercent = this[SettingsKeys.videoCompressionPercent]
-                ?.takeIf { it in 0..100 } ?: defaults.media.videoCompressionPercent,
-        ),
-        reminder = ReminderSettings(
-            removeNotificationWhenReminded = this[SettingsKeys.removeNotificationWhenReminded]
-                ?: defaults.reminder.removeNotificationWhenReminded,
-            showExactAlarmWarning = this[SettingsKeys.showExactAlarmWarning]
-                ?: defaults.reminder.showExactAlarmWarning,
-            recentlyRemindedKeepTimeMillis = this[SettingsKeys.recentlyRemindedKeepTimeMillis]
-                ?.takeIf { it >= 0L } ?: defaults.reminder.recentlyRemindedKeepTimeMillis,
-            removeNotificationWhenHistoryDeleted =
-                this[SettingsKeys.removeNotificationWhenHistoryDeleted]
-                    ?: defaults.reminder.removeNotificationWhenHistoryDeleted,
-        ),
+        appearance = appearanceSettings,
+        history = historySettings,
+        media = mediaSettings,
+        reminder = reminderSettings,
     )
 }
 
@@ -79,17 +95,34 @@ internal fun Preferences.toAppSettings(): AppSettings {
  * invoking this function.
  */
 internal fun MutablePreferences.write(settings: AppSettings) {
-    this[SettingsKeys.appTheme] = settings.appearance.theme.name
-    this[SettingsKeys.allowedNumberOfHistory] = settings.history.allowedNumberOfHistory
-    this[SettingsKeys.clearHistoryWhenLeaving] = settings.history.clearHistoryWhenLeaving
-    this[SettingsKeys.undoEnabled] = settings.history.undoEnabled
-    this[SettingsKeys.pictureCompressionPercent] = settings.media.pictureCompressionPercent
-    this[SettingsKeys.videoCompressionPercent] = settings.media.videoCompressionPercent
-    this[SettingsKeys.removeNotificationWhenReminded] =
-        settings.reminder.removeNotificationWhenReminded
-    this[SettingsKeys.showExactAlarmWarning] = settings.reminder.showExactAlarmWarning
-    this[SettingsKeys.recentlyRemindedKeepTimeMillis] =
-        settings.reminder.recentlyRemindedKeepTimeMillis
-    this[SettingsKeys.removeNotificationWhenHistoryDeleted] =
-        settings.reminder.removeNotificationWhenHistoryDeleted
+    settings.appearance.theme.name.let {
+        this[SettingsKeys.appTheme] = it
+    }
+    settings.history.allowedNumberOfHistory.let {
+        this[SettingsKeys.allowedNumberOfHistory] = it
+    }
+    settings.history.clearHistoryWhenLeaving.let {
+        this[SettingsKeys.clearHistoryWhenLeaving] = it
+    }
+    settings.history.undoEnabled.let {
+        this[SettingsKeys.undoEnabled] = it
+    }
+    settings.media.pictureCompressionPercent.let {
+        this[SettingsKeys.pictureCompressionPercent] = it
+    }
+    settings.media.videoCompressionPercent.let {
+        this[SettingsKeys.videoCompressionPercent] = it
+    }
+    settings.reminder.removeNotificationWhenReminded.let {
+        this[SettingsKeys.removeNotificationWhenReminded] = it
+    }
+    settings.reminder.showExactAlarmWarning.let {
+        this[SettingsKeys.showExactAlarmWarning] = it
+    }
+    settings.reminder.recentlyRemindedKeepTimeMillis.let {
+        this[SettingsKeys.recentlyRemindedKeepTimeMillis] = it
+    }
+    settings.reminder.removeNotificationWhenHistoryDeleted.let {
+        this[SettingsKeys.removeNotificationWhenHistoryDeleted] = it
+    }
 }
