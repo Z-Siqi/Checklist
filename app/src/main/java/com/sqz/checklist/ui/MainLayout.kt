@@ -5,38 +5,25 @@ import android.view.View
 import android.widget.Toast
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.sqz.checklist.R
-import com.sqz.checklist.assembly.settings.SettingsAssembly
 import com.sqz.checklist.ui.common.ContentScaffold
-import com.sqz.checklist.ui.common.TextTooltipBox
 import com.sqz.checklist.ui.main.backup.BackupAndRestoreLayout
 import com.sqz.checklist.ui.main.backup.BackupRestoreTopBar
 import com.sqz.checklist.ui.main.history.task.taskHistoryScreen
-import com.sqz.checklist.ui.main.settings.SettingsLayoutViewModel
-import com.sqz.checklist.ui.main.settings.SettingsTopBar
-import com.sqz.checklist.ui.main.settings.layout.SettingsLayout
+import com.sqz.checklist.ui.main.settings.settingsScreen
 import com.sqz.checklist.ui.main.task.taskScreen
 import com.sqz.checklist.ui.nav.RootNavRoute
 import com.sqz.checklist.ui.nav.group.home.homeNavGroup
 
 enum class MainLayoutNav {
-    Settings,
     BackupRestore,
 }
 
@@ -53,8 +40,6 @@ fun MainLayout(modifier: Modifier, context: Context, view: View) {
     val mainCoroutineScope = rememberCoroutineScope()
 
     val refreshListRequest = rememberSaveable { mutableStateOf(false) }
-    val settingsLayoutViewModel: SettingsLayoutViewModel = viewModel()
-    val settings = remember(context) { SettingsAssembly.get(context).settings }
 
     NavHost(
         navController = navController,
@@ -106,47 +91,6 @@ fun MainLayout(modifier: Modifier, context: Context, view: View) {
             }
         }
 
-        composable(MainLayoutNav.Settings.name) { //TODO: Finish refactoring this
-            ContentScaffold(
-                topBar = {
-                    SettingsTopBar(
-                        onBack = {
-                            navController.popBackStack()
-                            settingsLayoutViewModel.resetSearchState()
-                        },
-                        view = view,
-                    )
-                },
-                floatingActionButton = {
-                    val buttonText = stringResource(
-                        if (settingsLayoutViewModel.getSearchState()) R.string.cancel else R.string.search
-                    )
-                    TextTooltipBox(text = buttonText) {
-                        FloatingActionButton(
-                            onClick = {
-                                if (settingsLayoutViewModel.getSearchState()) {
-                                    settingsLayoutViewModel.resetSearchState()
-                                } else {
-                                    settingsLayoutViewModel.requestSearch()
-                                }
-                            }
-                        ) {
-                            val icon = if (settingsLayoutViewModel.getSearchState()) {
-                                Icons.Filled.Close
-                            } else {
-                                Icons.Filled.Search
-                            }
-                            Icon(icon, contentDescription = buttonText)
-                        }
-                    }
-                }
-            ) {
-                SettingsLayout(
-                    viewModel = settingsLayoutViewModel,
-                    view = view,
-                    settings = settings,
-                )
-            }
-        }
+        settingsScreen(rootNavController = navController, modifier = modifier)
     }
 }

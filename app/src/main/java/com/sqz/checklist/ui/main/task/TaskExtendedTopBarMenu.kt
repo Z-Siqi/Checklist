@@ -49,7 +49,7 @@ fun TopBarExtendedMenu(
     }
     val settingsClick = {
         onClickType(TopBarMenuClickType.Settings)
-        navController.navigate(MainLayoutNav.Settings.name)
+        navController.navigate(RootNavRoute.Settings)
     }
     val menuList = listOf(
         MenuItem(stringResource(R.string.task_history)) { taskHistoryClick() },

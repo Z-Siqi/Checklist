@@ -1,5 +1,4 @@
 package com.sqz.checklist.ui.main.settings
-import android.view.View
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -21,9 +20,8 @@ import com.sqz.checklist.ui.theme.Theme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsTopBar(
+internal fun SettingsTopBar(
     onBack: () -> Unit,
-    view: View,
     modifier: Modifier = Modifier
 ) {
     val localConfig = LocalWindowInfo.current.containerSize
